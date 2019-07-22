@@ -16,10 +16,10 @@ class CreateDiscountsTable extends Migration
         Schema::create('discounts', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->tinyInteger('type');
-            $table->string('name');
+            $table->string('name', 255)->nullable();
             $table->tinyInteger('value_type');
-            $table->integer('value');
-            $table->integer('region_id');
+            $table->integer('value')->unsigned();
+            $table->integer('region_id')->unsigned()->nullable();
             $table->tinyInteger('status');
             $table->timestamps();
         });

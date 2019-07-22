@@ -15,8 +15,8 @@ class CreateDiscountUserRolesTable extends Migration
     {
         Schema::create('discount_user_roles', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->integer('discount_id');
-            $table->integer('role_id');
+            $table->bigInteger('discount_id')->unsigned();
+            $table->bigInteger('role_id')->unsigned();
             $table->timestamps();
         });
     }
