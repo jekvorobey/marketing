@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateDiscountsProductsTable extends Migration
+class CreateDiscountUserRolesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,10 +13,10 @@ class CreateDiscountsProductsTable extends Migration
      */
     public function up()
     {
-        Schema::create('discounts_products', function (Blueprint $table) {
+        Schema::create('discount_user_roles', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->integer('discount_id');
-            $table->integer('product_id');
+            $table->integer('role_id');
             $table->timestamps();
         });
     }
@@ -28,6 +28,6 @@ class CreateDiscountsProductsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('discounts_products');
+        Schema::dropIfExists('discount_user_roles');
     }
 }
