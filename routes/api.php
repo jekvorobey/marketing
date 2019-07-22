@@ -13,6 +13,17 @@ use Illuminate\Http\Request;
 |
 */
 
-Route::middleware('auth:api')->get('/user', function (Request $request) {
-    return $request->user();
+Route::namespace('V1')->prefix('v1')->group(function () {
+    Route::prefix('discounts')->group(function () {
+
+        Route::prefix('{id}')->group(function () {
+            Route::get('', 'DiscountController@read');
+            Route::put('', 'DiscountController@update');
+            Route::delete('', 'DiscountController@delete');
+        });
+
+        Route::get('count', 'DiscountController@count');
+        Route::get('', 'DiscountController@read');
+        Route::post('', 'DiscountController@create');
+    });
 });

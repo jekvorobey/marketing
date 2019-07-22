@@ -20,7 +20,10 @@ class CreateDiscountsTable extends Migration
             $table->tinyInteger('value_type');
             $table->integer('value')->unsigned();
             $table->integer('region_id')->unsigned()->nullable();
+            $table->tinyInteger('approval_status');
             $table->tinyInteger('status');
+            $table->tinyInteger('validity')->nullable();
+            $table->timestamp('started_at', 0)->nullable();
             $table->timestamps();
         });
     }
