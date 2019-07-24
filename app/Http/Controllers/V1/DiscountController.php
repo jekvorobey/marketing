@@ -11,10 +11,10 @@ use Greensight\CommonMsa\Rest\Controller\ReadAction;
 use Greensight\CommonMsa\Rest\Controller\UpdateAction;
 
 /**
- * Class StoresController
+ * Class DiscountController
  * @package App\Http\Controllers\V1
  */
-class StoresController extends Controller
+class DiscountController extends Controller
 {
     use DeleteAction;
     use CreateAction;
