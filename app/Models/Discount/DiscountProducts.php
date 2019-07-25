@@ -1,24 +1,24 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Discount;
 
 use Greensight\CommonMsa\Models\AbstractModel;
 
 /**
- * Класс-модель для сущности "Скидка роли пользователя"
- * App\Models\Discount
+ * Класс-модель для сущности "Скидка продукта"
+ * App\Models\Discount\Discount
  *
  * @property int $discount_id
- * @property int $role_id
+ * @property int $product_id
  * @mixin \Eloquent
  *
  */
-class DiscountUserRoles extends AbstractModel
+class DiscountProducts extends AbstractModel
 {
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = ['discount_id', 'role_id'];
+    const FILLABLE = ['discount_id', 'product_id'];
     
     /**
      * @var array
@@ -28,5 +28,5 @@ class DiscountUserRoles extends AbstractModel
     /**
      * @var string
      */
-    protected $table = 'discount_user_roles';
+    protected $table = 'discount_products';
 }

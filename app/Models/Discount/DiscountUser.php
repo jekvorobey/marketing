@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Discount;
 
 use Greensight\CommonMsa\Models\AbstractModel;
 
 /**
  * Класс-модель для сущности "Скидка пользователя"
- * App\Models\Discount
+ * App\Models\Discount\Discount
  *
  * @property int $discount_id
  * @property int $user_id

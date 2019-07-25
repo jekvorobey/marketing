@@ -1,19 +1,19 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Discount;
 
 use Greensight\CommonMsa\Models\AbstractModel;
 
 /**
- * Класс-модель для сущности "Скидка продукта"
- * App\Models\Discount
+ * Класс-модель для сущности "Скидка категории продукта"
+ * App\Models\Discount\Discount
  *
  * @property int $discount_id
  * @property int $product_id
  * @mixin \Eloquent
  *
  */
-class DiscountProducts extends AbstractModel
+class DiscountProductCategories extends AbstractModel
 {
     /**
      * Заполняемые поля модели

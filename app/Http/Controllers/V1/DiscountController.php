@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\Discount;
+use App\Models\Discount\Discount;
 use Greensight\CommonMsa\Rest\Controller\CountAction;
 use Greensight\CommonMsa\Rest\Controller\CreateAction;
 use Greensight\CommonMsa\Rest\Controller\DeleteAction;
