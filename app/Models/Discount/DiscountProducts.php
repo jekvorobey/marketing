@@ -9,7 +9,7 @@ use Greensight\CommonMsa\Models\AbstractModel;
  * App\Models\Discount\Discount
  *
  * @property int $discount_id
- * @property int $product_id
+ * @property int $offer_id
  * @mixin \Eloquent
  *
  */
@@ -18,13 +18,13 @@ class DiscountProducts extends AbstractModel
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = ['discount_id', 'product_id'];
-    
+    const FILLABLE = ['discount_id', 'offer_id'];
+
     /**
      * @var array
      */
-    protected $fillable = ['discount_id', 'role_id'];
-    
+    protected $fillable = ['discount_id', 'offer_id'];
+
     /**
      * @var string
      */
