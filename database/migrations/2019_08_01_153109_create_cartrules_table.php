@@ -20,7 +20,7 @@ class CreateCartrulesTable extends Migration
             $table->string('name', 255)->nullable();
             $table->tinyInteger('value_type');
             $table->integer('value')->unsigned();
-            $table->string('value', 255)->nullable();
+            $table->string('promo_code', 255)->nullable();
             $table->integer('region_id')->unsigned()->nullable();
             $table->tinyInteger('approval_status');
             $table->tinyInteger('status');
