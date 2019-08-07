@@ -16,14 +16,14 @@ class CreateDiscountsTable extends Migration
         Schema::create('discounts', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->bigInteger('merchant_id');
-            $table->tinyInteger('type');
+            $table->tinyInteger('type')->unsigned();
             $table->string('name', 255)->nullable();
-            $table->tinyInteger('value_type');
+            $table->tinyInteger('value_type')->unsigned();
             $table->integer('value')->unsigned();
             $table->string('promo_code', 255)->nullable();
             $table->integer('region_id')->unsigned()->nullable();
-            $table->tinyInteger('approval_status');
-            $table->tinyInteger('status');
+            $table->tinyInteger('approval_status')->unsigned();
+            $table->tinyInteger('status')->unsigned();
             $table->integer('validity')->unsigned()->nullable();
             $table->timestamp('started_at', 0)->nullable();
             $table->timestamps();
