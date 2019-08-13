@@ -23,7 +23,7 @@ class DiscountsTableSeeder extends Seeder
         for ($i=0; $i<= 50; $i++) {
             $discount = new Discount();
             $discount->merchant_id = $merchants[array_rand($merchants)];
-            $discount->type = rand(1, 9);
+            $discount->type = rand(1, 10);
             $discount->promo_code = rand(0, 1) ? null : $faker->regexify('[A-Z0-9]{7}');
 
             $discount->name = $faker->text(30);
@@ -39,7 +39,8 @@ class DiscountsTableSeeder extends Seeder
             $discount->approval_status = rand(1, 3);
             $discount->status = rand(1, 3);
             $discount->validity = rand(0, 365);
-            $discount->started_at = rand(0, 1) ? null : $faker->dateTimeThisYear();
+            $discount->start_date = rand(0, 1) ? null : $faker->dateTimeThisYear();
+            $discount->end_date = rand(0, 1) ? null : $faker->dateTimeThisYear();
             $discount->created_at = $faker->dateTimeThisYear();
             $discount->save();
         }

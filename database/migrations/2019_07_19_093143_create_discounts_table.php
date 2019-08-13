@@ -25,7 +25,8 @@ class CreateDiscountsTable extends Migration
             $table->tinyInteger('approval_status')->unsigned();
             $table->tinyInteger('status')->unsigned();
             $table->integer('validity')->unsigned()->nullable();
-            $table->timestamp('started_at', 0)->nullable();
+            $table->timestamp('start_date', 0)->nullable();
+            $table->timestamp('end_date', 0)->nullable();
             $table->timestamps();
         });
     }
