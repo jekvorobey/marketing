@@ -20,13 +20,25 @@ class DiscountsTableSeeder extends Seeder
 
         $merchants = [1, 2];
 
+        $names =  [
+            'Первое мая',
+            '8 марта',
+            'Распродажа',
+            'Юбилей',
+            '23 февраля',
+            'Успей все скупить',
+            'Спелые арбузики за 5 рублей',
+            'Скидка 10% на шампуни',
+        ];
+
+
         for ($i=0; $i<= 50; $i++) {
             $discount = new Discount();
             $discount->merchant_id = $merchants[array_rand($merchants)];
             $discount->type = rand(1, 10);
             $discount->promo_code = rand(0, 1) ? null : $faker->regexify('[A-Z0-9]{7}');
 
-            $discount->name = $faker->text(30);
+            $discount->name = $names[array_rand($names)];
             // Тип значения (1 - проценты, 2 - рубли)
             if(rand(0, 1)) {
                 $discount->value_type = 1;
