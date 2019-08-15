@@ -4,6 +4,7 @@ namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Price\Price;
+use Greensight\CommonMsa\Rest\Controller\ReadAction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -15,7 +16,39 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  */
 class PriceController extends Controller
 {
-    //todo Добавить проверку прав
+    use ReadAction;
+    
+    /**
+     * Получить список полей, которые можно редактировать через стандартные rest действия.
+     * Пример return ['name', 'status'];
+     * @return array
+     */
+    protected function writableFieldList(): array
+    {
+        return Price::FILLABLE;
+    }
+    
+    /**
+     * Получить класс модели в виде строки
+     * Пример: return MyModel::class;
+     * @return string
+     */
+    public function modelClass(): string
+    {
+        return Price::class;
+    }
+    
+    /**
+     * Задать права для выполнения стандартных rest действий.
+     * Пример: return [ RestAction::$DELETE => 'permission' ];
+     * @return array
+     */
+    public function permissionMap(): array
+    {
+        return [
+            // todo добавить необходимые права
+        ];
+    }
     
     /**
      * Получить цену на предложение мерчанта
@@ -24,12 +57,13 @@ class PriceController extends Controller
      */
     public function price(int $offerId): JsonResponse
     {
+        //todo Добавить проверку прав
         $price = Price::query()
             ->where('offer_id', $offerId)
             ->first();
     
         return response()->json([
-            'item' => $price->price
+            'item' => $price
         ]);
     }
     
@@ -42,7 +76,7 @@ class PriceController extends Controller
      */
     public function setPrice(int $offerId, Request $request): Response
     {
-        // todo добавить проверку прав
+        // todo Добавить проверку прав
         $price = (float) $request->input('price');
         
         $ok = true;
