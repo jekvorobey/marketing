@@ -1,6 +1,6 @@
 <?php
 
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,5 +25,14 @@ Route::namespace('V1')->prefix('v1')->group(function () {
             Route::delete('', 'DiscountController@delete');
         });
 
+    });
+    
+    Route::prefix('offers')->group(function () {
+        Route::prefix('{id}')->group(function () {
+            Route::prefix('price')->group(function () {
+                Route::get('', 'PriceController@price');
+                Route::put('', 'PriceController@setPrice');
+            });
+        });
     });
 });
