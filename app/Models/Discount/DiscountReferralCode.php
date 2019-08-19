@@ -5,28 +5,30 @@ namespace App\Models\Discount;
 use Greensight\CommonMsa\Models\AbstractModel;
 
 /**
- * Класс-модель для сущности "Скидка продукта"
+ * Класс-модель для сущности "Скидка для
+ *
+ * "
  * App\Models\Discount\Discount
  *
  * @property int $discount_id
- * @property int $offer_id
+ * @property float $min_summ
  * @mixin \Eloquent
  *
  */
-class DiscountProducts extends AbstractModel
+class DiscountReferralCode extends AbstractModel
 {
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = ['discount_id', 'offer_id'];
+    const FILLABLE = ['discount_id', 'min_summ'];
 
     /**
      * @var array
      */
-    protected $fillable = ['discount_id', 'offer_id'];
+    protected $fillable = self::FILLABLE;
 
     /**
      * @var string
      */
-    protected $table = 'discount_products';
+    protected $table = 'discount_cart_summ';
 }

@@ -9,21 +9,21 @@ use Greensight\CommonMsa\Models\AbstractModel;
  * App\Models\Discount\Discount
  *
  * @property int $discount_id
- * @property int $product_id
+ * @property int $brand_id
  * @mixin \Eloquent
  *
  */
-class DiscountProductBrands extends AbstractModel
+class DiscountProductBrand extends AbstractModel
 {
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = ['discount_id', 'product_id'];
+    const FILLABLE = ['discount_id', 'brand_id'];
 
     /**
      * @var array
      */
-    protected $fillable = ['discount_id', 'role_id'];
+    protected $fillable = self::FILLABLE;
 
     /**
      * @var string

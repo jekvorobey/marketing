@@ -13,18 +13,18 @@ use Greensight\CommonMsa\Models\AbstractModel;
  * @mixin \Eloquent
  *
  */
-class DiscountUserRoles extends AbstractModel
+class DiscountUserRole extends AbstractModel
 {
     /**
      * Заполняемые поля модели
      */
     const FILLABLE = ['discount_id', 'role_id'];
-    
+
     /**
      * @var array
      */
-    protected $fillable = ['discount_id', 'role_id'];
-    
+    protected $fillable = self::FILLABLE;
+
     /**
      * @var string
      */
