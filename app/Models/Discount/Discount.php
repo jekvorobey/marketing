@@ -27,7 +27,7 @@ class Discount extends AbstractModel
     /**
      * @var array
      */
-    protected $fillable = ['type', 'name', 'value_type', 'value', 'region_id'];
+    protected $fillable = self::FILLABLE;
 
     /**
      * @var string
