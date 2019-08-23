@@ -47,38 +47,38 @@ class Discount extends AbstractModel
     ];
 
     public function discountProduct(){
-        return $this->hasOne(DiscountProduct::class, 'discount_id');
+        return $this->hasMany(DiscountProduct::class, 'discount_id');
     }
 
     public function discountProductBrand(){
-        return $this->hasOne(DiscountProductBrand::class, 'discount_id');
+        return $this->hasMany(DiscountProductBrand::class, 'discount_id');
     }
 
     public function discountProductCategory(){
-        return $this->hasOne(DiscountProductCategory::class, 'discount_id');
+        return $this->hasMany(DiscountProductCategory::class, 'discount_id');
     }
 
     public function discountUser(){
-        return $this->hasOne(DiscountUser::class, 'discount_id');
+        return $this->hasMany(DiscountUser::class, 'discount_id');
     }
 
     public function discountUserRole(){
-        return $this->hasOne(DiscountUserRole::class, 'discount_id');
+        return $this->hasMany(DiscountUserRole::class, 'discount_id');
     }
 
     public function discountDeliveryMethod(){
-        return $this->hasOne(DiscountDeliveryMethod::class, 'discount_id');
+        return $this->hasMany(DiscountDeliveryMethod::class, 'discount_id');
     }
 
     public function discountPayMethod(){
-        return $this->hasOne(DiscountPayMethod::class, 'discount_id');
+        return $this->hasMany(DiscountPayMethod::class, 'discount_id');
     }
 
     public function discountCartSumm(){
-        return $this->hasOne(DiscountCartSumm::class, 'discount_id');
+        return $this->hasMany(DiscountCartSumm::class, 'discount_id');
     }
 
     public function discountReferralCode(){
-        return $this->hasOne(DiscountReferralCode::class, 'discount_id');
+        return $this->hasMany(DiscountReferralCode::class, 'discount_id');
     }
 }

@@ -28,5 +28,5 @@ class DiscountProductCategory extends AbstractModel
     /**
      * @var string
      */
-    protected $table = 'discount_products';
+    protected $table = 'discount_product_categories';
 }
