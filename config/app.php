@@ -175,6 +175,7 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         \Greensight\CommonMsa\CommonLibServiceProvider::class,
+        \Pim\PimLibServiceProvider::class,
     ],
 
     /*

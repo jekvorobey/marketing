@@ -11,14 +11,19 @@
         {
             "type": "vcs",
             "url": "https://gitlab.com/greensight/ibt-common-ms-code.git"
+        },
+        {
+            "type": "vcs",
+            "url": "https://gitlab.com/greensight/ibt-pim-lib"
         }
     ],
     "require": {
         "php": "^7.1.3",
         "fideloper/proxy": "^4.0",
+        "greensight/ibt-common-lib": "dev-master",
+        "greensight/ibt-pim-lib": "dev-master",
         "laravel/framework": "5.8.*",
-        "laravel/tinker": "^1.0",
-        "greensight/ibt-common-lib": "dev-master"
+        "laravel/tinker": "^1.0"
     },
     "require-dev": {
         "beyondcode/laravel-dump-server": "^1.0",

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e108ab7d8c940878bf3faa17e7c5ef53",
+    "content-hash": "54d39adaee4938c78cd0494da661414a",
     "packages": [
         {
             "name": "dnoegel/php-xdg-base-dir",
@@ -478,6 +478,43 @@
             ],
             "description": "iBT common code for all microservices",
             "time": "2019-07-31T08:49:34+00:00"
+        },
+        {
+            "name": "greensight/ibt-pim-lib",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "git@gitlab.com:greensight/ibt-pim-lib.git",
+                "reference": "a5077cb04e0d644623f53504182d6def92b90eb8"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://gitlab.com/api/v4/projects/greensight%2Fibt-pim-lib/repository/archive.zip?sha=a5077cb04e0d644623f53504182d6def92b90eb8",
+                "reference": "a5077cb04e0d644623f53504182d6def92b90eb8",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "greensight/ibt-common-lib": "dev-master",
+                "php": "^7.1.3"
+            },
+            "require-dev": {
+                "laravel/framework": "^5.8"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Pim\\": "lib/"
+                }
+            },
+            "authors": [
+                {
+                    "name": "Ivan Koryukov",
+                    "email": "koryukov@greensight.ru"
+                }
+            ],
+            "description": "iBT PIM service client",
+            "time": "2019-10-31T10:36:16+00:00"
         },
         {
             "name": "guzzlehttp/guzzle",
@@ -5030,7 +5067,8 @@
     "aliases": [],
     "minimum-stability": "dev",
     "stability-flags": {
-        "greensight/ibt-common-lib": 20
+        "greensight/ibt-common-lib": 20,
+        "greensight/ibt-pim-lib": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,
