@@ -61,9 +61,20 @@ class PriceController extends Controller
         $price = Price::query()
             ->where('offer_id', $offerId)
             ->first();
+        if ($price) {
+            $result = [
+                'base' => $price->price,
+                'result' => $price->price - 5, // todo тут надо расчитывать стоимость со скидкой
+            ];
+        } else {
+            $result = [
+                'base' => 0,
+                'result' => 0,
+            ];
+        }
     
         return response()->json([
-            'item' => $price
+            'item' => $result
         ]);
     }
     
