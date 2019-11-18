@@ -37,4 +37,8 @@ Route::namespace('V1')->prefix('v1')->group(function () {
             });
         });
     });
+    
+    Route::prefix('price-reactor')->group(function () {
+        Route::get('basket', 'PriceReactorController@calculateBasketPrice');
+    });
 });

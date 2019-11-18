@@ -13,9 +13,9 @@ class BasketItem implements \JsonSerializable
     /** @var int */
     public $offerId;
     /** @var int */
-    private $categoryId;
+    public $categoryId;
     /** @var int */
-    private $brandId;
+    public $brandId;
     
     /**
      * BasketItem constructor.

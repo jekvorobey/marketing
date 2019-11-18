@@ -2,26 +2,27 @@
 
 namespace App\Models\Basket;
 
+use App\Models\Price\Price;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class Basket implements \JsonSerializable
 {
     /** @var int */
-    private $user;
+    public $user;
     /** @var string */
-    private $referalCode;
+    public $referalCode;
     /** @var int */
-    private $deliveryMethod;
+    public $deliveryMethod;
     /** @var int */
-    private $payMethod;
+    public $payMethod;
     
     /** @var float */
-    private $price;
+    public $price;
     /** @var float */
-    private $discount;
+    public $discount;
     /** @var BasketItem[] */
-    private $items;
+    public $items;
     
     public static function fromRequestData(array $data): self
     {
@@ -33,7 +34,7 @@ class Basket implements \JsonSerializable
             'items.*.brand_id' => 'required|integer',
             'items.*.category_id' => 'required|integer',
             
-            'referal_code' => 'string',
+            //'refferal_code' => 'string',
             'delivery_method' => 'integer',
             'pay_method' => 'integer',
         ]);
@@ -58,11 +59,23 @@ class Basket implements \JsonSerializable
         $this->user = $userId;
     }
     
-    public function calculatePrices()
+    public function addPrices()
     {
+        $ids = array_map(function (BasketItem $item) {
+            return $item->offerId;
+        }, $this->items);
+        $prices = Price::query()->whereIn('offer_id', $ids)->get()->keyBy('offer_id');
+        $totalSum = 0;
+        // todo добавить расчёт скидок
         foreach ($this->items as $item) {
-            // todo
+            if ($prices->has($item->offerId)) {
+                $item->price = $prices[$item->offerId]->price;
+                $totalSum += $item->price;
+            } else {
+                throw new \Exception("basket item offer {$item->offerId} without price");
+            }
         }
+        $this->price = $totalSum;
     }
     
     public function jsonSerialize()
