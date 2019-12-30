@@ -3,11 +3,14 @@
 namespace App\Models\Basket;
 
 use App\Models\Price\Price;
-use Illuminate\Support\Facades\Validator;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class Basket implements \JsonSerializable
 {
+    private const CERTS = [
+        'CERT2020-500' => ['id' => 1,'code' => 'CERT2020-500', 'amount' => 500],
+        'CERT2019-1000' => ['id' => 2, 'code' => 'CERT2019-1000', 'amount' => 1000],
+    ];
+    
     /**
      * Стоимость корзины без скидок.
      * @var float
@@ -32,33 +35,45 @@ class Basket implements \JsonSerializable
     public $deliveryMethod;
     /** @var int */
     public $payMethod;
+    /** @var int */
+    public $bonus;
+    /** @var string */
+    public $promocode;
+    /** @var array */
+    public $certificates;
+    
+    /** @var int */
+    private $appliedBonus;
+    private $discountByBonus = 0;
+    /** @var int */
+    private $newBonus;
+    /** @var string */
+    private $appliedPromocode;
+    private $discountByPromocode = 0;
+    /** @var array */
+    private $appliedCertificates;
+    private $discountByCertificates = 0;
+    
     /** @var BasketItem[] */
     public $items;
     
     public static function fromRequestData(array $data): self
     {
-        $validator = Validator::make($data, [
-            'user' => 'required|integer',
-            'items' => 'required|array',
-            'items.*.id' => 'required|integer',
-            'items.*.qty' => 'required|integer',
-            'items.*.offer_id' => 'required|integer',
-            'items.*.brand_id' => 'required|integer',
-            'items.*.category_id' => 'required|integer',
-            
-            //'refferal_code' => 'string',
-            'delivery_method' => 'integer',
-            'pay_method' => 'integer',
-        ]);
-        if ($validator->fails()) {
-            throw new BadRequestHttpException($validator->errors()->first());
-        }
         $basket = new self($data['user']);
-        $basket->referalCode = $data['referal_code'] ?? null;
-        $basket->deliveryMethod = $data['delivery_method'] ?? null;
-        $basket->payMethod = $data['pay_method'] ?? null;
         
-        foreach ($data['items'] as $itemData) {
+        @([
+            'referal_code' => $basket->referalCode,
+            'delivery_method' => $basket->deliveryMethod,
+            'pay_method' => $basket->payMethod,
+            
+            'bonus' => $basket->bonus,
+            'promocode' => $basket->promocode,
+            'certificates' => $basket->certificates,
+            
+            'items' => $items
+        ] = $data);
+        
+        foreach ($items as $itemData) {
             [
                 'id' => $id,
                 'qty' => $qty,
@@ -100,10 +115,56 @@ class Basket implements \JsonSerializable
             }
         }
         
+        $this->applyBonus();
+        $this->applyPromocode();
+        $this->applyCertificates();
+        
+        
+        
         $basketDiscount = 0;
         $this->cost = $totalCost;
         $this->discount = $totalItemDiscount + $basketDiscount;
         $this->price = $totalCost - $this->discount;
+    }
+    
+    private function availableBonus(): int
+    {
+        return 500; // todo
+    }
+    
+    private function applyBonus(): void
+    {
+        $available = $this->availableBonus();
+        if ($this->bonus <= $available) {
+            $this->appliedBonus = $this->bonus;
+        } else {
+            $this->appliedBonus = $available;
+        }
+        $this->discountByBonus = $this->appliedBonus;
+    }
+    
+    private function applyPromocode(): void
+    {
+        if ($this->promocode == 'ADMITAD700') {
+            $this->appliedPromocode = 'ADMITAD700';
+            $this->discountByPromocode = 700;
+        } else {
+            $this->appliedPromocode = '';
+        }
+    }
+    
+    private function applyCertificates(): void
+    {
+        foreach ($this->certificates as $code) {
+            if (isset($this->appliedCertificates[$code])) {
+                continue;
+            }
+            $cert = self::CERTS[$code] ?? null;
+            if ($cert) {
+                $this->appliedCertificates[] = $cert;
+                $this->discountByCertificates += $cert['amount'];
+            }
+        }
     }
     
     public function jsonSerialize()
