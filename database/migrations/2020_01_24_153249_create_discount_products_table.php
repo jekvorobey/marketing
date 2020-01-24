@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateDiscountPayMethodsTable extends Migration
+class CreateDiscountProductsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,14 +13,14 @@ class CreateDiscountPayMethodsTable extends Migration
      */
     public function up()
     {
-        Schema::create('discount_pay_methods', function (Blueprint $table) {
+        Schema::create('discount_products', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->bigInteger('discount_id')->unsigned();
-            $table->bigInteger('payment_method_id')->unsigned();
+            $table->bigInteger('offer_id')->unsigned();
             $table->timestamps();
         });
     }
-
+    
     /**
      * Reverse the migrations.
      *
@@ -28,6 +28,6 @@ class CreateDiscountPayMethodsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('discount_pay_methods');
+        Schema::dropIfExists('discount_products');
     }
 }

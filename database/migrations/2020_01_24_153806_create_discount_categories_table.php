@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateDiscountDeliveryMethodTable extends Migration
+class CreateDiscountCategoriesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,10 +13,10 @@ class CreateDiscountDeliveryMethodTable extends Migration
      */
     public function up()
     {
-        Schema::create('discount_delivery_methods', function (Blueprint $table) {
+        Schema::create('discount_categories', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->bigInteger('discount_id')->unsigned();
-            $table->bigInteger('delivery_method_id')->unsigned();
+            $table->bigInteger('category_id')->unsigned();
             $table->timestamps();
         });
     }
@@ -28,6 +28,6 @@ class CreateDiscountDeliveryMethodTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('discount_delivery_methods');
+        Schema::dropIfExists('discount_categories');
     }
 }
