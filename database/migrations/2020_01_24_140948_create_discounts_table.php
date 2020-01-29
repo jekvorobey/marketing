@@ -53,6 +53,14 @@ class CreateDiscountsTable extends Migration
             $table->timestamps();
         });
 
+        Schema::create('discount_segments', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->bigInteger('discount_id')->unsigned();
+            $table->bigInteger('segment_id')->unsigned();
+            $table->boolean('except');
+            $table->timestamps();
+        });
+
         Schema::create('discount_user_roles', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->bigInteger('discount_id')->unsigned();

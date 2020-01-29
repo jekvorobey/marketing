@@ -121,6 +121,8 @@ class Discount extends AbstractModel
         'discountOffer',
         'discountBrand',
         'discountCategory',
+        'discountUserRole',
+        'discountSegment',
     ];
 
     /**
@@ -153,5 +155,13 @@ class Discount extends AbstractModel
     public function discountUserRole()
     {
         return $this->hasMany(DiscountUserRole::class, 'discount_id');
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function discountSegment()
+    {
+        return $this->hasMany(DiscountSegment::class, 'discount_id');
     }
 }
