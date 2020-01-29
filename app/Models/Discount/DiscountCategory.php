@@ -5,28 +5,23 @@ namespace App\Models\Discount;
 use Greensight\CommonMsa\Models\AbstractModel;
 
 /**
- * Класс-модель для сущности "Скидка для способа оплаты"
+ * Класс-модель для сущности "Скидка на товары категории"
  * App\Models\Discount\Discount
  *
  * @property int $discount_id
- * @property int $payment_method_id
+ * @property int $category_id
  * @mixin \Eloquent
  *
  */
-class DiscountPayMethod extends AbstractModel
+class DiscountCategory extends AbstractModel
 {
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = ['discount_id', 'payment_method_id'];
+    const FILLABLE = ['discount_id', 'category_id'];
 
     /**
      * @var array
      */
     protected $fillable = self::FILLABLE;
-
-    /**
-     * @var string
-     */
-    protected $table = 'discount_pay_methods';
 }

@@ -24,9 +24,4 @@ class DiscountUserRole extends AbstractModel
      * @var array
      */
     protected $fillable = self::FILLABLE;
-
-    /**
-     * @var string
-     */
-    protected $table = 'discount_user_roles';
 }

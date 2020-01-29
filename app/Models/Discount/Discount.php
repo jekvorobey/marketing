@@ -5,113 +5,153 @@ namespace App\Models\Discount;
 use Carbon\Carbon;
 use Greensight\CommonMsa\Models\AbstractModel;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Класс-модель для сущности "Скидка"
  * App\Models\Discount
  *
+ * @property int $sponsor
+ * @property int $merchant_id
  * @property int $type
  * @property string|null $name
  * @property int $value_type
  * @property int $value
- * @property int|null $region_id
+ * @property int $approval_status
  * @property int $status
+ * @property Carbon $start_date
+ * @property Carbon $end_date
+ * @property boolean $promo_code_only
  * @mixin \Eloquent
  *
- * @property-read Collection|DiscountProduct[] $discountProduct
- * @property-read Collection|DiscountProductBrand[] $discountProductBrand
- * @property-read Collection|DiscountProductCategory[] $discountProductCategory
- * @property-read Collection|DiscountUser[] $discountUser
+ * @property-read Collection|DiscountOffer[] $discountProduct
+ * @property-read Collection|DiscountBrand[] $discountProductBrand
+ * @property-read Collection|DiscountCategory[] $discountProductCategory
  * @property-read Collection|DiscountUserRole[] $discountUserRole
- * @property-read Collection|DiscountDeliveryMethod[] $discountDeliveryMethod
- * @property-read Collection|DiscountPayMethod[] $discountPayMethod
- * @property-read Collection|DiscountCartSumm[] $discountCartSumm
- * @property-read Collection|DiscountReferralCode[] $discountReferralCode
  */
 class Discount extends AbstractModel
 {
-    const APP_STATUS_NOT_APPROVED = 1;
-    const APP_STATUS_SENT = 2;
-    const APP_STATUS_APPROVING = 3;
-    const APP_STATUS_REJECT = 4;
-    const APP_STATUS_APPROVED = 5;
-    
+    /**
+     * Статус согласования скидки
+     */
+    /** Отправлено */
+    const APP_STATUS_SENT = 1;
+    /** На рассмотрении */
+    const APP_STATUS_APPROVING = 2;
+    /** Отклонено */
+    const APP_STATUS_REJECT = 3;
+    /** Согласовано */
+    const APP_STATUS_APPROVED = 4;
+
+    /**
+     * Статус скидки
+     */
+    /** Активна */
     const STATUS_ACTIVE = 1;
+    /** Приостановлена */
     const STATUS_PAUSED = 2;
+    /** Истекла */
     const STATUS_EXPIRED = 3;
-    
-    const TYPE_PRODUCT = 1;
-    const TYPE_PRODUCT_CATEGORY = 2;
-    const TYPE_PRODUCT_BRAND = 3;
-    const TYPE_USER = 4;
-    const TYPE_USER_ROLE = 5;
-    const TYPE_DELIVERY_METHOD = 6;
-    const TYPE_PAY_METHOD = 7;
-    const TYPE_FIRST_ORDER = 8;
-    const TYPE_CART_TOTAL = 9;
-    const TYPE_REFERRAL = 10;
-    const TYPE_BUNDLE = 11;
-    
+
+    /**
+     * Тип скидки (назначается на)
+     */
+    /** Скидка на оффер */
+    const DISCOUNT_TYPE_OFFER = 1;
+    /** Скидка на бандл */
+    const DISCOUNT_TYPE_BUNDLE = 2;
+    /** Скидка на бренд */
+    const DISCOUNT_TYPE_BRAND = 3;
+    /** Скидка на категорию */
+    const DISCOUNT_TYPE_CATEGORY = 4;
+    /** Скидка на доставку */
+    const DISCOUNT_TYPE_DELIVERY = 5;
+    /** Скидка на все товары */
+    const DISCOUNT_TYPE_CART_TOTAL = 6;
+
+    /**
+     * Тип условия возникновения права на скидку
+     */
+    /** На первый заказ */
+    const CONDITION_TYPE_FIRST_ORDER = 1;
+    /** На заказ от определенной суммы */
+    const CONDITION_TYPE_MIN_PRICE_ORDER = 2;
+    /** На заказ от определенной суммы товаров заданного бренда */
+    const CONDITION_TYPE_MIN_PRICE_BRAND = 3;
+    /** На заказ от определенной суммы товаров заданной категорииа */
+    const CONDITION_TYPE_MIN_PRICE_CATEGORY = 4;
+    /** На количество единиц одного товара */
+    const CONDITION_TYPE_EVERY_UNIT_PRODUCT = 5;
+    /** На способ доставки */
+    const CONDITION_TYPE_DELIVERY_METHOD = 6;
+    /** На способ оплаты */
+    const CONDITION_TYPE_PAY_METHOD = 7;
+    /** Территория действия (регион с точки зрения адреса доставки заказа) */
+    const CONDITION_TYPE_REGION = 8;
+    /** Для определенных пользователей системы */
+    const CONDITION_TYPE_USER = 9;
+    /** Порядковый номер заказа */
+    const CONDITION_TYPE_ORDER_SEQUENCE_NUMBER = 10;
+    /** Взаимодействия с другими маркетинговыми инструментами */
+    const CONDITION_TYPE_DISCOUNT_SYNERGY = 11;
+
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = ['type', 'name', 'value_type', 'value', 'region_id'];
+    const FILLABLE = [
+        'sponsor',
+        'merchant_id',
+        'type',
+        'name',
+        'value_type',
+        'value',
+        'approval_status',
+        'status',
+        'start_date',
+        'end_date',
+        'promo_code_only',
+    ];
 
     /**
      * @var array
      */
     protected $fillable = self::FILLABLE;
 
-    /**
-     * @var string
-     */
-    protected $table = 'discounts';
-
     protected $with = [
-        'discountProduct',
-        'discountProductBrand',
-        'discountProductCategory',
-        'discountUser',
-        'discountUserRole',
-        'discountDeliveryMethod',
-        'discountPayMethod',
-        'discountCartSumm',
-        'discountReferralCode',
+        'discountOffer',
+        'discountBrand',
+        'discountCategory',
     ];
 
-    public function discountProduct(){
-        return $this->hasMany(DiscountProduct::class, 'discount_id');
+    /**
+     * @return HasMany
+     */
+    public function discountOffer()
+    {
+        return $this->hasMany(DiscountOffer::class, 'discount_id');
     }
 
-    public function discountProductBrand(){
-        return $this->hasMany(DiscountProductBrand::class, 'discount_id');
+    /**
+     * @return HasMany
+     */
+    public function discountBrand()
+    {
+        return $this->hasMany(DiscountBrand::class, 'discount_id');
     }
 
-    public function discountProductCategory(){
-        return $this->hasMany(DiscountProductCategory::class, 'discount_id');
+    /**
+     * @return HasMany
+     */
+    public function discountCategory()
+    {
+        return $this->hasMany(DiscountCategory::class, 'discount_id');
     }
 
-    public function discountUser(){
-        return $this->hasMany(DiscountUser::class, 'discount_id');
-    }
-
-    public function discountUserRole(){
+    /**
+     * @return HasMany
+     */
+    public function discountUserRole()
+    {
         return $this->hasMany(DiscountUserRole::class, 'discount_id');
-    }
-
-    public function discountDeliveryMethod(){
-        return $this->hasMany(DiscountDeliveryMethod::class, 'discount_id');
-    }
-
-    public function discountPayMethod(){
-        return $this->hasMany(DiscountPayMethod::class, 'discount_id');
-    }
-
-    public function discountCartSumm(){
-        return $this->hasMany(DiscountCartSumm::class, 'discount_id');
-    }
-
-    public function discountReferralCode(){
-        return $this->hasMany(DiscountReferralCode::class, 'discount_id');
     }
 }

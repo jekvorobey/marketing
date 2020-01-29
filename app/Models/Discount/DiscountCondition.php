@@ -5,28 +5,23 @@ namespace App\Models\Discount;
 use Greensight\CommonMsa\Models\AbstractModel;
 
 /**
- * Класс-модель для сущности "Скидка для реферала"
+ * Класс-модель для сущности "Условие возникновения скидки"
  * App\Models\Discount\Discount
  *
  * @property int $discount_id
- * @property string $referral_code
+ * @property int $offer_id
  * @mixin \Eloquent
  *
  */
-class DiscountReferralCode extends AbstractModel
+class DiscountCondition extends AbstractModel
 {
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = ['discount_id', 'referral_code'];
+    const FILLABLE = ['discount_id', 'type', 'condition'];
 
     /**
      * @var array
      */
     protected $fillable = self::FILLABLE;
-
-    /**
-     * @var string
-     */
-    protected $table = 'discount_referral_codes';
 }

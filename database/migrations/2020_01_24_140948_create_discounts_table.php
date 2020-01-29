@@ -28,6 +28,47 @@ class CreateDiscountsTable extends Migration
             $table->boolean('promo_code_only'); /** Доступен только по промокоду */
             $table->timestamps();
         });
+
+        Schema::create('discount_offers', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->bigInteger('discount_id')->unsigned();
+            $table->bigInteger('offer_id')->unsigned();
+            $table->boolean('except');
+            $table->timestamps();
+        });
+
+        Schema::create('discount_brands', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->bigInteger('discount_id')->unsigned();
+            $table->bigInteger('brand_id')->unsigned();
+            $table->boolean('except');
+            $table->timestamps();
+        });
+
+        Schema::create('discount_categories', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->bigInteger('discount_id')->unsigned();
+            $table->bigInteger('category_id')->unsigned();
+            $table->boolean('except');
+            $table->timestamps();
+        });
+
+        Schema::create('discount_user_roles', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->bigInteger('discount_id')->unsigned();
+            $table->bigInteger('role_id')->unsigned();
+            $table->boolean('except');
+            $table->timestamps();
+        });
+
+        /** Условия возникновения скидки */
+        Schema::create('discount_conditions', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->bigInteger('discount_id')->unsigned();  /** Скидка */
+            $table->bigInteger('type')->unsigned();         /** Тип условия */
+            $table->json('condition');                      /** Услвоие */
+            $table->timestamps();
+        });
     }
 
     /**
@@ -37,6 +78,12 @@ class CreateDiscountsTable extends Migration
      */
     public function down()
     {
+        Schema::dropIfExists('discount_conditions');
+        Schema::dropIfExists('discount_user_roles');
+        Schema::dropIfExists('discount_segments');
+        Schema::dropIfExists('discount_categories');
+        Schema::dropIfExists('discount_brands');
+        Schema::dropIfExists('discount_products');
         Schema::dropIfExists('discounts');
     }
 }
