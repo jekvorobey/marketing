@@ -66,7 +66,7 @@ class Discount extends AbstractModel
     const DISCOUNT_TYPE_CATEGORY = 4;
     /** Скидка на доставку */
     const DISCOUNT_TYPE_DELIVERY = 5;
-    /** Скидка на все товары */
+    /** Скидка на сумму корзины */
     const DISCOUNT_TYPE_CART_TOTAL = 6;
 
     /**
@@ -78,7 +78,7 @@ class Discount extends AbstractModel
     const CONDITION_TYPE_MIN_PRICE_ORDER = 2;
     /** На заказ от определенной суммы товаров заданного бренда */
     const CONDITION_TYPE_MIN_PRICE_BRAND = 3;
-    /** На заказ от определенной суммы товаров заданной категорииа */
+    /** На заказ от определенной суммы товаров заданной категории */
     const CONDITION_TYPE_MIN_PRICE_CATEGORY = 4;
     /** На количество единиц одного товара */
     const CONDITION_TYPE_EVERY_UNIT_PRODUCT = 5;
