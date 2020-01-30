@@ -35,7 +35,7 @@ class DiscountsTableSeeder extends Seeder
             $discount = new Discount();
             $discount->sponsor = 1;
             $discount->merchant_id = $merchants[array_rand($merchants)];
-            $discount->type = rand(1, 10);
+            $discount->type = rand(1, 6);
             $discount->name = $names[array_rand($names)];
             // Тип значения (1 - проценты, 2 - рубли)
             if (rand(0, 1)) {
