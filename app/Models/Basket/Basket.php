@@ -155,6 +155,9 @@ class Basket implements \JsonSerializable
     
     private function applyCertificates(): void
     {
+        if (!$this->certificates) {
+            return;
+        }
         foreach ($this->certificates as $code) {
             if (isset($this->appliedCertificates[$code])) {
                 continue;
