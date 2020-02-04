@@ -28,7 +28,10 @@ Route::namespace('V1')->prefix('v1')->group(function () {
     });
     
     Route::prefix('offers')->group(function () {
-        Route::get('prices', 'PriceController@read');
+        Route::prefix('prices')->group(function () {
+            Route::get('', 'PriceController@read');
+            Route::put('', 'PriceController@setPrices');
+        });
         
         Route::prefix('{offerId}')->group(function () {
             Route::prefix('price')->group(function () {
