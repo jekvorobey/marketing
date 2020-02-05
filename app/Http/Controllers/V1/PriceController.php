@@ -8,6 +8,8 @@ use Greensight\CommonMsa\Rest\Controller\ReadAction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
@@ -79,9 +81,8 @@ class PriceController extends Controller
     }
     
     /**
-     * Установить кол-во товара на складе
-     * @param  int  $storeId
-     * @param  int  $productId
+     * Установить цену для предложения мерчанта
+     * @param  int  $offerId
      * @param Request $request
      * @return Response
      */
@@ -112,6 +113,51 @@ class PriceController extends Controller
             throw new HttpException(500);
         }
         
+        return response('', 204);
+    }
+
+    /**
+     * Установить цены для для предложений мерчанта
+     * На вход должен быть передан массив:
+     * 'prices' => [
+     *      [
+     *          'offer_id' => ...,
+     *          'price' => ...,
+     *      ],
+     *      ...
+     * ]
+     * @param  Request  $request
+     * @return Response
+     */
+    public function setPrices(Request $request): Response
+    {
+        $data = $request->validate([
+            'prices' => 'required|array',
+            'prices.*.offer_id' => 'required|integer',
+            'prices.*.price' => 'required|numeric',
+        ]);
+        $newPrices = array_combine(
+            array_column($data['prices'], 'offer_id'),
+            array_column($data['prices'], 'price')
+        );
+
+        try {
+            DB::transaction(function () use ($newPrices) {
+                $offerIds = array_keys($newPrices);
+                /** @var Collection|Price[] $prices */
+                $prices = Price::query()->whereIn('offer_id', $offerIds)->get()->keyBy('offer_id');
+                foreach ($offerIds as $offerId) {
+                    $price = $prices->has($offerId) ? $prices[$offerId] : new Price();
+                    $price->offer_id = $offerId;
+                    $price->price = $newPrices[$price->offer_id];
+                    $price->save();
+                }
+            });
+        }
+        catch (\Exception $e) {
+            throw new HttpException(500, $e->getMessage());
+        }
+
         return response('', 204);
     }
 }
