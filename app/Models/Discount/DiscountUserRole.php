@@ -10,6 +10,7 @@ use Greensight\CommonMsa\Models\AbstractModel;
  *
  * @property int $discount_id
  * @property int $role_id
+ * @property boolean $except
  * @mixin \Eloquent
  *
  */
@@ -18,7 +19,7 @@ class DiscountUserRole extends AbstractModel
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = ['discount_id', 'role_id'];
+    const FILLABLE = ['discount_id', 'role_id', 'except'];
 
     /**
      * @var array

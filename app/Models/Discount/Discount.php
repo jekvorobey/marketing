@@ -95,6 +95,13 @@ class Discount extends AbstractModel
     /** Взаимодействия с другими маркетинговыми инструментами */
     const CONDITION_TYPE_DISCOUNT_SYNERGY = 11;
 
+    const DISCOUNT_OFFER_RELATION = 1;
+    const DISCOUNT_BRAND_RELATION = 2;
+    const DISCOUNT_CATEGORY_RELATION = 3;
+    const DISCOUNT_SEGMENT_RELATION = 4;
+    const DISCOUNT_USER_ROLE_RELATION = 5;
+    const DISCOUNT_CONDITION_RELATION = 6;
+
     /**
      * Заполняемые поля модели
      */
@@ -124,6 +131,22 @@ class Discount extends AbstractModel
         'discountUserRole',
         'discountSegment',
     ];
+
+    /**
+     * Доступные типы скидок
+     * @return array
+     */
+    public static function availableTypes()
+    {
+        return [
+            self::DISCOUNT_TYPE_OFFER,
+            self::DISCOUNT_TYPE_BUNDLE,
+            self::DISCOUNT_TYPE_BRAND,
+            self::DISCOUNT_TYPE_CATEGORY,
+            self::DISCOUNT_TYPE_DELIVERY,
+            self::DISCOUNT_TYPE_CART_TOTAL,
+        ];
+    }
 
     /**
      * @return HasMany

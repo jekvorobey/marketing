@@ -10,6 +10,7 @@ use Greensight\CommonMsa\Models\AbstractModel;
  *
  * @property int $discount_id
  * @property int $category_id
+ * @property boolean $except
  * @mixin \Eloquent
  *
  */
@@ -18,7 +19,7 @@ class DiscountCategory extends AbstractModel
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = ['discount_id', 'category_id'];
+    const FILLABLE = ['discount_id', 'category_id', 'except'];
 
     /**
      * @var array

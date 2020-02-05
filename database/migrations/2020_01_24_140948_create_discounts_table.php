@@ -35,6 +35,11 @@ class CreateDiscountsTable extends Migration
             $table->bigInteger('offer_id')->unsigned();
             $table->boolean('except');
             $table->timestamps();
+
+            $table->foreign('discount_id')
+                ->references('id')
+                ->on('discounts')
+                ->onDelete('cascade');
         });
 
         Schema::create('discount_brands', function (Blueprint $table) {
@@ -43,6 +48,11 @@ class CreateDiscountsTable extends Migration
             $table->bigInteger('brand_id')->unsigned();
             $table->boolean('except');
             $table->timestamps();
+
+            $table->foreign('discount_id')
+                ->references('id')
+                ->on('discounts')
+                ->onDelete('cascade');;
         });
 
         Schema::create('discount_categories', function (Blueprint $table) {
@@ -51,6 +61,11 @@ class CreateDiscountsTable extends Migration
             $table->bigInteger('category_id')->unsigned();
             $table->boolean('except');
             $table->timestamps();
+
+            $table->foreign('discount_id')
+                ->references('id')
+                ->on('discounts')
+                ->onDelete('cascade');
         });
 
         Schema::create('discount_segments', function (Blueprint $table) {
@@ -59,6 +74,11 @@ class CreateDiscountsTable extends Migration
             $table->bigInteger('segment_id')->unsigned();
             $table->boolean('except');
             $table->timestamps();
+
+            $table->foreign('discount_id')
+                ->references('id')
+                ->on('discounts')
+                ->onDelete('cascade');
         });
 
         Schema::create('discount_user_roles', function (Blueprint $table) {
@@ -67,6 +87,11 @@ class CreateDiscountsTable extends Migration
             $table->bigInteger('role_id')->unsigned();
             $table->boolean('except');
             $table->timestamps();
+
+            $table->foreign('discount_id')
+                ->references('id')
+                ->on('discounts')
+                ->onDelete('cascade');
         });
 
         /** Условия возникновения скидки */
@@ -74,8 +99,13 @@ class CreateDiscountsTable extends Migration
             $table->bigIncrements('id');
             $table->bigInteger('discount_id')->unsigned();  /** Скидка */
             $table->bigInteger('type')->unsigned();         /** Тип условия */
-            $table->json('condition');                      /** Услвоие */
+            $table->json('condition')->nullable();                      /** Услвоие */
             $table->timestamps();
+
+            $table->foreign('discount_id')
+                ->references('id')
+                ->on('discounts')
+                ->onDelete('cascade');
         });
     }
 
@@ -92,6 +122,7 @@ class CreateDiscountsTable extends Migration
         Schema::dropIfExists('discount_categories');
         Schema::dropIfExists('discount_brands');
         Schema::dropIfExists('discount_products');
+        Schema::dropIfExists('discount_offers');
         Schema::dropIfExists('discounts');
     }
 }
