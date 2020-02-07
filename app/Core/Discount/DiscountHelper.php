@@ -9,7 +9,6 @@ use App\Models\Discount\DiscountCondition;
 use App\Models\Discount\DiscountOffer;
 use App\Models\Discount\DiscountSegment;
 use App\Models\Discount\DiscountUserRole;
-use Illuminate\Support\Collection;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class DiscountHelper
@@ -22,6 +21,30 @@ class DiscountHelper
     {
         if (!in_array($data['type'], Discount::availableTypes())) {
             throw new HttpException(500, 'Discount type error');
+        }
+
+        if (!in_array($data['sponsor'], [Discount::DISCOUNT_MERCHANT_SPONSOR, Discount::DISCOUNT_ADMIN_SPONSOR])) {
+            throw new HttpException(500, 'Discount sponsor error');
+        }
+
+        if (!in_array($data['value_type'], [Discount::DISCOUNT_VALUE_TYPE_RUB, Discount::DISCOUNT_VALUE_TYPE_PERCENT])) {
+            throw new HttpException(500, 'Discount value type error');
+        }
+
+        if ($data['value'] < 0) {
+            throw new HttpException(500, 'Discount value error');
+        }
+
+        if ($data['value_type'] === Discount::DISCOUNT_VALUE_TYPE_PERCENT && $data['value'] > 100) {
+            throw new HttpException(500, 'Discount percent value error');
+        }
+
+        if (!in_array($data['status'], Discount::availableStatuses())) {
+            throw new HttpException(500, 'Discount status error');
+        }
+
+        if (!in_array($data['approval_status'], Discount::availableAppStatuses())) {
+            throw new HttpException(500, 'Discount approval status error');
         }
 
         return true;

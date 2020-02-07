@@ -69,6 +69,15 @@ class Discount extends AbstractModel
     /** Скидка на сумму корзины */
     const DISCOUNT_TYPE_CART_TOTAL = 6;
 
+    /** Спонсор скидки */
+    const DISCOUNT_MERCHANT_SPONSOR = 1;
+    const DISCOUNT_ADMIN_SPONSOR = 2;
+
+    /** Тип значения – Рубли */
+    const DISCOUNT_VALUE_TYPE_RUB = 1;
+    /** Тип значения – Проценты */
+    const DISCOUNT_VALUE_TYPE_PERCENT = 1;
+
     /**
      * Тип условия возникновения права на скидку
      */
@@ -145,6 +154,33 @@ class Discount extends AbstractModel
             self::DISCOUNT_TYPE_CATEGORY,
             self::DISCOUNT_TYPE_DELIVERY,
             self::DISCOUNT_TYPE_CART_TOTAL,
+        ];
+    }
+
+    /**
+     * Доступные статусы скидок
+     * @return array
+     */
+    public static function availableStatuses()
+    {
+        return [
+            self::STATUS_ACTIVE,
+            self::STATUS_PAUSED,
+            self::STATUS_EXPIRED,
+        ];
+    }
+
+    /**
+     * Доступные статусы рассмотрения заявок на скидки
+     * @return array
+     */
+    public static function availableAppStatuses()
+    {
+        return [
+            self::APP_STATUS_SENT,
+            self::APP_STATUS_APPROVING,
+            self::APP_STATUS_REJECT,
+            self::APP_STATUS_APPROVED,
         ];
     }
 
