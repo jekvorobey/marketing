@@ -52,7 +52,7 @@ class Discount extends AbstractModel
     const STATUS_ACTIVE = 1;
     /** Приостановлена */
     const STATUS_PAUSED = 2;
-    /** Истекла */
+    /** Завершена */
     const STATUS_EXPIRED = 3;
 
     /**
