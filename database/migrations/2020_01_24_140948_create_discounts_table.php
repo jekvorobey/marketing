@@ -23,8 +23,8 @@ class CreateDiscountsTable extends Migration
             $table->integer('value')->unsigned(); /** Значение */
             $table->tinyInteger('approval_status')->unsigned(); /** Статус заявки мерчанта на скидку */
             $table->tinyInteger('status')->unsigned();  /** Статус скидки */
-            $table->timestamp('start_date', 0)->nullable();  /** Срок действия от */
-            $table->timestamp('end_date', 0)->nullable();  /** Срок действия до */
+            $table->date('start_date')->nullable();  /** Срок действия от */
+            $table->date('end_date')->nullable();  /** Срок действия до */
             $table->boolean('promo_code_only'); /** Доступен только по промокоду */
             $table->timestamps();
         });
