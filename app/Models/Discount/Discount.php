@@ -34,14 +34,16 @@ class Discount extends AbstractModel
     /**
      * Статус согласования скидки
      */
+    /** Не согласовано */
+    const APP_STATUS_NOT_APPROVED = 1;
     /** Отправлено */
-    const APP_STATUS_SENT = 1;
+    const APP_STATUS_SENT = 2;
     /** На рассмотрении */
-    const APP_STATUS_APPROVING = 2;
+    const APP_STATUS_APPROVING = 3;
     /** Отклонено */
-    const APP_STATUS_REJECT = 3;
+    const APP_STATUS_REJECT = 4;
     /** Согласовано */
-    const APP_STATUS_APPROVED = 4;
+    const APP_STATUS_APPROVED = 5;
 
     /**
      * Статус скидки
@@ -73,10 +75,10 @@ class Discount extends AbstractModel
     const DISCOUNT_MERCHANT_SPONSOR = 1;
     const DISCOUNT_ADMIN_SPONSOR = 2;
 
-    /** Тип значения – Рубли */
-    const DISCOUNT_VALUE_TYPE_RUB = 1;
     /** Тип значения – Проценты */
     const DISCOUNT_VALUE_TYPE_PERCENT = 1;
+    /** Тип значения – Рубли */
+    const DISCOUNT_VALUE_TYPE_RUB = 2;
 
     /**
      * Тип условия возникновения права на скидку
@@ -177,6 +179,7 @@ class Discount extends AbstractModel
     public static function availableAppStatuses()
     {
         return [
+            self::APP_STATUS_NOT_APPROVED,
             self::APP_STATUS_SENT,
             self::APP_STATUS_APPROVING,
             self::APP_STATUS_REJECT,

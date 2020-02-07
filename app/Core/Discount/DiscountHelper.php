@@ -44,7 +44,7 @@ class DiscountHelper
         }
 
         if (!in_array($data['approval_status'], Discount::availableAppStatuses())) {
-            throw new HttpException(500, 'Discount approval status error');
+            throw new HttpException(500, 'Discount approval status error ' . $data['approval_status']);
         }
 
         return true;
