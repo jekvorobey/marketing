@@ -30,27 +30,45 @@ class DiscountsTableSeeder extends Seeder
             'Скидка 10% на шампуни',
         ];
 
+        $types = Discount::availableTypes();
+        $approvalStatuses = Discount::availableAppStatuses();
+        $statuses = Discount::availableStatuses();
 
         for ($i = 0; $i <= 50; $i++) {
             $discount = new Discount();
-            $discount->sponsor = 1;
-            $discount->merchant_id = $merchants[array_rand($merchants)];
-            $discount->type = rand(1, 6);
-            $discount->name = $names[array_rand($names)];
-            // Тип значения (1 - проценты, 2 - рубли)
-            if (rand(0, 1)) {
-                $discount->value_type = 1;
-                $discount->value = rand(10, 1000);
-            } else {
-                $discount->value_type = 2;
-                $discount->value = rand(5, 15);
-            }
+            $discount->sponsor = $faker->randomElement([
+                Discount::DISCOUNT_MERCHANT_SPONSOR,
+                Discount::DISCOUNT_ADMIN_SPONSOR
+            ]);
+            $discount->merchant_id = $faker->randomElement($merchants);
+            $discount->type = $faker->randomElement($types);
+            $discount->name = $faker->randomElement($names);
+            $discount->value_type = $faker->randomElement([
+                Discount::DISCOUNT_VALUE_TYPE_PERCENT,
+                Discount::DISCOUNT_VALUE_TYPE_RUB,
+            ]);
 
-            $discount->approval_status = rand(1, 3);
-            $discount->status = rand(1, 3);
-            $discount->start_date = rand(0, 1) ? null : $faker->dateTimeThisYear();
-            $discount->end_date = rand(0, 1) ? null : $faker->dateTimeThisYear();
-            $discount->promo_code_only = rand(0, 1);
+            $discount->value = ($discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB)
+                ? $discount->value = $faker->numberBetween(10, 1000)
+                : $discount->value = $faker->numberBetween(5, 20);
+
+            $discount->start_date = null;
+            $discount->end_date = null;
+
+            $discount->start_date = $faker->boolean()
+                ? $faker->dateTimeBetween($startDate = '-6 month', $endDate = '+1 month')
+                : null;
+
+            $discount->end_date = $faker->boolean()
+                ? $faker->dateTimeBetween($startDate = '+1 month', $endDate = '+5 month')
+                : null;
+
+            $discount->status = $faker->randomElement($statuses);
+            $discount->approval_status = ($discount->status === Discount::STATUS_ACTIVE)
+                ? Discount::APP_STATUS_APPROVED
+                : $faker->randomElement($approvalStatuses);
+
+            $discount->promo_code_only = $faker->boolean();
             $discount->created_at = $faker->dateTimeThisYear();
             $discount->save();
         }
