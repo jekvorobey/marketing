@@ -160,7 +160,9 @@ class DiscountController extends Controller
                         $query->where($key, $value);
                     } else {
                         $op = ($key === 'start_date') ? '>=' : '<=';
-                        $query->where($key, $op, $value);
+                        $query->where(function ($query) use ($key, $op, $value) {
+                            $query->where($key, $op, $value)->orWhereNull($key);
+                        });
                     }
                     break;
                 case 'role_id':
