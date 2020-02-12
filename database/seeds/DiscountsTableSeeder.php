@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Seeder;
 use App\Models\Discount\Discount;
+use MerchantManagement\Services\MerchantService\MerchantService;
 
 /**
  * Class DiscountsTableSeeder
@@ -12,13 +13,14 @@ class DiscountsTableSeeder extends Seeder
 
     /**
      * Run the database seeds.
+     * @param MerchantService $merchantService
      */
-    public function run()
+    public function run(MerchantService $merchantService)
     {
         $faker = Faker\Factory::create('ru_RU');
         $faker->seed(self::FAKER_SEED);
 
-        $merchants = [1, 2];
+        $merchantsIds = $merchantService->merchants()->keys()->toArray();
 
         $names = [
             'Первое мая',
@@ -40,7 +42,7 @@ class DiscountsTableSeeder extends Seeder
                 Discount::DISCOUNT_MERCHANT_SPONSOR,
                 Discount::DISCOUNT_ADMIN_SPONSOR
             ]);
-            $discount->merchant_id = $faker->randomElement($merchants);
+            $discount->merchant_id = $faker->randomElement($merchantsIds);
             $discount->type = $faker->randomElement($types);
             $discount->name = $faker->randomElement($names);
             $discount->value_type = $faker->randomElement([
