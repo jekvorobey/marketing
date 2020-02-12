@@ -5,13 +5,13 @@ namespace App\Http\Controllers\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Discount\Discount;
 use App\Core\Discount\DiscountHelper;
-use Greensight\CommonMsa\Rest\Controller\CountAction;
 use Greensight\CommonMsa\Rest\Controller\DeleteAction;
-use Greensight\CommonMsa\Rest\Controller\ReadAction;
 use Greensight\CommonMsa\Rest\Controller\UpdateAction;
 use Greensight\CommonMsa\Services\RequestInitiator\RequestInitiator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\JsonResponse;
 
 /**
  * Class DiscountController
@@ -21,9 +21,39 @@ class DiscountController extends Controller
 {
     use DeleteAction;
     use UpdateAction;
-    use ReadAction;
-    use CountAction;
 
+    /**
+     * @param Request $request
+     * @param RequestInitiator $client
+     * @return JsonResponse
+     */
+    public function count(Request $request, RequestInitiator $client)
+    {
+        $query = Discount::query();
+        $total = $this->modifyQuery($request, $query)->count();
+        return response()->json(['total' => $total]);
+    }
+
+    /**
+     * @param Request $request
+     * @param RequestInitiator $client
+     * @return JsonResponse
+     */
+    public function read(Request $request, RequestInitiator $client)
+    {
+        $query = Discount::query();
+        $query = $this->modifyQuery($request, $query);
+        $items = $query->get();
+        return response()->json([
+            'items' => $items
+        ]);
+    }
+
+    /**
+     * @param Request $request
+     * @param RequestInitiator $client
+     * @return JsonResponse
+     */
     public function create(Request $request, RequestInitiator $client)
     {
         $data = $request->validate([
@@ -89,5 +119,57 @@ class DiscountController extends Controller
         return [
             // todo добавить необходимые права
         ];
+    }
+
+    /**
+     * @param Request $request
+     * @param Builder $query
+     * @return Builder
+     */
+    protected function modifyQuery(Request $request, Builder $query)
+    {
+        $params['page'] = $request->get('page', null);
+        $params['perPage'] = $request->get('perPage', null);
+        $params['sort'] = $request->get('sort', 'asc');
+        $filter = $request->get('filter', []);
+
+        if ($params['page'] > 0 && $params['perPage'] > 0) {
+            $offset = ($params['page'] - 1) * $params['perPage'];
+            $query->offset($offset)->limit((int)$params['perPage']);
+        }
+
+        foreach ($filter as $key => $value) {
+            switch ($key) {
+                case 'id':
+                case 'merchant_id':
+                    $query->where($key, (int)$value);
+                    break;
+                case 'type':
+                case 'status':
+                case 'approval_status':
+                    if (is_array($value)) {
+                        $query->whereIn($key, $value);
+                    }
+                    break;
+                case 'name':
+                    $query->where($key, 'like', "%{$value}%");
+                    break;
+                case 'start_date':
+                case 'end_date':
+                    if (isset($filter['fix_' . $key]) && $filter['fix_' . $key]) {
+                        $query->where($key, $value);
+                    } else {
+                        $op = ($key === 'start_date') ? '>=' : '<=';
+                        $query->where($key, $op, $value);
+                    }
+                    break;
+                case 'role_id':
+                    $query = $query->forRoleId((int) $value);
+                    break;
+            }
+        }
+
+        $query->orderBy('id', $params['sort'] === 'asc' ? 'asc' : 'desc');
+        return $query;
     }
 }

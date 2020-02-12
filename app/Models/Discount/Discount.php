@@ -4,6 +4,7 @@ namespace App\Models\Discount;
 
 use Carbon\Carbon;
 use Greensight\CommonMsa\Models\AbstractModel;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -24,10 +25,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property boolean $promo_code_only
  * @mixin \Eloquent
  *
- * @property-read Collection|DiscountOffer[] $discountProduct
- * @property-read Collection|DiscountBrand[] $discountProductBrand
- * @property-read Collection|DiscountCategory[] $discountProductCategory
- * @property-read Collection|DiscountUserRole[] $discountUserRole
+ * @property-read Collection|DiscountOffer[] $offers
+ * @property-read Collection|DiscountBrand[] $brands
+ * @property-read Collection|DiscountCategory[] $categories
+ * @property-read Collection|DiscountUserRole[] $roles
+ * @property-read Collection|DiscountUserRole[] $segments
+ *
  */
 class Discount extends AbstractModel
 {
@@ -135,14 +138,6 @@ class Discount extends AbstractModel
      */
     protected $fillable = self::FILLABLE;
 
-    protected $with = [
-        'discountOffer',
-        'discountBrand',
-        'discountCategory',
-        'discountUserRole',
-        'discountSegment',
-    ];
-
     /**
      * Доступные типы скидок
      * @return array
@@ -190,7 +185,7 @@ class Discount extends AbstractModel
     /**
      * @return HasMany
      */
-    public function discountOffer()
+    public function offers()
     {
         return $this->hasMany(DiscountOffer::class, 'discount_id');
     }
@@ -198,7 +193,7 @@ class Discount extends AbstractModel
     /**
      * @return HasMany
      */
-    public function discountBrand()
+    public function brands()
     {
         return $this->hasMany(DiscountBrand::class, 'discount_id');
     }
@@ -206,7 +201,7 @@ class Discount extends AbstractModel
     /**
      * @return HasMany
      */
-    public function discountCategory()
+    public function categories()
     {
         return $this->hasMany(DiscountCategory::class, 'discount_id');
     }
@@ -214,7 +209,7 @@ class Discount extends AbstractModel
     /**
      * @return HasMany
      */
-    public function discountUserRole()
+    public function roles()
     {
         return $this->hasMany(DiscountUserRole::class, 'discount_id');
     }
@@ -222,8 +217,20 @@ class Discount extends AbstractModel
     /**
      * @return HasMany
      */
-    public function discountSegment()
+    public function segments()
     {
         return $this->hasMany(DiscountSegment::class, 'discount_id');
+    }
+
+    /**
+     * @param Builder $query
+     * @param $roleId
+     * @return Builder
+     */
+    public function scopeForRoleId(Builder $query, int $roleId): Builder
+    {
+        return $query->whereHas('roles', function (Builder $query) use ($roleId) {
+            $query->where('role_id', $roleId);
+        });
     }
 }
