@@ -5,6 +5,7 @@ namespace App\Http\Controllers\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Discount\Discount;
 use App\Core\Discount\DiscountHelper;
+use App\Core\Discount\DiscountCalculator;
 use Greensight\CommonMsa\Rest\Controller\DeleteAction;
 use Greensight\CommonMsa\Rest\Controller\UpdateAction;
 use Greensight\CommonMsa\Services\RequestInitiator\RequestInitiator;
@@ -12,6 +13,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Class DiscountController
@@ -41,6 +44,16 @@ class DiscountController extends Controller
      */
     public function read(Request $request, RequestInitiator $client)
     {
+        $id = $request->route('id');
+        if ($id > 0) {
+            $discount = Discount::find((int) $id);
+            if (!$discount) {
+                throw new NotFoundHttpException();
+            }
+
+            return response()->json($discount);
+        }
+
         $query = Discount::query();
         $query = $this->modifyQuery($request, $query);
         $items = $query->get();
@@ -56,22 +69,32 @@ class DiscountController extends Controller
      */
     public function create(Request $request, RequestInitiator $client)
     {
-        $data = $request->validate([
-            'name' => 'string|required',
-            'type' => 'numeric|required',
-            'value' => 'numeric|required',
-            'value_type' => 'numeric|required',
-            'start_date' => 'string|nullable',
-            'end_date' => 'string|nullable',
-            'promo_code_only' => 'boolean|required',
-            'status' => 'numeric|required',
-            'approval_status' => 'numeric|required',
-            'sponsor' => 'numeric|required',
-            'merchant_id' => 'numeric|nullable',
-            'relations' => 'array|required',
-        ]);
+        try {
+            $data = $request->validate([
+                'name' => 'string|required',
+                'type' => 'numeric|required',
+                'value' => 'numeric|required',
+                'value_type' => 'numeric|required',
+                'start_date' => 'string|nullable',
+                'end_date' => 'string|nullable',
+                'promo_code_only' => 'boolean|required',
+                'status' => 'numeric|required',
+                'approval_status' => 'numeric|required',
+                'sponsor' => 'numeric|required',
+                'merchant_id' => 'numeric|nullable',
+                'relations' => 'array|required',
+            ]);
+        } catch (\Exception $ex) {
+            return response()->json(['error' => $ex->getMessage()], 400);
+        }
 
-        DiscountHelper::validate($data);
+        try {
+            DiscountHelper::validate($data);
+        } catch (HttpException $ex) {
+            return response()->json(['error' => $ex->getMessage()], $ex->getStatusCode());
+        } catch (\Exception $ex) {
+            return response()->json(['error' => $ex->getMessage()], 500);
+        }
 
         try {
             DB::beginTransaction();
@@ -87,6 +110,20 @@ class DiscountController extends Controller
         return response()->json([
             'id' => $discountId,
         ], 201);
+    }
+
+    /**
+     * Возвращает данные о примененных скидках
+     *
+     * @param Request $request
+     * @param RequestInitiator $client
+     * @return JsonResponse
+     */
+    public function calculate(Request $request, RequestInitiator $client)
+    {
+        $calculator = new DiscountCalculator($request);
+        $result = $calculator->calculate();
+        return response()->json($result);
     }
 
     /**
@@ -142,6 +179,8 @@ class DiscountController extends Controller
             switch ($key) {
                 case 'id':
                 case 'merchant_id':
+                case 'sponsor':
+                case 'promo_code_only':
                     $query->where($key, (int)$value);
                     break;
                 case 'type':

@@ -19,6 +19,8 @@ Route::namespace('V1')->prefix('v1')->group(function () {
         Route::get('', 'DiscountController@read');
         Route::post('', 'DiscountController@create');
 
+        Route::post('calculate', 'DiscountController@calculate');
+
         Route::prefix('{id}')->group(function () {
             Route::get('', 'DiscountController@read');
             Route::put('', 'DiscountController@update');
@@ -26,13 +28,13 @@ Route::namespace('V1')->prefix('v1')->group(function () {
         });
 
     });
-    
+
     Route::prefix('offers')->group(function () {
         Route::prefix('prices')->group(function () {
             Route::get('', 'PriceController@read');
             Route::put('', 'PriceController@setPrices');
         });
-        
+
         Route::prefix('{offerId}')->group(function () {
             Route::prefix('price')->group(function () {
                 Route::get('', 'PriceController@price');
@@ -40,7 +42,7 @@ Route::namespace('V1')->prefix('v1')->group(function () {
             });
         });
     });
-    
+
     Route::prefix('price-reactor')->group(function () {
         Route::get('basket', 'PriceReactorController@calculateBasketPrice');
     });

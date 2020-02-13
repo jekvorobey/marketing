@@ -20,31 +20,35 @@ class DiscountHelper
     public static function validate(array $data)
     {
         if (!in_array($data['type'], Discount::availableTypes())) {
-            throw new HttpException(500, 'Discount type error');
+            throw new HttpException(400, 'Discount type error');
         }
 
         if (!in_array($data['sponsor'], [Discount::DISCOUNT_MERCHANT_SPONSOR, Discount::DISCOUNT_ADMIN_SPONSOR])) {
-            throw new HttpException(500, 'Discount sponsor error');
+            throw new HttpException(400, 'Discount sponsor error');
+        }
+
+        if ($data['sponsor'] == Discount::DISCOUNT_ADMIN_SPONSOR && isset($data['merchant_id'])) {
+            throw new HttpException(400, 'Discount sponsor / merchant error');
         }
 
         if (!in_array($data['value_type'], [Discount::DISCOUNT_VALUE_TYPE_RUB, Discount::DISCOUNT_VALUE_TYPE_PERCENT])) {
-            throw new HttpException(500, 'Discount value type error');
+            throw new HttpException(400, 'Discount value type error');
         }
 
         if ($data['value'] < 0) {
-            throw new HttpException(500, 'Discount value error');
+            throw new HttpException(400, 'Discount value error');
         }
 
         if ($data['value_type'] === Discount::DISCOUNT_VALUE_TYPE_PERCENT && $data['value'] > 100) {
-            throw new HttpException(500, 'Discount percent value error');
+            throw new HttpException(400, 'Discount percent value error');
         }
 
         if (!in_array($data['status'], Discount::availableStatuses())) {
-            throw new HttpException(500, 'Discount status error');
+            throw new HttpException(400, 'Discount status error');
         }
 
         if (!in_array($data['approval_status'], Discount::availableAppStatuses())) {
-            throw new HttpException(500, 'Discount approval status error ' . $data['approval_status']);
+            throw new HttpException(400, 'Discount approval status error ' . $data['approval_status']);
         }
 
         return true;
@@ -58,13 +62,13 @@ class DiscountHelper
     {
         $discount = new Discount();
         $discount->sponsor = $data['sponsor'];
-        $discount->merchant_id = $data['merchant_id'];
+        $discount->merchant_id = $data['merchant_id'] ?? null;
         $discount->name = $data['name'];
         $discount->type = $data['type'];
         $discount->value = $data['value'];
         $discount->value_type = $data['value_type'];
-        $discount->start_date = $data['start_date'];
-        $discount->end_date = $data['end_date'];
+        $discount->start_date = $data['start_date'] ?? null;
+        $discount->end_date = $data['end_date'] ?? null;
         $discount->status = $data['status'];
         $discount->approval_status = $data['approval_status'];
         $discount->promo_code_only = $data['promo_code_only'];

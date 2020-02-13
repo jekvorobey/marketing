@@ -7,6 +7,7 @@ use Greensight\CommonMsa\Models\AbstractModel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use PhpParser\Node\Stmt\Catch_;
 
 /**
  * Класс-модель для сущности "Скидка"
@@ -232,5 +233,25 @@ class Discount extends AbstractModel
         return $query->whereHas('roles', function (Builder $query) use ($roleId) {
             $query->where('role_id', $roleId);
         });
+    }
+
+    /**
+     * Активные и доступные на заданную дату скидки
+     *
+     * @param Builder $query
+     * @param Carbon|null $date
+     * @return Builder
+     */
+    public function scopeActive(Builder $query, ?Carbon $date = null): Builder
+    {
+        $date = $date ?? Carbon::now();
+        return $query
+            ->where('status', Discount::STATUS_ACTIVE)
+            ->where('approval_status', Discount::APP_STATUS_APPROVED)
+            ->where(function ($query) use ($date) {
+                $query->where('start_date', '<=', $date)->orWhereNull('start_date');
+            })->where(function ($query) use ($date) {
+                $query->where('end_date', '>=', $date)->orWhereNull('end_date');
+            });
     }
 }
