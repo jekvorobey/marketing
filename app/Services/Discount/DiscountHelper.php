@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Core\Discount;
+namespace App\Services\Discount;
 
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountBrand;

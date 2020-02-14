@@ -4,8 +4,8 @@ namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Discount\Discount;
-use App\Core\Discount\DiscountHelper;
-use App\Core\Discount\DiscountCalculator;
+use App\Services\Discount\DiscountHelper;
+use App\Services\Discount\DiscountCalculator;
 use Greensight\CommonMsa\Rest\Controller\DeleteAction;
 use Greensight\CommonMsa\Rest\Controller\UpdateAction;
 use Greensight\CommonMsa\Services\RequestInitiator\RequestInitiator;

@@ -84,32 +84,6 @@ class Discount extends AbstractModel
     /** Тип значения – Рубли */
     const DISCOUNT_VALUE_TYPE_RUB = 2;
 
-    /**
-     * Тип условия возникновения права на скидку
-     */
-    /** На первый заказ */
-    const CONDITION_TYPE_FIRST_ORDER = 1;
-    /** На заказ от определенной суммы */
-    const CONDITION_TYPE_MIN_PRICE_ORDER = 2;
-    /** На заказ от определенной суммы товаров заданного бренда */
-    const CONDITION_TYPE_MIN_PRICE_BRAND = 3;
-    /** На заказ от определенной суммы товаров заданной категории */
-    const CONDITION_TYPE_MIN_PRICE_CATEGORY = 4;
-    /** На количество единиц одного товара */
-    const CONDITION_TYPE_EVERY_UNIT_PRODUCT = 5;
-    /** На способ доставки */
-    const CONDITION_TYPE_DELIVERY_METHOD = 6;
-    /** На способ оплаты */
-    const CONDITION_TYPE_PAY_METHOD = 7;
-    /** Территория действия (регион с точки зрения адреса доставки заказа) */
-    const CONDITION_TYPE_REGION = 8;
-    /** Для определенных пользователей системы */
-    const CONDITION_TYPE_USER = 9;
-    /** Порядковый номер заказа */
-    const CONDITION_TYPE_ORDER_SEQUENCE_NUMBER = 10;
-    /** Взаимодействия с другими маркетинговыми инструментами */
-    const CONDITION_TYPE_DISCOUNT_SYNERGY = 11;
-
     const DISCOUNT_OFFER_RELATION = 1;
     const DISCOUNT_BRAND_RELATION = 2;
     const DISCOUNT_CATEGORY_RELATION = 3;
@@ -221,6 +195,14 @@ class Discount extends AbstractModel
     public function segments()
     {
         return $this->hasMany(DiscountSegment::class, 'discount_id');
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function conditions()
+    {
+        return $this->hasMany(DiscountCondition::class, 'discount_id');
     }
 
     /**
