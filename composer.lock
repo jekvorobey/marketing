@@ -526,12 +526,12 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.com:greensight/ibt-pim-lib.git",
-                "reference": "9c3d02e496ac169beca31e8e362fb4695bbc7e4f"
+                "reference": "aa76a482f1f6497bfe794d18321ab5079df27e9a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://gitlab.com/api/v4/projects/greensight%2Fibt-pim-lib/repository/archive.zip?sha=9c3d02e496ac169beca31e8e362fb4695bbc7e4f",
-                "reference": "9c3d02e496ac169beca31e8e362fb4695bbc7e4f",
+                "url": "https://gitlab.com/api/v4/projects/greensight%2Fibt-pim-lib/repository/archive.zip?sha=aa76a482f1f6497bfe794d18321ab5079df27e9a",
+                "reference": "aa76a482f1f6497bfe794d18321ab5079df27e9a",
                 "shasum": ""
             },
             "require": {
@@ -555,7 +555,7 @@
                 }
             ],
             "description": "iBT PIM service client",
-            "time": "2020-01-31T16:22:59+00:00"
+            "time": "2020-02-19T11:20:03+00:00"
         },
         {
             "name": "guzzlehttp/guzzle",

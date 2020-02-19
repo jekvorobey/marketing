@@ -121,7 +121,13 @@ class DiscountController extends Controller
      */
     public function calculate(Request $request, RequestInitiator $client)
     {
-        $calculator = new DiscountCalculator($request);
+        $user = collect($request->post('user', []));
+        $offer = collect($request->post('offers', []));
+        $promoCode = collect($request->post('promo_code', []));
+        $delivery = collect($request->post('delivery', []));
+        $payment = collect($request->post('payment', []));
+        $basket = collect($request->post('basket', []));
+        $calculator = new DiscountCalculator($user, $offer, $promoCode, $delivery, $payment, $basket);
         $result = $calculator->calculate();
         return response()->json($result);
     }

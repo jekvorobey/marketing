@@ -9,8 +9,11 @@ use App\Models\Discount\DiscountOffer;
 use App\Models\Discount\DiscountSegment;
 use App\Models\Discount\DiscountUserRole;
 use App\Models\Price\Price;
-use Illuminate\Http\Request;
 use App\Models\Discount\Discount;
+use Pim\Dto\CategoryDto;
+use Pim\Dto\Product\ProductDto;
+use Pim\Services\CategoryService\CategoryService;
+use Pim\Services\ProductService\ProductService;
 use Illuminate\Support\Collection;
 
 /**
@@ -44,16 +47,39 @@ class DiscountCalculator
     protected $discounts;
 
     /**
-     * DiscountCalculator constructor.
-     * @param Request $request
+     * Список категорий
+     * @var CategoryDto[]|Collection
      */
-    public function __construct(Request $request)
-    {
-        $this->filter = $this->getFilter($request);
-        $this->loadOfferData();
+    protected $categories;
 
+    /**
+     * DiscountCalculator constructor.
+     * @param Collection $user ['id' => int, 'role' => int, 'segment' => int]
+     * @param Collection $offers [['id' => int, 'quantity' => float|null], ...]]
+     * @param Collection $promoCode todo
+     * @param Collection $delivery ['method' => int, 'price' => float, 'region' => int]
+     * @param Collection $payment ['method' => int]
+     * @param Collection $basket ['price' => float]
+     */
+    public function __construct(Collection $user,
+                                Collection $offers,
+                                Collection $promoCode,
+                                Collection $delivery,
+                                Collection $payment,
+                                Collection $basket)
+    {
+        $this->filter = [];
+        $this->filter['user'] = $user;
+        $this->filter['offers'] = $offers;
+        $this->filter['promoCode'] = $promoCode;
+        $this->filter['delivery'] = $delivery;
+        $this->filter['payment'] = $payment;
+        $this->filter['basket'] = $basket;
+
+        $this->loadData();
         $this->discounts = collect();
         $this->relations = collect();
+        $this->categories = collect();
         $this->appliedDiscounts = collect();
     }
 
@@ -78,34 +104,41 @@ class DiscountCalculator
     }
 
     /**
-     * @param Request $request
-     * @return Collection|Collection[]
+     * Загружает все необходимые данные
+     * @return $this
      */
-    protected function getFilter(Request $request)
+    protected function loadData()
     {
-        $filter['user'] = collect($request->post('user', []));
-        $filter['offers'] = collect($request->post('offers', []));
-        $filter['promoCode'] = collect($request->post('promo_code', []));
-        $filter['delivery'] = collect($request->post('delivery', []));
-        $filter['payment'] = collect($request->post('payment', []));
-        $filter['brands'] = collect(); // todo
-        $filter['categories'] = collect(); // todo
+        $offerIds = $this->filter['offers']->pluck('id');
+        if ($offerIds->isNotEmpty()) {
+            $this->hydrateOfferPrice();
+            $this->hydrateProductInfo();
+        } else {
+            $this->filter['offers'] = collect();
+        }
 
-        return $filter;
+        $this->filter['brands'] = $this->filter['offers']->pluck('brand_id')
+            ->unique()
+            ->filter(function ($brandId) {
+                return $brandId > 0;
+            });
+
+        $this->filter['categories'] = $this->filter['offers']->pluck('category_id')
+            ->unique()
+            ->filter(function ($brandId) {
+                return $brandId > 0;
+            });
+
+        return $this;
     }
 
     /**
-     * Загружает данные по офферам
+     * Заполняет цены офферов
      * @return $this
      */
-    protected function loadOfferData()
+    protected function hydrateOfferPrice()
     {
         $offerIds = $this->filter['offers']->pluck('id');
-        if ($offerIds->isEmpty()) {
-            $this->filter['offers'] = collect();
-            return $this;
-        }
-
         /** @var Collection $prices */
         $prices = Price::select(['offer_id', 'price'])
             ->whereIn('offer_id', $offerIds)
@@ -114,7 +147,7 @@ class DiscountCalculator
 
         $offers = collect();
         foreach ($this->filter['offers'] as $offer) {
-            $offerId = (int) $offer['id'];
+            $offerId = (int)$offer['id'];
             if (!$prices->has($offerId)) {
                 continue;
             }
@@ -123,6 +156,47 @@ class DiscountCalculator
                 'id' => $offerId,
                 'price' => $prices[$offerId],
                 'quantity' => $offer['quantity'] ?? null,
+                'brand_id' => $offer['brand_id'] ?? null,
+                'category_id' => $offer['category_id'] ?? null,
+            ]));
+        }
+        $this->filter['offers'] = $offers;
+        return $this;
+    }
+
+    /**
+     * Заполняет информацию о товаре (категория, бренд)
+     * @return $this
+     */
+    protected function hydrateProductInfo()
+    {
+        $offerIds = $this->filter['offers']->pluck('id')->toArray();
+        /** @var ProductService $offerService */
+        $productService = resolve(ProductService::class);
+        $productQuery = $productService
+            ->newQuery()
+            ->addFields(
+                ProductDto::entity(),
+                'id',
+                'category_id',
+                'brand_id'
+            );
+
+        $offers = collect();
+        $productsByOffers = $productService->productsByOffers($productQuery, $offerIds);
+        foreach ($this->filter['offers'] as $offer) {
+            $offerId = $offer['id'];
+            if (!isset($productsByOffers[$offerId]['product'])) {
+                continue;
+            }
+
+            $product = $productsByOffers[$offerId]['product'];
+            $offers->put($offerId, collect([
+                'id' => $offerId,
+                'price' => $offer['price'] ?? null,
+                'quantity' => $offer['quantity'] ?? null,
+                'brand_id' => $product['brand_id'],
+                'category_id' => $product['category_id'],
             ]));
         }
         $this->filter['offers'] = $offers;
@@ -223,6 +297,7 @@ class DiscountCalculator
             $changed = false;
             switch ($discount->type) {
                 case Discount::DISCOUNT_TYPE_OFFER:
+                    # Скидка на офферы
                     $offerIds = $this->relations['offers'][$discount->id]->pluck('offer_id');
                     $changed = $this->applyDiscountToOffer($discount, $offerIds);
                     break;
@@ -230,16 +305,32 @@ class DiscountCalculator
                     // todo
                     break;
                 case Discount::DISCOUNT_TYPE_BRAND:
-                    $data['brands'] = $this->relations['brands'][$discount->id]->pluck('brand_id');
+                    # Скидка на бренды
+                    /** @var Collection $brandIds */
+                    $brandIds = $this->relations['brands'][$discount->id]->pluck('brand_id');
+                    # За исключением офферов
+                    $exceptOfferIds = $this->getExceptOffersForDiscount($discount->id);
+                    # Отбираем нужные офферы
+                    $offerIds = $this->filterForDiscountBrand($brandIds, $exceptOfferIds);
+                    $changed = $this->applyDiscountToOffer($discount, $offerIds);
                     break;
                 case Discount::DISCOUNT_TYPE_CATEGORY:
-                    // todo
+                    # Скидка на категории
+                    /** @var Collection $categoryIds */
+                    $categoryIds = $this->relations['categories'][$discount->id]->pluck('category_id');
+                    # За исключением брендов
+                    $exceptBrandIds = $this->getExceptBrandsForDiscount($discount->id);
+                    # За исключением офферов
+                    $exceptOfferIds = $this->getExceptOffersForDiscount($discount->id);
+                    # Отбираем нужные офферы
+                    $offerIds = $this->filterForDiscountCategory($categoryIds, $exceptBrandIds, $exceptOfferIds);
+                    $changed = $this->applyDiscountToOffer($discount, $offerIds);
                     break;
                 case Discount::DISCOUNT_TYPE_DELIVERY:
-                    // todo
+                    $changed = $this->changePrice($this->filter['delivery'], $discount);
                     break;
                 case Discount::DISCOUNT_TYPE_CART_TOTAL:
-                    // todo
+                    $changed = $this->changePrice($this->filter['basket'], $discount);
                     break;
             }
 
@@ -252,14 +343,18 @@ class DiscountCalculator
     }
 
     /**
-     * Применяет скидку на офферы
+     * Применяет скидку к офферам
      *
      * @param $discount
-     * @param $offerIds
+     * @param Collection $offerIds
      * @return bool Результат применения скидки
      */
-    protected function applyDiscountToOffer($discount, $offerIds)
+    protected function applyDiscountToOffer($discount, Collection $offerIds)
     {
+        if ($offerIds->isEmpty()) {
+            return false;
+        }
+
         $changed = false;
         foreach ($offerIds as $offerId) {
             if (!$this->filter['offers']->has($offerId)) {
@@ -267,29 +362,81 @@ class DiscountCalculator
             }
 
             $offer = &$this->filter['offers'][$offerId];
-            $currentDiscount = $offer['discount'] ?? 0;
-            $currentCost = $offer['cost'] ?? $offer['price'];
-            switch ($discount->value_type) {
-                case Discount::DISCOUNT_VALUE_TYPE_PERCENT:
-                    $offer['discount'] = $currentDiscount + round($offer['price'] * $discount->value / 100);
-                    $offer['price'] = $currentCost - $offer['discount'];
-                    $offer['cost'] = $currentCost;
-                    break;
-                case Discount::DISCOUNT_VALUE_TYPE_RUB:
-                    $newDiscount = $discount->value > $offer['price']
-                            ? $offer['price']
-                            : $discount->value;
-
-                    $offer['discount'] = $currentDiscount + $newDiscount;
-                    $offer['price'] = $currentCost - $offer['discount'];
-                    $offer['cost'] = $currentCost;
-                    break;
-            }
-
-            $changed = true;
+            $changed = $changed || $this->changePrice($offer, $discount);
         }
 
         return $changed;
+    }
+
+    /**
+     * @param $item
+     * @param $discount
+     * @return bool
+     */
+    protected function changePrice(&$item, $discount)
+    {
+        if (!isset($item['price'])) {
+            return false;
+        }
+
+        $currentDiscount = $item['discount'] ?? 0;
+        $currentCost = $item['cost'] ?? $item['price'];
+        switch ($discount->value_type) {
+            case Discount::DISCOUNT_VALUE_TYPE_PERCENT:
+                $item['discount'] = $currentDiscount + round($item['price'] * $discount->value / 100);
+                $item['price'] = $currentCost - $item['discount'];
+                $item['cost'] = $currentCost;
+                break;
+            case Discount::DISCOUNT_VALUE_TYPE_RUB:
+                $newDiscount = $discount->value > $item['price'] ? $item['price'] : $value;
+                $item['discount'] = $currentDiscount + $newDiscount;
+                $item['price'] = $currentCost - $item['discount'];
+                $item['cost'] = $currentCost;
+                break;
+            default:
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param $brandIds
+     * @param $exceptOfferIds
+     * @return Collection
+     */
+    protected function filterForDiscountBrand($brandIds, $exceptOfferIds)
+    {
+        return $this->filter['offers']->filter(function ($offer) use ($brandIds, $exceptOfferIds) {
+            return $brandIds->search($offer['brand_id']) !== false
+                && $exceptOfferIds->search($offer['id']) === false;
+        })->pluck('id');
+    }
+
+    /**
+     * @param $categoryIds
+     * @param $exceptBrandIds
+     * @param $exceptOfferIds
+     * @return Collection
+     */
+    protected function filterForDiscountCategory($categoryIds, $exceptBrandIds, $exceptOfferIds)
+    {
+        return $this->filter['offers']->filter(function ($offer) use ($categoryIds, $exceptBrandIds, $exceptOfferIds) {
+            $offerCategory = $this->categories->has($offer['category_id'])
+                ? $this->categories[$offer['category_id']]
+                : null;
+
+            return $offerCategory
+                && $categoryIds->reduce(function ($carry, $categoryId) use ($offerCategory) {
+                    return $carry ||
+                        (
+                            $this->categories->has($categoryId)
+                            && $this->categories[$categoryId]->isAncestorOf($offerCategory)
+                        );
+                })
+                && $exceptBrandIds->search($offer['brand_id']) === false
+                && $exceptOfferIds->search($offer['id']) === false;
+        })->pluck('id');
     }
 
     /**
@@ -347,7 +494,7 @@ class DiscountCalculator
     {
         /** Если не передали офферы, то пропускаем скидки на бренды */
         $validTypes = [Discount::DISCOUNT_TYPE_BRAND, Discount::DISCOUNT_TYPE_CATEGORY];
-        if ($this->filter['offers']->isEmpty() || $this->existsAnyTypeInDiscounts($validTypes)) {
+        if ($this->filter['brands']->isEmpty() || $this->existsAnyTypeInDiscounts($validTypes)) {
             $this->relations['brands'] = collect();
             return $this;
         }
@@ -368,13 +515,12 @@ class DiscountCalculator
     {
         /** Если не передали офферы, то пропускаем скидки на категорию */
         $validTypes = [Discount::DISCOUNT_TYPE_CATEGORY];
-        if ($this->filter['offers']->isEmpty() || $this->existsAnyTypeInDiscounts($validTypes)) {
+        if ($this->filter['categories']->isEmpty() || $this->existsAnyTypeInDiscounts($validTypes)) {
             $this->relations['categories'] = collect();
             return $this;
         }
 
         $this->relations['categories'] = DiscountCategory::select(['discount_id', 'category_id', 'except'])
-            ->whereIn('category_id', $this->filter['categories'])
             ->get()
             ->groupBy('discount_id');
 
@@ -426,6 +572,47 @@ class DiscountCalculator
             ->groupBy('discount_id');
 
         return $this;
+    }
+
+    /**
+     * Получает все категории
+     * @return $this
+     */
+    protected function fetchCategories()
+    {
+        if ($this->categories->isNotEmpty()) {
+            return $this;
+        }
+
+        $categoryService = resolve(CategoryService::class);
+        $this->categories = $categoryService->categories($categoryService->newQuery())->keyBy('id');
+        return $this;
+    }
+
+    /**
+     * @param $discountId
+     * @return Collection
+     */
+    protected function getExceptOffersForDiscount($discountId)
+    {
+        return $this->relations['offers']->has($discountId)
+            ? $this->relations['offers'][$discountId]->filter(function ($offer) {
+                return $offer['except'];
+            })->pluck('offer_id')
+            : collect();
+    }
+
+    /**
+     * @param $discountId
+     * @return Collection
+     */
+    protected function getExceptBrandsForDiscount($discountId)
+    {
+        return $this->relations['brands']->has($discountId)
+            ? $this->relations['brands'][$discountId]->filter(function ($brand) {
+                return $brand['except'];
+            })->pluck('brand_id')
+            : collect();
     }
 
     /**
@@ -599,12 +786,13 @@ class DiscountCalculator
                 case DiscountCondition::MIN_PRICE_ORDER:
                     $r = $this->getPriceOrders() >= $condition->getMinPrice();
                     break;
-                /** Скидка на заказ от заданной суммы на один из бренд */
+                /** Скидка на заказ от заданной суммы на один из брендов */
                 case DiscountCondition::MIN_PRICE_BRAND:
                     $r = $this->getMaxTotalPriceForBrands($condition->getBrands()) >= $condition->getMinPrice();
                     break;
                 /** Скидка на заказ от заданной суммы на одну из категорий */
                 case DiscountCondition::MIN_PRICE_CATEGORY:
+                    $this->fetchCategories();
                     $r = $this->getMaxTotalPriceForCategories($condition->getCategories()) >= $condition->getMinPrice();
                     break;
                 /** Скидка на заказ определенного количества товара */
@@ -633,6 +821,8 @@ class DiscountCalculator
                 case DiscountCondition::BUNDLE:
                     $r = true; // todo
                     break;
+                case DiscountCondition::DISCOUNT_SYNERGY:
+                    continue(2); # Проверяет отдельно на этапе применения скидок
                 default:
                     return false;
             }
@@ -663,72 +853,89 @@ class DiscountCalculator
     }
 
     /**
+     * Заказ от определенной суммы
      * @return float
-     * @todo
      */
     public function getPriceOrders()
     {
-        return 0;
+        return $this->filter['offers']->pluck('price')->sum();
     }
 
     /**
+     * Возвращает максимальную сумму товаров среди брендов ($brands)
      * @param array $brands
      * @return float
-     * @todo
      */
     public function getMaxTotalPriceForBrands($brands)
     {
-        return 0;
+        $max = 0;
+        foreach ($brands as $brandId) {
+            $sum = $this->filter['offers']->filter(function ($offer) use ($brandId) {
+                return $offer['brand_id'] === $brandId;
+            })->pluck('price')->sum();
+            $max = max($sum, $max);
+        }
+
+        return $max;
     }
 
     /**
      * @param array $categories
      * @return float
-     * @todo
      */
     public function getMaxTotalPriceForCategories($categories)
     {
-        return 0;
+        $max = 0;
+        foreach ($categories as $categoryId) {
+            $sum = $this->filter['offers']->filter(function ($offer) use ($categoryId) {
+                return $this->categories->has($categoryId)
+                    && $this->categories->has($offer['category_id'])
+                    && $this->categories[$categoryId]->isSelfOrAncestorOf($this->categories[$offer['category_id']]);
+            })->pluck('price')->sum();
+            $max = max($sum, $max);
+        }
+
+        return $max;
     }
 
     /**
+     * Количество единиц одного оффера
      * @param $offerId
      * @param $count
      * @return bool
-     * @todo
      */
     public function checkEveryUnitProduct($offerId, $count)
     {
-        return true;
+        return $this->filter['offers']->has($offerId) && $this->filter['offers'][$offerId]['quantity'] >= $count;
     }
 
     /**
+     * Способ доставки
      * @param $deliveryMethod
      * @return bool
-     * @todo
      */
     public function checkDeliveryMethod($deliveryMethod)
     {
-        return true;
+        return isset($this->filter['delivery']['method']) && $this->filter['delivery']['method'] === $deliveryMethod;
     }
 
     /**
+     * Способ оплаты
      * @param $payment
      * @return bool
-     * @todo
      */
     public function checkPayMethod($payment)
     {
-        return true;
+        return isset($this->filter['payment']['method']) && $this->filter['payment']['method'] === $payment;
     }
 
     /**
+     * Регион доставки
      * @param $region
      * @return bool
-     * @todo
      */
     public function checkRegion($region)
     {
-        return true;
+        return isset($this->filter['delivery']['region']) && $this->filter['delivery']['region'] === $region;
     }
 }
