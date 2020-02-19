@@ -13,13 +13,12 @@ use PhpParser\Node\Stmt\Catch_;
  * Класс-модель для сущности "Скидка"
  * App\Models\Discount
  *
- * @property int $sponsor
  * @property int $merchant_id
+ * @property int $user_id
  * @property int $type
  * @property string|null $name
  * @property int $value_type
  * @property int $value
- * @property int $approval_status
  * @property int $status
  * @property Carbon $start_date
  * @property Carbon $end_date
@@ -36,28 +35,22 @@ use PhpParser\Node\Stmt\Catch_;
 class Discount extends AbstractModel
 {
     /**
-     * Статус согласования скидки
-     */
-    /** Не согласовано */
-    const APP_STATUS_NOT_APPROVED = 1;
-    /** Отправлено */
-    const APP_STATUS_SENT = 2;
-    /** На рассмотрении */
-    const APP_STATUS_APPROVING = 3;
-    /** Отклонено */
-    const APP_STATUS_REJECT = 4;
-    /** Согласовано */
-    const APP_STATUS_APPROVED = 5;
-
-    /**
      * Статус скидки
      */
+    /** Создана */
+    const STATUS_CREATED = 1;
+    /** Отправлена на согласование */
+    const STATUS_SENT = 2;
+    /** На согласовании */
+    const STATUS_ON_CHECKING = 3;
     /** Активна */
-    const STATUS_ACTIVE = 1;
+    const STATUS_ACTIVE = 4;
+    /** Отклонена */
+    const STATUS_REJECTED = 5;
     /** Приостановлена */
-    const STATUS_PAUSED = 2;
+    const STATUS_PAUSED = 6;
     /** Завершена */
-    const STATUS_EXPIRED = 3;
+    const STATUS_EXPIRED = 7;
 
     /**
      * Тип скидки (назначается на)
@@ -136,24 +129,13 @@ class Discount extends AbstractModel
     public static function availableStatuses()
     {
         return [
+            self::STATUS_CREATED,
+            self::STATUS_SENT,
+            self::STATUS_ON_CHECKING,
             self::STATUS_ACTIVE,
+            self::STATUS_REJECTED,
             self::STATUS_PAUSED,
             self::STATUS_EXPIRED,
-        ];
-    }
-
-    /**
-     * Доступные статусы рассмотрения заявок на скидки
-     * @return array
-     */
-    public static function availableAppStatuses()
-    {
-        return [
-            self::APP_STATUS_NOT_APPROVED,
-            self::APP_STATUS_SENT,
-            self::APP_STATUS_APPROVING,
-            self::APP_STATUS_REJECT,
-            self::APP_STATUS_APPROVED,
         ];
     }
 

@@ -23,16 +23,12 @@ class DiscountHelper
             throw new HttpException(400, 'Discount type error');
         }
 
-        if (!in_array($data['sponsor'], [Discount::DISCOUNT_MERCHANT_SPONSOR, Discount::DISCOUNT_ADMIN_SPONSOR])) {
-            throw new HttpException(400, 'Discount sponsor error');
-        }
-
-        if ($data['sponsor'] == Discount::DISCOUNT_ADMIN_SPONSOR && isset($data['merchant_id'])) {
-            throw new HttpException(400, 'Discount sponsor / merchant error');
-        }
-
         if (!in_array($data['value_type'], [Discount::DISCOUNT_VALUE_TYPE_RUB, Discount::DISCOUNT_VALUE_TYPE_PERCENT])) {
             throw new HttpException(400, 'Discount value type error');
+        }
+
+        if ($data['user_id'] < 0) {
+            throw new HttpException(400, 'User ID value error');
         }
 
         if ($data['value'] < 0) {
@@ -45,10 +41,6 @@ class DiscountHelper
 
         if (!in_array($data['status'], Discount::availableStatuses())) {
             throw new HttpException(400, 'Discount status error');
-        }
-
-        if (!in_array($data['approval_status'], Discount::availableAppStatuses())) {
-            throw new HttpException(400, 'Discount approval status error ' . $data['approval_status']);
         }
 
         return true;

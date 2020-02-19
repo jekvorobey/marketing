@@ -3,6 +3,7 @@
 use Illuminate\Database\Seeder;
 use App\Models\Discount\Discount;
 use MerchantManagement\Services\MerchantService\MerchantService;
+use Greensight\CommonMsa\Services\AuthService\UserService;
 
 /**
  * Class DiscountsTableSeeder
@@ -21,6 +22,8 @@ class DiscountsTableSeeder extends Seeder
         $faker->seed(self::FAKER_SEED);
 
         $merchantsIds = $merchantService->merchants()->keys()->toArray();
+        $userService = resolve(UserService::class);
+        $userIds = $userService->users()->keys()->toArray();
 
         $names = [
             'Первое мая',
@@ -29,20 +32,19 @@ class DiscountsTableSeeder extends Seeder
             'Юбилей',
             '23 февраля',
             'Успей все скупить',
-            'Скидка 10% на шампуни',
+            'Скидка на шампуни',
         ];
 
         $types = Discount::availableTypes();
-        $approvalStatuses = Discount::availableAppStatuses();
         $statuses = Discount::availableStatuses();
 
-        for ($i = 0; $i <= 50; $i++) {
+        for ($i = 0; $i <= 200; $i++) {
             $discount = new Discount();
-            $discount->sponsor = $faker->randomElement([
-                Discount::DISCOUNT_MERCHANT_SPONSOR,
-                Discount::DISCOUNT_ADMIN_SPONSOR
-            ]);
-            $discount->merchant_id = $faker->randomElement($merchantsIds);
+            $discount->user_id = $faker->randomElement($userIds);
+            $discount->merchant_id = $faker->boolean(80)
+                ? $faker->randomElement($merchantsIds)
+                : null;
+
             $discount->type = $faker->randomElement($types);
             $discount->name = $faker->randomElement($names);
             $discount->value_type = $faker->randomElement([
@@ -66,10 +68,6 @@ class DiscountsTableSeeder extends Seeder
                 : null;
 
             $discount->status = $faker->randomElement($statuses);
-            $discount->approval_status = ($discount->status === Discount::STATUS_ACTIVE)
-                ? Discount::APP_STATUS_APPROVED
-                : $faker->randomElement($approvalStatuses);
-
             $discount->promo_code_only = $faker->boolean();
             $discount->created_at = $faker->dateTimeThisYear();
             $discount->save();
