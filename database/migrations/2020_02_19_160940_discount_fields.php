@@ -18,6 +18,18 @@ class DiscountFields extends Migration
             $table->dropColumn('approval_status');
             $table->dropColumn('sponsor');
         });
+
+        Schema::table('discount_user_roles', function (Blueprint $table) {
+            $table->dropColumn('except');
+        });
+
+        Schema::table('discount_segments', function (Blueprint $table) {
+            $table->dropColumn('except');
+        });
+
+        Schema::table('discount_categories', function (Blueprint $table) {
+            $table->dropColumn('except');
+        });
     }
 
     /**
@@ -27,6 +39,18 @@ class DiscountFields extends Migration
      */
     public function down()
     {
+        Schema::table('discount_categories', function (Blueprint $table) {
+            $table->addColumn('boolean', 'except');
+        });
+
+        Schema::table('discount_segments', function (Blueprint $table) {
+            $table->addColumn('boolean', 'except');
+        });
+
+        Schema::table('discount_user_roles', function (Blueprint $table) {
+            $table->addColumn('boolean', 'except');
+        });
+
         Schema::table('discounts', function (Blueprint $table) {
             $table->addColumn('tinyInteger', 'sponsor')->unsigned();
             $table->addColumn('tinyInteger', 'approval_status')->unsigned();

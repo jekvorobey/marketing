@@ -388,7 +388,7 @@ class DiscountCalculator
                 $item['cost'] = $currentCost;
                 break;
             case Discount::DISCOUNT_VALUE_TYPE_RUB:
-                $newDiscount = $discount->value > $item['price'] ? $item['price'] : $value;
+                $newDiscount = $discount->value > $item['price'] ? $item['price'] : $discount->value;
                 $item['discount'] = $currentDiscount + $newDiscount;
                 $item['price'] = $currentCost - $item['discount'];
                 $item['cost'] = $currentCost;
@@ -520,7 +520,7 @@ class DiscountCalculator
             return $this;
         }
 
-        $this->relations['categories'] = DiscountCategory::select(['discount_id', 'category_id', 'except'])
+        $this->relations['categories'] = DiscountCategory::select(['discount_id', 'category_id'])
             ->get()
             ->groupBy('discount_id');
 
@@ -730,9 +730,7 @@ class DiscountCalculator
     {
         return $discount->type === Discount::DISCOUNT_TYPE_CATEGORY
             && $this->relations['categories']->has($discount->id)
-            && $this->relations['categories'][$discount->id]->filter(function ($category) {
-                return !$category['except'];
-            })->isNotEmpty();
+            && $this->relations['categories'][$discount->id]->isNotEmpty();
     }
 
     /**

@@ -19,7 +19,7 @@ class DiscountCategory extends AbstractModel
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = ['discount_id', 'category_id', 'except'];
+    const FILLABLE = ['discount_id', 'category_id'];
 
     /**
      * @var array

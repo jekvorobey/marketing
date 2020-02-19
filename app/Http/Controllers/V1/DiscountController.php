@@ -79,11 +79,11 @@ class DiscountController extends Controller
                 'end_date' => 'string|nullable',
                 'promo_code_only' => 'boolean|required',
                 'status' => 'numeric|required',
-                'approval_status' => 'numeric|required',
-                'sponsor' => 'numeric|required',
                 'merchant_id' => 'numeric|nullable',
                 'relations' => 'array|required',
             ]);
+
+            $data['user_id'] = $client->userId();
         } catch (\Exception $ex) {
             return response()->json(['error' => $ex->getMessage()], 400);
         }
@@ -185,13 +185,12 @@ class DiscountController extends Controller
             switch ($key) {
                 case 'id':
                 case 'merchant_id':
-                case 'sponsor':
+                case 'user_id':
                 case 'promo_code_only':
                     $query->where($key, (int)$value);
                     break;
                 case 'type':
                 case 'status':
-                case 'approval_status':
                     if (is_array($value)) {
                         $query->whereIn($key, $value);
                     }

@@ -53,7 +53,7 @@ class DiscountHelper
     public static function create(array $data)
     {
         $discount = new Discount();
-        $discount->sponsor = $data['sponsor'];
+        $discount->user_id = $data['user_id'];
         $discount->merchant_id = $data['merchant_id'] ?? null;
         $discount->name = $data['name'];
         $discount->type = $data['type'];
@@ -62,7 +62,6 @@ class DiscountHelper
         $discount->start_date = $data['start_date'] ?? null;
         $discount->end_date = $data['end_date'] ?? null;
         $discount->status = $data['status'];
-        $discount->approval_status = $data['approval_status'];
         $discount->promo_code_only = $data['promo_code_only'];
 
         $ok = $discount->save();

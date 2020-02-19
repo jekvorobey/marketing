@@ -88,13 +88,12 @@ class Discount extends AbstractModel
      * Заполняемые поля модели
      */
     const FILLABLE = [
-        'sponsor',
+        'user_id',
         'merchant_id',
         'type',
         'name',
         'value_type',
         'value',
-        'approval_status',
         'status',
         'start_date',
         'end_date',
@@ -211,7 +210,6 @@ class Discount extends AbstractModel
         $date = $date ?? Carbon::now();
         return $query
             ->where('status', Discount::STATUS_ACTIVE)
-            ->where('approval_status', Discount::APP_STATUS_APPROVED)
             ->where(function ($query) use ($date) {
                 $query->where('start_date', '<=', $date)->orWhereNull('start_date');
             })->where(function ($query) use ($date) {
