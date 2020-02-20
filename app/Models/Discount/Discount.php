@@ -7,7 +7,8 @@ use Greensight\CommonMsa\Models\AbstractModel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use PhpParser\Node\Stmt\Catch_;
+use Eloquent;
+use DB;
 
 /**
  * Класс-модель для сущности "Скидка"
@@ -23,7 +24,7 @@ use PhpParser\Node\Stmt\Catch_;
  * @property Carbon $start_date
  * @property Carbon $end_date
  * @property boolean $promo_code_only
- * @mixin \Eloquent
+ * @mixin Eloquent
  *
  * @property-read Collection|DiscountOffer[] $offers
  * @property-read Collection|DiscountBrand[] $brands
@@ -215,5 +216,66 @@ class Discount extends AbstractModel
             })->where(function ($query) use ($date) {
                 $query->where('end_date', '>=', $date)->orWhereNull('end_date');
             });
+    }
+
+    /**
+     * Сделать скидку совместимой с другой скидкой
+     * @param Discount $other
+     * @return bool
+     */
+    public function makeCompatible(Discount $other)
+    {
+        if ($this->id === $other->id) {
+            return false;
+        }
+
+        try {
+            DB::beginTransaction();
+
+            /** @var DiscountCondition[] $conditions */
+            $conditions = DiscountCondition::query()
+                ->whereIn('discount_id', [$this->id, $other->id])
+                ->where('type', DiscountCondition::DISCOUNT_SYNERGY)
+                ->get()
+                ->keyBy('discount_id');
+
+            $thisSynergy = collect($conditions[$this->id]['condition'][DiscountCondition::FIELD_SYNERGY] ?? [])
+                ->push($other->id)
+                ->unique()
+                ->toArray();
+
+            $otherSynergy = collect($conditions[$other->id]['condition'][DiscountCondition::FIELD_SYNERGY] ?? [])
+                ->push($this->id)
+                ->unique()
+                ->toArray();
+
+            if ($conditions->has($this->id)) {
+                $conditions[$this->id]->condition = [DiscountCondition::FIELD_SYNERGY => $thisSynergy];
+                $conditions[$this->id]->update();
+            } else {
+                DiscountCondition::create([
+                    'discount_id' => $this->id,
+                    'type' => DiscountCondition::DISCOUNT_SYNERGY,
+                    'condition' => [DiscountCondition::FIELD_SYNERGY => $thisSynergy]
+                ]);
+            }
+
+            if ($conditions->has($other->id)) {
+                $conditions[$other->id]->condition = [DiscountCondition::FIELD_SYNERGY => $otherSynergy];
+                $conditions[$other->id]->update();
+            } else {
+                DiscountCondition::create([
+                    'discount_id' => $other->id,
+                    'type' => DiscountCondition::DISCOUNT_SYNERGY,
+                    'condition' => [DiscountCondition::FIELD_SYNERGY => $otherSynergy]
+                ]);
+            }
+
+            DB::commit();
+            return true;
+        } catch (\Exception $ex) {
+            DB::rollBack();
+            return false;
+        }
     }
 }

@@ -18,6 +18,14 @@
         },
         {
             "type": "vcs",
+            "url": "https://gitlab.com/greensight/ibt-oms-lib"
+        },
+        {
+            "type": "vcs",
+            "url": "https://gitlab.com/greensight/ibt-logistics-lib"
+        },
+        {
+            "type": "vcs",
             "url": "https://gitlab.com/greensight/ibt-merchant-management-lib"
         }
     ],
@@ -25,6 +33,8 @@
         "php": "^7.1.3",
         "ext-json": "*",
         "fideloper/proxy": "^4.0",
+        "greensight/ibt-oms-lib": "dev-master",
+        "greensight/ibt-logistics-lib": "dev-master",
         "greensight/ibt-common-lib": "dev-master",
         "greensight/ibt-merchant-management-lib": "dev-master",
         "greensight/ibt-pim-lib": "dev-master",

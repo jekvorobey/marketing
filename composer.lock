@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2029d08bd01dbc09db244d889f605d68",
+    "content-hash": "bd7bf780937095e3a8ced58b475cd08d",
     "packages": [
         {
             "name": "dnoegel/php-xdg-base-dir",
@@ -484,6 +484,54 @@
             "time": "2020-02-10T14:01:21+00:00"
         },
         {
+            "name": "greensight/ibt-logistics-lib",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "git@gitlab.com:greensight/ibt-logistics-lib.git",
+                "reference": "e799731cc33f23b364727502bfcd1505a584737b"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://gitlab.com/api/v4/projects/greensight%2Fibt-logistics-lib/repository/archive.zip?sha=e799731cc33f23b364727502bfcd1505a584737b",
+                "reference": "e799731cc33f23b364727502bfcd1505a584737b",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "greensight/ibt-common-lib": "dev-master",
+                "php": "^7.1.3"
+            },
+            "require-dev": {
+                "laravel/framework": "^5.8",
+                "phpunit/phpunit": "^7.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Greensight\\Logistics\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Greensight\\Logistics\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "phpunit"
+                ]
+            },
+            "authors": [
+                {
+                    "name": "Evgeny Bereza",
+                    "email": "bereza@greensight.ru"
+                }
+            ],
+            "description": "iBT logistics client",
+            "time": "2020-02-20T14:01:46+00:00"
+        },
+        {
             "name": "greensight/ibt-merchant-management-lib",
             "version": "dev-master",
             "source": {
@@ -519,6 +567,54 @@
             ],
             "description": "iBT Merchant Management service client",
             "time": "2020-01-30T10:53:45+00:00"
+        },
+        {
+            "name": "greensight/ibt-oms-lib",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "git@gitlab.com:greensight/ibt-oms-lib.git",
+                "reference": "ec646535b6f09372e04ceb2720f7422650f43faf"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://gitlab.com/api/v4/projects/greensight%2Fibt-oms-lib/repository/archive.zip?sha=ec646535b6f09372e04ceb2720f7422650f43faf",
+                "reference": "ec646535b6f09372e04ceb2720f7422650f43faf",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "greensight/ibt-common-lib": "dev-master",
+                "php": "^7.1.3"
+            },
+            "require-dev": {
+                "laravel/framework": "^5.8",
+                "phpunit/phpunit": "^7.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Greensight\\Oms\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Greensight\\Oms\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "phpunit"
+                ]
+            },
+            "authors": [
+                {
+                    "name": "Evgeny Bereza",
+                    "email": "bereza@greensight.ru"
+                }
+            ],
+            "description": "iBT oms client",
+            "time": "2020-02-19T08:38:32+00:00"
         },
         {
             "name": "greensight/ibt-pim-lib",
@@ -5314,6 +5410,8 @@
     "aliases": [],
     "minimum-stability": "dev",
     "stability-flags": {
+        "greensight/ibt-oms-lib": 20,
+        "greensight/ibt-logistics-lib": 20,
         "greensight/ibt-common-lib": 20,
         "greensight/ibt-merchant-management-lib": 20,
         "greensight/ibt-pim-lib": 20

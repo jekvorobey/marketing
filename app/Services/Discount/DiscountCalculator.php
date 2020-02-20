@@ -75,12 +75,14 @@ class DiscountCalculator
         $this->filter['delivery'] = $delivery;
         $this->filter['payment'] = $payment;
         $this->filter['basket'] = $basket;
+        $this->filter['bundles'] = []; // todo
 
-        $this->loadData();
         $this->discounts = collect();
         $this->relations = collect();
         $this->categories = collect();
         $this->appliedDiscounts = collect();
+
+        $this->loadData();
     }
 
     /**
@@ -109,6 +111,7 @@ class DiscountCalculator
      */
     protected function loadData()
     {
+        $this->fetchCategories();
         $offerIds = $this->filter['offers']->pluck('id');
         if ($offerIds->isNotEmpty()) {
             $this->hydrateOfferPrice();
@@ -231,7 +234,6 @@ class DiscountCalculator
             ->fetchDiscountCategories()
             ->fetchDiscountSegments()
             ->fetchDiscountUserRoles();
-
         return $this;
     }
 
@@ -479,6 +481,7 @@ class DiscountCalculator
         }
 
         $this->relations['offers'] = DiscountOffer::select(['discount_id', 'offer_id', 'except'])
+            ->whereIn('discount_id', $this->discounts->pluck('id'))
             ->whereIn('offer_id', $this->filter['offers']->pluck('id'))
             ->get()
             ->groupBy('discount_id');
@@ -500,6 +503,7 @@ class DiscountCalculator
         }
 
         $this->relations['brands'] = DiscountBrand::select(['discount_id', 'brand_id', 'except'])
+            ->whereIn('discount_id', $this->discounts->pluck('id'))
             ->whereIn('brand_id', $this->filter['brands'])
             ->get()
             ->groupBy('discount_id');
@@ -521,7 +525,17 @@ class DiscountCalculator
         }
 
         $this->relations['categories'] = DiscountCategory::select(['discount_id', 'category_id'])
+            ->whereIn('discount_id', $this->discounts->pluck('id'))
             ->get()
+            ->filter(function ($discountCategory) {
+                $categoryLeaf = $this->categories[$discountCategory->category_id];
+                foreach ($this->filter['categories'] as $categoryId) {
+                    if ($categoryLeaf->isSelfOrAncestorOf($this->categories[$categoryId])) {
+                        return true;
+                    }
+                }
+                return false;
+            })
             ->groupBy('discount_id');
 
         return $this;
@@ -534,6 +548,7 @@ class DiscountCalculator
     protected function fetchDiscountSegments()
     {
         $this->relations['segments'] = DiscountSegment::select(['discount_id', 'segment_id'])
+            ->whereIn('discount_id', $this->discounts->pluck('id'))
             ->get()
             ->groupBy('discount_id')
             ->transform(function ($segments) {
@@ -550,6 +565,7 @@ class DiscountCalculator
     protected function fetchDiscountUserRoles()
     {
         $this->relations['roles'] = DiscountUserRole::select(['discount_id', 'role_id'])
+            ->whereIn('discount_id', $this->discounts->pluck('id'))
             ->get()
             ->groupBy('discount_id')
             ->transform(function ($segments) {
@@ -566,7 +582,7 @@ class DiscountCalculator
      */
     protected function fetchDiscountConditions(Collection $discountIds)
     {
-        $this->relations['conditions'] = DiscountCondition::query()
+        $this->relations['conditions'] = DiscountCondition::select(['discount_id', 'type', 'condition'])
             ->whereIn('discount_id', $discountIds)
             ->get()
             ->groupBy('discount_id');
@@ -671,8 +687,9 @@ class DiscountCalculator
             case Discount::DISCOUNT_TYPE_CATEGORY:
                 return $this->checkCategories($discount);
             case Discount::DISCOUNT_TYPE_DELIVERY:
+                return isset($this->filter['delivery']['price']);
             case Discount::DISCOUNT_TYPE_CART_TOTAL:
-                return true;
+                return isset($this->filter['basket']['price']);
             default:
                 return false;
         }
@@ -702,7 +719,7 @@ class DiscountCalculator
      */
     protected function checkBundles(Discount $discount): bool
     {
-        return $discount->type === Discount::DISCOUNT_TYPE_BUNDLE;
+        return $discount->type === Discount::DISCOUNT_TYPE_BUNDLE && !empty($this->filter['bundles']);
     }
 
     /**
@@ -746,7 +763,6 @@ class DiscountCalculator
 
         return isset($this->filter['user']['role'])
             && $this->relations['roles'][$discount->id]->search($this->filter['user']['role']) !== false;
-
     }
 
     /**
@@ -790,7 +806,6 @@ class DiscountCalculator
                     break;
                 /** Скидка на заказ от заданной суммы на одну из категорий */
                 case DiscountCondition::MIN_PRICE_CATEGORY:
-                    $this->fetchCategories();
                     $r = $this->getMaxTotalPriceForCategories($condition->getCategories()) >= $condition->getMinPrice();
                     break;
                 /** Скидка на заказ определенного количества товара */

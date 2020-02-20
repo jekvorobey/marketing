@@ -13,6 +13,9 @@ use Pim\Services\CategoryService\CategoryService;
 use Pim\Services\BrandService\BrandService;
 use Pim\Services\OfferService\OfferService;
 use MerchantManagement\Services\MerchantService\MerchantService;
+use Greensight\Oms\Dto\PaymentMethod;
+use Greensight\Logistics\Dto\Lists\DeliveryMethod;
+use Greensight\Logistics\Services\ListsService\ListsService;
 use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\CommonMsa\Dto\UserDto;
 use Pim\Core\PimException;
@@ -24,7 +27,7 @@ class DiscountsTableSeeder extends Seeder
 {
     const FAKER_SEED = 123456;
 
-    const DISCOUNT_SIZE = 200;
+    const DISCOUNT_SIZE = 300;
 
     /**
      * @var \Faker\Generator
@@ -57,6 +60,31 @@ class DiscountsTableSeeder extends Seeder
     protected $userIds;
 
     /**
+     * @var array
+     */
+    protected $deliveryMethods;
+
+    /**
+     * @var array
+     */
+    protected $paymentMethods;
+
+    /**
+     * @var array
+     */
+    protected $regions;
+
+    /**
+     * @var array
+     */
+    protected $discountIds;
+
+    /**
+     * @var Discount[]
+     */
+    protected $discounts;
+
+    /**
      * Run the database seeds.
      * @throws PimException
      */
@@ -84,6 +112,16 @@ class DiscountsTableSeeder extends Seeder
         /** @var UserService $userService */
         $userService = resolve(UserService::class);
         $this->userIds = $userService->users($userService->newQuery())->pluck('id')->toArray();
+
+        /** @var ListsService $listsService */
+        $listsService = resolve(ListsService::class);
+        $query = $listsService->newQuery()->include('regions');
+        $this->regions = $listsService->regions($query)->pluck('id')->toArray();
+
+        $this->deliveryMethods = array_keys(DeliveryMethod::allMethods());
+        $this->paymentMethods = array_keys(PaymentMethod::allMethods());
+        $this->discounts = [];
+        $this->discountIds = [];
 
         $names = [
             'Первое мая',
@@ -133,6 +171,9 @@ class DiscountsTableSeeder extends Seeder
             $discount->save();
 
             $this->seedRelations($discount);
+
+            $this->discounts[$discount->id] = $discount;
+            $this->discountIds[] = $discount->id;
         }
     }
 
@@ -153,8 +194,8 @@ class DiscountsTableSeeder extends Seeder
     {
         switch ($discount->type) {
             case Discount::DISCOUNT_TYPE_OFFER:
-                $count = min(10, count($this->offerIds));
-                $offers = $this->faker->randomElements($this->offerIds, $this->faker->numberBetween(1, $count));
+                $count = $this->faker->numberBetween(1, min(10, count($this->offerIds)));
+                $offers = $this->faker->randomElements($this->offerIds, $count);
                 foreach ($offers as $offerId) {
                     $this->createDiscountOffer($discount->id, $offerId);
                 }
@@ -164,16 +205,16 @@ class DiscountsTableSeeder extends Seeder
                 break;
             case Discount::DISCOUNT_TYPE_BRAND:
                 # Скидка на бренды
-                $count = min(5, count($this->brandIds));
-                $brands = $this->faker->randomElements($this->brandIds, $this->faker->numberBetween(1, $count));
+                $count = $this->faker->numberBetween(1, min(5, count($this->brandIds)));
+                $brands = $this->faker->randomElements($this->brandIds, $count);
                 foreach ($brands as $brandId) {
                     $this->createDiscountBrand($discount->id, $brandId);
                 }
 
                 # За исключением офферов
                 if ($this->faker->boolean(15)) {
-                    $count = min(3, count($this->offerIds));
-                    $offers = $this->faker->randomElements($this->offerIds, $this->faker->numberBetween(1, $count));
+                    $count = $this->faker->numberBetween(1, min(3, count($this->offerIds)));
+                    $offers = $this->faker->randomElements($this->offerIds, $count);
                     foreach ($offers as $offerId) {
                         $this->createDiscountOffer($discount->id, $offerId, 1);
                     }
@@ -181,16 +222,16 @@ class DiscountsTableSeeder extends Seeder
                 break;
             case Discount::DISCOUNT_TYPE_CATEGORY:
                 # Скидка на категории
-                $count = min(3, count($this->categoryIds));
-                $categories = $this->faker->randomElements($this->categoryIds, $this->faker->numberBetween(1, $count));
+                $count = $this->faker->numberBetween(1, min(3, count($this->categoryIds)));
+                $categories = $this->faker->randomElements($this->categoryIds, $count);
                 foreach ($categories as $category) {
                     $this->createDiscountCategory($discount->id, $category);
                 }
 
                 # За исключением брендов
                 if ($this->faker->boolean(15)) {
-                    $count = min(3, count($this->brandIds));
-                    $brands = $this->faker->randomElements($this->brandIds, $this->faker->numberBetween(1, $count));
+                    $count = $this->faker->numberBetween(1, min(3, count($this->brandIds)));
+                    $brands = $this->faker->randomElements($this->brandIds, $count);
                     foreach ($brands as $brandId) {
                         $this->createDiscountBrand($discount->id, $brandId, 1);
                     }
@@ -198,8 +239,8 @@ class DiscountsTableSeeder extends Seeder
 
                 # За исключением офферов
                 if ($this->faker->boolean(15)) {
-                    $count = min(3, count($this->offerIds));
-                    $offers = $this->faker->randomElements($this->offerIds, $this->faker->numberBetween(1, $count));
+                    $count = $this->faker->numberBetween(1, min(3, count($this->offerIds)));
+                    $offers = $this->faker->randomElements($this->offerIds, $count);
                     foreach ($offers as $offerId) {
                         $this->createDiscountOffer($discount->id, $offerId, 1);
                     }
@@ -236,6 +277,17 @@ class DiscountsTableSeeder extends Seeder
         /** Скидка на первый заказ */
         if ($this->faker->boolean(5)) {
             $this->createDiscountCondition($discount->id, DiscountCondition::FIRST_ORDER, null);
+        } else {
+            /** Порядковый номер заказа */
+            if ($this->faker->boolean(10)) {
+                $this->createDiscountCondition(
+                    $discount->id,
+                    DiscountCondition::ORDER_SEQUENCE_NUMBER,
+                    [
+                        DiscountCondition::FIELD_ORDER_SEQUENCE_NUMBER => $this->faker->numberBetween(2, 10),
+                    ]
+                );
+            }
         }
 
         /** На заказ от определенной суммы */
@@ -249,7 +301,8 @@ class DiscountsTableSeeder extends Seeder
 
         /** На заказ от определенной суммы товаров заданного бренда */
         if ($this->faker->boolean(5)) {
-            $brands = $this->faker->randomElements($this->brandIds, min(5, count($this->brandIds)));
+            $count = $this->faker->numberBetween(1, min(5, count($this->brandIds)));
+            $brands = $this->faker->randomElements($this->brandIds, $count);
             $this->createDiscountCondition(
                 $discount->id,
                 DiscountCondition::MIN_PRICE_BRAND,
@@ -262,7 +315,8 @@ class DiscountsTableSeeder extends Seeder
 
         /** На заказ от определенной суммы товаров заданной категории */
         if ($this->faker->boolean(5)) {
-            $categoryIds = $this->faker->randomElements($this->categoryIds, min(5, count($this->categoryIds)));
+            $count = $this->faker->numberBetween(1, min(5, count($this->categoryIds)));
+            $categoryIds = $this->faker->randomElements($this->categoryIds, $count);
             $this->createDiscountCondition(
                 $discount->id,
                 DiscountCondition::MIN_PRICE_CATEGORY,
@@ -285,16 +339,75 @@ class DiscountsTableSeeder extends Seeder
             );
         }
 
-        /**
-         * todo
-         * DELIVERY_METHOD - На способ доставки
-         * PAY_METHOD - На способ оплаты
-         * REGION - Территория действия (регион с точки зрения адреса доставки заказа)
-         * USER - Для определенных пользователей системы
-         * ORDER_SEQUENCE_NUMBER - Порядковый номер заказа
-         * DISCOUNT_SYNERGY - Взаимодействия с другими маркетинговыми инструментами
-         * BUNDLE - Скидка на определенные бандлы.
-         */
+        /** На способ доставки */
+        if ($this->faker->boolean(5)) {
+            $count = $this->faker->numberBetween(1, min(2, count($this->deliveryMethods)));
+            $this->createDiscountCondition(
+                $discount->id,
+                DiscountCondition::DELIVERY_METHOD,
+                [
+                    DiscountCondition::FIELD_DELIVERY_METHODS => $this->faker->randomElements($this->deliveryMethods, $count),
+                ]
+            );
+        }
+
+        /** На способ оплаты */
+        if ($this->faker->boolean(5)) {
+            $count = $this->faker->numberBetween(1, min(2, count($this->paymentMethods)));
+            $this->createDiscountCondition(
+                $discount->id,
+                DiscountCondition::PAY_METHOD,
+                [
+                    DiscountCondition::FIELD_PAYMENT_METHODS => $this->faker->randomElements($this->paymentMethods, $count),
+                ]
+            );
+        }
+
+        /** Территория действия (регион с точки зрения адреса доставки заказа) */
+        if ($this->faker->boolean(5)) {
+            $count = $this->faker->numberBetween(1, min(3, count($this->regions)));
+            $this->createDiscountCondition(
+                $discount->id,
+                DiscountCondition::REGION,
+                [
+                    DiscountCondition::FIELD_REGIONS => $this->faker->randomElements($this->regions, $count),
+                ]
+            );
+        }
+
+        /** Для определенных пользователей системы */
+        if ($this->faker->boolean(5)) {
+            $count = $this->faker->numberBetween(1, min(5, count($this->userIds)));
+            $this->createDiscountCondition(
+                $discount->id,
+                DiscountCondition::USER,
+                [
+                    DiscountCondition::FIELD_USER_IDS => $this->faker->randomElements($this->userIds, $count),
+                ]
+            );
+        }
+
+        /** Взаимодействия с другими маркетинговыми инструментами */
+        if ($discount->type === Discount::DISCOUNT_TYPE_BUNDLE) {
+            # todo отсутсвует реализация бандлов
+            $count = $this->faker->numberBetween(1, 10);
+            $this->createDiscountCondition(
+                $discount->id,
+                DiscountCondition::BUNDLE,
+                [
+                    DiscountCondition::FIELD_BUNDLES => $count,
+                ]
+            );
+        }
+
+        /** Взаимодействия с другими маркетинговыми инструментами */
+        if ($this->faker->boolean(10) && !empty($this->discountIds)) {
+            $count = $this->faker->numberBetween(1, min(5, count($this->discountIds)));
+            $discountIds = $this->faker->randomElements($this->discountIds, $count);
+            foreach ($discountIds as $discountId) {
+                $discount->makeCompatible($this->discounts[$discountId]);
+            }
+        }
     }
 
     /**
