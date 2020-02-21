@@ -3,14 +3,18 @@
 namespace App\Models\Basket;
 
 use App\Models\Price\Price;
+use App\Services\Discount\DiscountCalculator;
+use App\Services\Discount\DiscountCalculatorBuilder;
+use Illuminate\Support\Collection;
+use Exception;
 
 class Basket implements \JsonSerializable
 {
     private const CERTS = [
-        'CERT2020-500' => ['id' => 1,'code' => 'CERT2020-500', 'amount' => 500],
+        'CERT2020-500' => ['id' => 1, 'code' => 'CERT2020-500', 'amount' => 500],
         'CERT2019-1000' => ['id' => 2, 'code' => 'CERT2019-1000', 'amount' => 1000],
     ];
-    
+
     /**
      * Стоимость корзины без скидок.
      * @var float
@@ -26,7 +30,7 @@ class Basket implements \JsonSerializable
      * @var float
      */
     public $discount;
-    
+
     /** @var int */
     public $user;
     /** @var string */
@@ -41,7 +45,7 @@ class Basket implements \JsonSerializable
     public $promocode;
     /** @var array */
     public $certificates;
-    
+
     /** @var int */
     private $appliedBonus;
     private $discountByBonus = 0;
@@ -53,26 +57,29 @@ class Basket implements \JsonSerializable
     /** @var array */
     private $appliedCertificates;
     private $discountByCertificates = 0;
-    
+
+    /** @var array */
+    private $appliedDiscount;
+
     /** @var BasketItem[] */
     public $items;
-    
+
     public static function fromRequestData(array $data): self
     {
         $basket = new self($data['user']);
-        
+
         @([
             'referal_code' => $basket->referalCode,
             'delivery_method' => $basket->deliveryMethod,
             'pay_method' => $basket->payMethod,
-            
+
             'bonus' => $basket->bonus,
             'promocode' => $basket->promocode,
             'certificates' => $basket->certificates,
-            
+
             'items' => $items
         ] = $data);
-        
+
         foreach ($items as $itemData) {
             [
                 'id' => $id,
@@ -83,55 +90,58 @@ class Basket implements \JsonSerializable
             ] = $itemData;
             $basket->items[] = new BasketItem($id, $qty, $offerId, $categoryId, $brandId);
         }
-        
+
         return $basket;
     }
-    
+
     public function __construct(int $userId)
     {
         $this->user = $userId;
     }
-    
+
     public function addPrices()
     {
-        $ids = array_map(function (BasketItem $item) {
-            return $item->offerId;
-        }, $this->items);
-        $prices = Price::query()->whereIn('offer_id', $ids)->get()->keyBy('offer_id');
+        $offers = collect($this->items)->transform(function(BasketItem $item) {
+            return ['id' => $item->offerId, 'qty' => $item->qty];
+        });
+
+        $calculation = (new DiscountCalculatorBuilder())
+            ->offers($offers)
+            ->calculate();
+
+        $this->appliedDiscount = $calculation['discounts'];
+
         $totalCost = 0;
         $totalItemDiscount = 0;
-        // todo добавить расчёт скидок
         foreach ($this->items as $item) {
-            if ($prices->has($item->offerId)) {
-                $item->cost = $prices[$item->offerId]->price;
-                $item->totalCost = $item->cost * $item->qty;
-                $item->discount = 0 * $item->qty;
-                $item->price = $item->totalCost - $item->discount;
-                
-                $totalCost += $item->totalCost;
-                $totalItemDiscount += $item->discount;
-            } else {
-                throw new \Exception("basket item offer {$item->offerId} without price");
+            if (!$calculation['offers']->has($item->offerId)) {
+                throw new Exception("basket item offer {$item->offerId} without price");
             }
+
+            $offer = $calculation['offers'][$item->offerId];
+            $item->cost = $offer['cost'];
+            $item->totalCost = $offer['cost'] * $offer['qty'];
+            $item->discount = $offer['discount'] * $offer['qty'];
+            $item->price = $offer['price'];
+            $totalCost += $item->totalCost;
+            $totalItemDiscount += $item->discount;
         }
-        
+
         $this->applyBonus();
         $this->applyPromocode();
         $this->applyCertificates();
-        
-        
-        
+
         $basketDiscount = 0;
         $this->cost = $totalCost;
         $this->discount = $totalItemDiscount + $basketDiscount;
         $this->price = $totalCost - $this->discount;
     }
-    
+
     private function availableBonus(): int
     {
         return 500; // todo
     }
-    
+
     private function applyBonus(): void
     {
         $available = $this->availableBonus();
@@ -142,7 +152,7 @@ class Basket implements \JsonSerializable
         }
         $this->discountByBonus = $this->appliedBonus;
     }
-    
+
     private function applyPromocode(): void
     {
         if ($this->promocode == 'ADMITAD700') {
@@ -152,7 +162,7 @@ class Basket implements \JsonSerializable
             $this->appliedPromocode = '';
         }
     }
-    
+
     private function applyCertificates(): void
     {
         if (!$this->certificates) {
@@ -169,14 +179,15 @@ class Basket implements \JsonSerializable
             }
         }
     }
-    
+
     public function jsonSerialize()
     {
         return [
             'cost' => $this->cost,
             'price' => $this->price,
             'discount' => $this->discount,
-            
+            'appliedDiscount' => $this->appliedDiscount,
+
             'items' => $this->items,
         ];
     }

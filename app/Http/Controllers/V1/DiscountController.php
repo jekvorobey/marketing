@@ -4,8 +4,8 @@ namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Discount\Discount;
+use App\Services\Discount\DiscountCalculatorBuilder;
 use App\Services\Discount\DiscountHelper;
-use App\Services\Discount\DiscountCalculator;
 use Greensight\CommonMsa\Rest\Controller\DeleteAction;
 use Greensight\CommonMsa\Rest\Controller\UpdateAction;
 use Greensight\CommonMsa\Services\RequestInitiator\RequestInitiator;
@@ -122,13 +122,21 @@ class DiscountController extends Controller
     public function calculate(Request $request, RequestInitiator $client)
     {
         $customer = collect($request->post('customer', []));
-        $offer = collect($request->post('offers', []));
+        $offers = collect($request->post('offers', []));
         $promoCode = collect($request->post('promo_code', []));
         $delivery = collect($request->post('delivery', []));
         $payment = collect($request->post('payment', []));
         $basket = collect($request->post('basket', []));
-        $calculator = new DiscountCalculator($customer, $offer, $promoCode, $delivery, $payment, $basket);
-        $result = $calculator->calculate();
+
+        $result = (new DiscountCalculatorBuilder())
+            ->customers($customer)
+            ->offers($offers)
+            ->promoCode($promoCode)
+            ->delivery($delivery)
+            ->payment($payment)
+            ->basket($basket)
+            ->calculate();
+
         return response()->json($result);
     }
 

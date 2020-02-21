@@ -58,30 +58,35 @@ class DiscountCalculator
 
     /**
      * DiscountCalculator constructor.
-     * @param Collection $customer ['id' => int]
-     * @param Collection $offers [['id' => int, 'quantity' => float|null], ...]]
-     * @param Collection $promoCode todo
-     * @param Collection $delivery ['method' => int, 'price' => float, 'region' => int]
-     * @param Collection $payment ['method' => int]
-     * @param Collection $basket ['price' => float]
+     * @param Collection $params
+     * Формат:
+     *  {
+     *      'customer': ['id' => int],
+     *      'offers': [['id' => int, 'qty' => float|null], ...]]
+     *      'promoCode': todo
+     *      'delivery': ['method' => int, 'price' => float, 'region' => int]
+     *      'payment': ['method' => int]
+     *      'basket': ['price' => float]
+     *  }
      */
-    public function __construct(Collection $customer,
-                                Collection $offers,
-                                Collection $promoCode,
-                                Collection $delivery,
-                                Collection $payment,
-                                Collection $basket)
+    public function __construct(Collection $params)
     {
         $this->filter = [];
         $this->filter['bundles'] = []; // todo
-        $this->filter['offers'] = $offers;
-        $this->filter['promoCode'] = $promoCode;
-        $this->filter['customer'] = ['id' => isset($customer['id']) ? floatval($customer['id']) : null];
-        $this->filter['basket'] = ['price' => isset($basket['price']) ? floatval($basket['price']) : null];
-        $this->filter['payment'] = ['method' => isset($payment['method']) ? intval($payment['method']) : null];
+        $this->filter['offers'] = $params['offers'] ?? collect();
+        $this->filter['promoCode'] = $params['promoCode'] ?? collect();
+        $this->filter['customer'] = [
+            'id' => isset($params['customer']['id']) ? floatval($params['customer']['id']) : null
+        ];
+        $this->filter['basket'] = [
+            'price' => isset($params['basket']['price']) ? floatval($params['basket']['price']) : null
+        ];
+        $this->filter['payment'] = [
+            'method' => isset($params['payment']['method']) ? intval($params['payment']['method']) : null
+        ];
         $this->filter['delivery'] = [
-            'price' => isset($delivery['price']) ? floatval($delivery['price']) : null,
-            'method' => isset($delivery['method']) ? intval($delivery['method']) : null,
+            'price' => isset($params['delivery']['price']) ? floatval($params['delivery']['price']) : null,
+            'method' => isset($params['delivery']['method']) ? intval($params['delivery']['method']) : null,
         ];
 
         $this->discounts = collect();
@@ -230,7 +235,7 @@ class DiscountCalculator
             $offers->put($offerId, collect([
                 'id' => $offerId,
                 'price' => $prices[$offerId],
-                'quantity' => $offer['quantity'] ?? null,
+                'qty' => $offer['qty'] ?? null,
                 'brand_id' => $offer['brand_id'] ?? null,
                 'category_id' => $offer['category_id'] ?? null,
             ]));
@@ -269,7 +274,7 @@ class DiscountCalculator
             $offers->put($offerId, collect([
                 'id' => $offerId,
                 'price' => $offer['price'] ?? null,
-                'quantity' => $offer['quantity'] ?? null,
+                'qty' => $offer['qty'] ?? null,
                 'brand_id' => $product['brand_id'],
                 'category_id' => $product['category_id'],
             ]));
@@ -947,7 +952,9 @@ class DiscountCalculator
      */
     public function getPriceOrders()
     {
-        return $this->filter['offers']->pluck('price')->sum();
+        return $this->filter['offers']->map(function ($offer) {
+            return $offer['price'] * $offer['qty'];
+        })->sum();
     }
 
     /**
@@ -961,7 +968,9 @@ class DiscountCalculator
         foreach ($brands as $brandId) {
             $sum = $this->filter['offers']->filter(function ($offer) use ($brandId) {
                 return $offer['brand_id'] === $brandId;
-            })->pluck('price')->sum();
+            })->map(function ($offer) {
+                return $offer['price'] * $offer['qty'];
+            })->sum();
             $max = max($sum, $max);
         }
 
@@ -980,7 +989,9 @@ class DiscountCalculator
                 return $this->categories->has($categoryId)
                     && $this->categories->has($offer['category_id'])
                     && $this->categories[$categoryId]->isSelfOrAncestorOf($this->categories[$offer['category_id']]);
-            })->pluck('price')->sum();
+            })->map(function ($offer) {
+                return $offer['price'] * $offer['qty'];
+            })->sum();
             $max = max($sum, $max);
         }
 
@@ -995,7 +1006,7 @@ class DiscountCalculator
      */
     public function checkEveryUnitProduct($offerId, $count)
     {
-        return $this->filter['offers']->has($offerId) && $this->filter['offers'][$offerId]['quantity'] >= $count;
+        return $this->filter['offers']->has($offerId) && $this->filter['offers'][$offerId]['qty'] >= $count;
     }
 
     /**
