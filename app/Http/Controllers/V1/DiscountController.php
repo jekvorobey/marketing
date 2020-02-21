@@ -195,6 +195,17 @@ class DiscountController extends Controller
                         $query->whereIn($key, $value);
                     }
                     break;
+                case '!status':
+                    if (is_array($value)) {
+                        $query->where(function (Builder $query) use ($value) {
+                            $query->whereNotIn('status', $value)->orWhere('user_id', $value);
+                        });
+                    } else {
+                        $query->where(function (Builder $query) use ($value) {
+                            $query->where('status', '!=', $value)->orWhere('user_id', $value);
+                        });
+                    }
+                    break;
                 case 'name':
                     $query->where($key, 'like', "%{$value}%");
                     break;
