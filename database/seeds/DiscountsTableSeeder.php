@@ -12,6 +12,7 @@ use Greensight\CommonMsa\Rest\RestQuery;
 use Pim\Services\CategoryService\CategoryService;
 use Pim\Services\BrandService\BrandService;
 use Pim\Services\OfferService\OfferService;
+use Greensight\Customer\Services\CustomerService\CustomerService;
 use MerchantManagement\Services\MerchantService\MerchantService;
 use Greensight\Oms\Dto\PaymentMethod;
 use Greensight\Logistics\Dto\Lists\DeliveryMethod;
@@ -27,61 +28,42 @@ class DiscountsTableSeeder extends Seeder
 {
     const FAKER_SEED = 123456;
 
-    const DISCOUNT_SIZE = 300;
+    const DISCOUNT_SIZE = 200;
 
-    /**
-     * @var \Faker\Generator
-     */
+    /** @var \Faker\Generator */
     protected $faker;
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $offerIds;
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $categoryIds;
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $brandIds;
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $merchantsIds;
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $userIds;
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $deliveryMethods;
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $paymentMethods;
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $regions;
 
-    /**
-     * @var array
-     */
+    /** @var array */
+    protected  $customerIds;
+
+    /** @var array */
     protected $discountIds;
 
-    /**
-     * @var Discount[]
-     */
+    /** @var Discount[] */
     protected $discounts;
 
     /**
@@ -117,6 +99,10 @@ class DiscountsTableSeeder extends Seeder
         $listsService = resolve(ListsService::class);
         $query = $listsService->newQuery()->include('regions');
         $this->regions = $listsService->regions($query)->pluck('id')->toArray();
+
+        /** @var CustomerService $customerService */
+        $customerService = resolve(CustomerService::class);
+        $this->customerIds = $customerService->customers($customerService->newQuery())->pluck('id')->toArray();
 
         $this->deliveryMethods = array_keys(DeliveryMethod::allMethods());
         $this->paymentMethods = array_keys(PaymentMethod::allMethods());
@@ -375,14 +361,14 @@ class DiscountsTableSeeder extends Seeder
             );
         }
 
-        /** Для определенных пользователей системы */
+        /** Для определенных покупателей */
         if ($this->faker->boolean(5)) {
-            $count = $this->faker->numberBetween(1, min(5, count($this->userIds)));
+            $count = $this->faker->numberBetween(1, min(5, count($this->customerIds)));
             $this->createDiscountCondition(
                 $discount->id,
-                DiscountCondition::USER,
+                DiscountCondition::CUSTOMER,
                 [
-                    DiscountCondition::FIELD_USER_IDS => $this->faker->randomElements($this->userIds, $count),
+                    DiscountCondition::FIELD_CUSTOMER_IDS => $this->faker->randomElements($this->customerIds, $count),
                 ]
             );
         }

@@ -10,10 +10,14 @@ use App\Models\Discount\DiscountSegment;
 use App\Models\Discount\DiscountUserRole;
 use App\Models\Price\Price;
 use App\Models\Discount\Discount;
+use Greensight\Customer\Dto\CustomerDto;
+use Greensight\Oms\Services\OrderService\OrderService;
 use Pim\Dto\CategoryDto;
 use Pim\Dto\Product\ProductDto;
 use Pim\Services\CategoryService\CategoryService;
 use Pim\Services\ProductService\ProductService;
+use Greensight\Customer\Services\CustomerService\CustomerService;
+use Greensight\CommonMsa\Services\AuthService\UserService;
 use Illuminate\Support\Collection;
 
 /**
@@ -54,14 +58,14 @@ class DiscountCalculator
 
     /**
      * DiscountCalculator constructor.
-     * @param Collection $user ['id' => int, 'role' => int, 'segment' => int]
+     * @param Collection $customer ['id' => int]
      * @param Collection $offers [['id' => int, 'quantity' => float|null], ...]]
      * @param Collection $promoCode todo
      * @param Collection $delivery ['method' => int, 'price' => float, 'region' => int]
      * @param Collection $payment ['method' => int]
      * @param Collection $basket ['price' => float]
      */
-    public function __construct(Collection $user,
+    public function __construct(Collection $customer,
                                 Collection $offers,
                                 Collection $promoCode,
                                 Collection $delivery,
@@ -69,19 +73,21 @@ class DiscountCalculator
                                 Collection $basket)
     {
         $this->filter = [];
-        $this->filter['user'] = $user;
+        $this->filter['bundles'] = []; // todo
         $this->filter['offers'] = $offers;
         $this->filter['promoCode'] = $promoCode;
-        $this->filter['delivery'] = $delivery;
-        $this->filter['payment'] = $payment;
-        $this->filter['basket'] = $basket;
-        $this->filter['bundles'] = []; // todo
+        $this->filter['customer'] = ['id' => isset($customer['id']) ? floatval($customer['id']) : null];
+        $this->filter['basket'] = ['price' => isset($basket['price']) ? floatval($basket['price']) : null];
+        $this->filter['payment'] = ['method' => isset($payment['method']) ? intval($payment['method']) : null];
+        $this->filter['delivery'] = [
+            'price' => isset($delivery['price']) ? floatval($delivery['price']) : null,
+            'method' => isset($delivery['method']) ? intval($delivery['method']) : null,
+        ];
 
         $this->discounts = collect();
         $this->relations = collect();
         $this->categories = collect();
         $this->appliedDiscounts = collect();
-
         $this->loadData();
     }
 
@@ -99,9 +105,10 @@ class DiscountCalculator
             ->apply();
 
         return [
-            'discounts' => $this->discounts,
-            'apply' => $this->appliedDiscounts,
+            'discounts' => $this->appliedDiscounts,
             'offers' => $this->filter['offers'],
+            'delivery' => $this->filter['delivery'],
+            'basket' => $this->filter['basket'],
         ];
     }
 
@@ -132,7 +139,68 @@ class DiscountCalculator
                 return $brandId > 0;
             });
 
+        if (isset($this->filter['customer']['id'])) {
+            $this->filter['customer'] = $this->getCustomerInfo((int) $this->filter['customer']['id']);
+        }
+
         return $this;
+    }
+
+    /**
+     * @param int $customerId
+     * @return array
+     */
+    protected function getCustomerInfo(int $customerId)
+    {
+        $customer = [
+            'id' => $customerId,
+            'roles' => [],
+            'segment' => 1, // todo
+            'orders' => []
+        ];
+
+        $this->filter['customer']['id'] = $customerId;
+        $customer['roles'] = $this->loadRoleForCustomer($customerId);
+        if (!$customer['roles']) {
+            return [];
+        }
+
+        $customer['orders']['count'] = $this->loadCustomerOrdersCount($customerId);
+        return $customer;
+    }
+
+    /**
+     * @param int $customerId
+     * @return array|null
+     */
+    protected function loadRoleForCustomer(int $customerId)
+    {
+        /** @var CustomerService $customerService */
+        $customerService = resolve(CustomerService::class);
+        $query = $customerService->newQuery()
+            ->addFields(CustomerDto::entity(), 'user_id')
+            ->setFilter('id', $customerId);
+        $customer = $customerService->customers($query)->first();
+        if (!isset($customer['user_id'])) {
+            return null;
+        }
+
+        /** @var UserService $userService */
+        $userService = resolve(UserService::class);
+        return $userService->userRoles($customer['user_id'])->pluck('id')->toArray();
+    }
+
+    /**
+     * @param int $customerId
+     * @return int
+     */
+    protected function loadCustomerOrdersCount(int $customerId)
+    {
+        /** @var OrderService $orderService */
+        $orderService = resolve(OrderService::class);
+        $query = $orderService->newQuery()->setFilter('customer_id', $customerId);
+        $ordersCount = $orderService->ordersCount($query);
+        return $ordersCount['total'];
     }
 
     /**
@@ -150,6 +218,10 @@ class DiscountCalculator
 
         $offers = collect();
         foreach ($this->filter['offers'] as $offer) {
+            if (!isset($offer['id'])) {
+                continue;
+            }
+
             $offerId = (int)$offer['id'];
             if (!$prices->has($offerId)) {
                 continue;
@@ -233,7 +305,7 @@ class DiscountCalculator
             ->fetchDiscountBrands()
             ->fetchDiscountCategories()
             ->fetchDiscountSegments()
-            ->fetchDiscountUserRoles();
+            ->fetchDiscountCustomerRoles();
         return $this;
     }
 
@@ -385,13 +457,14 @@ class DiscountCalculator
         $currentCost = $item['cost'] ?? $item['price'];
         switch ($discount->value_type) {
             case Discount::DISCOUNT_VALUE_TYPE_PERCENT:
-                $item['discount'] = $currentDiscount + round($item['price'] * $discount->value / 100);
+                $discountValue = min($item['price'], round($item['price'] * $discount->value / 100));
+                $item['discount'] = $currentDiscount + $discountValue;
                 $item['price'] = $currentCost - $item['discount'];
                 $item['cost'] = $currentCost;
                 break;
             case Discount::DISCOUNT_VALUE_TYPE_RUB:
-                $newDiscount = $discount->value > $item['price'] ? $item['price'] : $discount->value;
-                $item['discount'] = $currentDiscount + $newDiscount;
+                $discountValue = $discount->value > $item['price'] ? $item['price'] : $discount->value;
+                $item['discount'] = $currentDiscount + $discountValue;
                 $item['price'] = $currentCost - $item['discount'];
                 $item['cost'] = $currentCost;
                 break;
@@ -399,7 +472,7 @@ class DiscountCalculator
                 return false;
         }
 
-        return true;
+        return $discountValue > 0;
     }
 
     /**
@@ -547,6 +620,11 @@ class DiscountCalculator
      */
     protected function fetchDiscountSegments()
     {
+        if (!isset($this->filter['customer']['segment'])) {
+            $this->relations['segments'] = collect();
+            return $this;
+        }
+
         $this->relations['segments'] = DiscountSegment::select(['discount_id', 'segment_id'])
             ->whereIn('discount_id', $this->discounts->pluck('id'))
             ->get()
@@ -562,7 +640,7 @@ class DiscountCalculator
      * Получаем все возможные скидки и роли из DiscountRole
      * @return $this
      */
-    protected function fetchDiscountUserRoles()
+    protected function fetchDiscountCustomerRoles()
     {
         $this->relations['roles'] = DiscountUserRole::select(['discount_id', 'role_id'])
             ->whereIn('discount_id', $this->discounts->pluck('id'))
@@ -654,7 +732,7 @@ class DiscountCalculator
     {
         return $this->checkPromo($discount)
             && $this->checkType($discount)
-            && $this->checkUserRole($discount)
+            && $this->checkCustomerRole($discount)
             && $this->checkSegment($discount);
     }
 
@@ -754,15 +832,13 @@ class DiscountCalculator
      * @param Discount $discount
      * @return bool
      */
-    protected function checkUserRole(Discount $discount): bool
+    protected function checkCustomerRole(Discount $discount): bool
     {
-        // Если отсутствуют условия скидки на пользовательскую роль
-        if (!$this->relations['roles']->has($discount->id)) {
-            return true;
-        }
-
-        return isset($this->filter['user']['role'])
-            && $this->relations['roles'][$discount->id]->search($this->filter['user']['role']) !== false;
+        return !$this->relations['roles']->has($discount->id) ||
+            (
+                isset($this->filter['customer']['roles'])
+                && $this->relations['roles'][$discount->id]->intersect($this->filter['customer']['roles'])->isNotEmpty()
+            );
     }
 
     /**
@@ -776,8 +852,8 @@ class DiscountCalculator
             return true;
         }
 
-        return isset($this->filter['user']['segment'])
-            && $this->relations['segments'][$discount->id]->search($this->filter['user']['segment']) !== false;
+        return isset($this->filter['customer']['segment'])
+            && $this->relations['segments'][$discount->id]->search($this->filter['customer']['segment']) !== false;
     }
 
     /**
@@ -824,12 +900,13 @@ class DiscountCalculator
                 case DiscountCondition::REGION:
                     $r = $this->checkRegion($condition->getRegions());
                     break;
-                case DiscountCondition::USER:
-                    $r = in_array($this->getUserId(), $condition->getUserIds());
+                case DiscountCondition::CUSTOMER:
+                    $r = in_array($this->getCustomerId(), $condition->getCustomerIds());
                     break;
                 /** Скидка на каждый N-й заказ */
                 case DiscountCondition::ORDER_SEQUENCE_NUMBER:
-                    $r = $this->getCountOrders() % $condition->getOrderSequenceNumber() === 0;
+                    $countOrders = $this->getCountOrders();
+                    $r = isset($countOrders) && (($countOrders + 1) % $condition->getOrderSequenceNumber() === 0);
                     break;
                 case DiscountCondition::BUNDLE:
                     $r = true; // todo
@@ -851,18 +928,17 @@ class DiscountCalculator
     /**
      * @return int|null
      */
-    public function getUserId()
+    public function getCustomerId()
     {
-        return $this->filter['user']['id'] ?? null;
+        return $this->filter['customer']['id'] ?? null;
     }
 
     /**
-     * @return int
-     * @todo
+     * @return int|null
      */
     public function getCountOrders()
     {
-        return 0;
+        return $this->filter['customer']['orders']['count'] ?? null;
     }
 
     /**

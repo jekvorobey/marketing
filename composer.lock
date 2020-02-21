@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "bd7bf780937095e3a8ced58b475cd08d",
+    "content-hash": "0bba2166be210a98a3e4cb0e6452c325",
     "packages": [
         {
             "name": "dnoegel/php-xdg-base-dir",
@@ -425,6 +425,54 @@
             "description": "A simple library to encode and decode JSON Web Tokens (JWT) in PHP. Should conform to the current spec.",
             "homepage": "https://github.com/firebase/php-jwt",
             "time": "2017-06-27T22:17:23+00:00"
+        },
+        {
+            "name": "greensight/ibt-cm-lib",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "git@gitlab.com:greensight/ibt-cm-lib.git",
+                "reference": "0fc5f2fd8f03f78cfc0eb06cb0fd9cec15d4ae9f"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://gitlab.com/api/v4/projects/greensight%2Fibt-cm-lib/repository/archive.zip?sha=0fc5f2fd8f03f78cfc0eb06cb0fd9cec15d4ae9f",
+                "reference": "0fc5f2fd8f03f78cfc0eb06cb0fd9cec15d4ae9f",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "greensight/ibt-common-lib": "dev-master",
+                "php": "^7.1.3"
+            },
+            "require-dev": {
+                "laravel/framework": "^5.8",
+                "phpunit/phpunit": "^7.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Greensight\\Customer\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Greensight\\Customer\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "phpunit"
+                ]
+            },
+            "authors": [
+                {
+                    "name": "Yury Kudryavtsev",
+                    "email": "kudryavtsev@greensight.ru"
+                }
+            ],
+            "description": "iBT Customer management client",
+            "time": "2020-02-20T13:25:25+00:00"
         },
         {
             "name": "greensight/ibt-common-lib",
@@ -5410,6 +5458,7 @@
     "aliases": [],
     "minimum-stability": "dev",
     "stability-flags": {
+        "greensight/ibt-cm-lib": 20,
         "greensight/ibt-oms-lib": 20,
         "greensight/ibt-logistics-lib": 20,
         "greensight/ibt-common-lib": 20,

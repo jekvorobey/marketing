@@ -35,8 +35,8 @@ class DiscountCondition extends AbstractModel
     const PAY_METHOD = 7;
     /** Территория действия (регион с точки зрения адреса доставки заказа) */
     const REGION = 8;
-    /** Для определенных пользователей системы */
-    const USER = 9;
+    /** Для определенных покупателей */
+    const CUSTOMER = 9;
     /** Порядковый номер заказа */
     const ORDER_SEQUENCE_NUMBER = 10;
     /** Взаимодействия с другими маркетинговыми инструментами */
@@ -58,7 +58,7 @@ class DiscountCondition extends AbstractModel
     const FIELD_REGIONS = 'regions';
     const FIELD_ORDER_SEQUENCE_NUMBER = 'orderSequenceNumber';
     const FIELD_BUNDLES = 'bundles';
-    const FIELD_USER_IDS = 'userIds';
+    const FIELD_CUSTOMER_IDS = 'customerIds';
     const FIELD_SYNERGY = 'synergy';
 
     /**
@@ -161,9 +161,9 @@ class DiscountCondition extends AbstractModel
     /**
      * @return array
      */
-    public function getUserIds()
+    public function getCustomerIds()
     {
-        return $this->condition[self::FIELD_USER_IDS] ?? [];
+        return $this->condition[self::FIELD_CUSTOMER_IDS] ?? [];
     }
 
     /**

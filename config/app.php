@@ -176,6 +176,8 @@ return [
         App\Providers\RouteServiceProvider::class,
         \Greensight\CommonMsa\CommonLibServiceProvider::class,
         \Greensight\Logistics\LogisticsLibServiceProvider::class,
+        \Greensight\Customer\CustomerLibServiceProvider::class,
+        \Greensight\Oms\OmsLibServiceProvider::class,
         \MerchantManagement\MerchantLibServiceProvider::class,
         \Pim\PimLibServiceProvider::class,
     ],
