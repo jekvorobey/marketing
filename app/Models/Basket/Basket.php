@@ -188,9 +188,7 @@ class Basket implements \JsonSerializable
         return [
             'cost' => $this->cost,
             'price' => $this->price,
-            'discount' => $this->discount,
-            'appliedDiscount' => $this->appliedDiscount,
-
+            'discounts' => $this->appliedDiscount,
             'items' => $this->items,
         ];
     }

@@ -62,11 +62,10 @@ class DiscountCalculator
      * Формат:
      *  {
      *      'customer': ['id' => int],
-     *      'offers': [['id' => int, 'qty' => float|null], ...]]
+     *      'offers': [['id' => int, 'qty' => int|null], ...]]
      *      'promoCode': todo
-     *      'delivery': ['method' => int, 'price' => float, 'region' => int]
+     *      'delivery': ['method' => int, 'price' => int, 'region' => int]
      *      'payment': ['method' => int]
-     *      'basket': ['price' => float]
      *  }
      */
     public function __construct(Collection $params)
@@ -76,16 +75,13 @@ class DiscountCalculator
         $this->filter['offers'] = $params['offers'] ?? collect();
         $this->filter['promoCode'] = $params['promoCode'] ?? collect();
         $this->filter['customer'] = [
-            'id' => isset($params['customer']['id']) ? floatval($params['customer']['id']) : null
-        ];
-        $this->filter['basket'] = [
-            'price' => isset($params['basket']['price']) ? floatval($params['basket']['price']) : null
+            'id' => isset($params['customer']['id']) ? intval($params['customer']['id']) : null
         ];
         $this->filter['payment'] = [
             'method' => isset($params['payment']['method']) ? intval($params['payment']['method']) : null
         ];
         $this->filter['delivery'] = [
-            'price' => isset($params['delivery']['price']) ? floatval($params['delivery']['price']) : null,
+            'price' => isset($params['delivery']['price']) ? intval($params['delivery']['price']) : null,
             'method' => isset($params['delivery']['method']) ? intval($params['delivery']['method']) : null,
         ];
 
@@ -113,7 +109,6 @@ class DiscountCalculator
             'discounts' => $this->appliedDiscounts,
             'offers' => $this->filter['offers'],
             'delivery' => $this->filter['delivery'],
-            'basket' => $this->filter['basket'],
         ];
     }
 
@@ -145,7 +140,7 @@ class DiscountCalculator
             });
 
         if (isset($this->filter['customer']['id'])) {
-            $this->filter['customer'] = $this->getCustomerInfo((int) $this->filter['customer']['id']);
+            $this->filter['customer'] = $this->getCustomerInfo((int)$this->filter['customer']['id']);
         }
 
         return $this;
@@ -235,7 +230,7 @@ class DiscountCalculator
             $offers->put($offerId, collect([
                 'id' => $offerId,
                 'price' => $prices[$offerId],
-                'qty' => $offer['qty'] ?? null,
+                'qty' => $offer['qty'] ?? 1,
                 'brand_id' => $offer['brand_id'] ?? null,
                 'category_id' => $offer['category_id'] ?? null,
             ]));
@@ -274,7 +269,7 @@ class DiscountCalculator
             $offers->put($offerId, collect([
                 'id' => $offerId,
                 'price' => $offer['price'] ?? null,
-                'qty' => $offer['qty'] ?? null,
+                'qty' => $offer['qty'] ?? 1,
                 'brand_id' => $product['brand_id'],
                 'category_id' => $product['category_id'],
             ]));
@@ -406,14 +401,14 @@ class DiscountCalculator
                     $changed = $this->applyDiscountToOffer($discount, $offerIds);
                     break;
                 case Discount::DISCOUNT_TYPE_DELIVERY:
-                    $changed = $this->changePrice($this->filter['delivery'], $discount);
+                    $changed = $this->changePrice($this->filter['delivery'], $discount->value, $discount->value_type);
                     break;
                 case Discount::DISCOUNT_TYPE_CART_TOTAL:
-                    $changed = $this->changePrice($this->filter['basket'], $discount);
+                    $changed = $this->applyDiscountToBasket($discount);
                     break;
             }
 
-            if ($changed) {
+            if ($changed > 0) {
                 $this->appliedDiscounts->push($data);
             }
         }
@@ -422,7 +417,109 @@ class DiscountCalculator
     }
 
     /**
-     * Применяет скидку к офферам
+     * Применяет скидку ко всей корзине (распределяется равномерно по всем товарам)
+     *
+     * @param $discount
+     * @return int Абсолютный размер скидки (в руб.), который удалось использовать
+     */
+    protected function applyDiscountToBasket($discount)
+    {
+        if ($this->filter['offers']->isEmpty()) {
+            return false;
+        }
+
+        return $this->applyEvenly($discount, $this->filter['offers']->pluck('id'));
+    }
+
+    /**
+     * Равномерно распределяет скидку
+     * @param $discount
+     * @param Collection $offerIds
+     * @return int Абсолютный размер скидки (в руб.), который удалось использовать
+     */
+    protected function applyEvenly($discount, Collection $offerIds)
+    {
+        $priceOrders = $this->getPriceOrders();
+        if ($priceOrders <= 0) {
+            return 0.;
+        }
+
+        # Текущее значение скидки (в рублях, без учета скидок, которые могли применяться ранее)
+        $currentDiscountValue = 0;
+        # Номинальное значение скидки (в рублях)
+        $discountValue = $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_PERCENT
+            ? round($priceOrders * $discount->value / 100)
+            : $discount->value;
+        # Скидка не может быть больше, чем стоимость всей корзины
+        $discountValue = min($discountValue, $priceOrders);
+
+        /**
+         * Если скидку невозможно распределить равномерно по всем товарам,
+         * то использовать скидку, сверх номинальной
+         */
+        $force = false;
+        $prevCurrentDiscountValue = 0;
+        while ($currentDiscountValue < $discountValue || $priceOrders === 0) {
+            /**
+             * Сортирует ID офферов.
+             * Сначала применяем скидки на самые дорогие товары (цена * количество)
+             * Если необходимо использовать скидку сверх номинальной ($force), то сортируем в обратном порядке.
+             */
+            $offerIds = $this->sortOrderIdsByTotalPrice($offerIds, $force);
+            $coefficient = ($discountValue - $currentDiscountValue) / $priceOrders;
+            foreach ($offerIds as $offerId) {
+                $offer = &$this->filter['offers'][$offerId];
+                $valueUp = ceil($offer['price'] * $coefficient);
+                $valueDown = floor($offer['price'] * $coefficient);
+                $changeUp = $this->changePrice($offer, $valueUp, $discount->value_type, false);
+                $changeDown = $this->changePrice($offer, $valueDown, $discount->value_type, false);
+                if ($changeUp * $offer['qty'] <= $discountValue - $currentDiscountValue || $force) {
+                    $change = $this->changePrice($offer, $valueUp, $discount->value_type);
+                } elseif ($changeDown * $offer['qty'] <= $discountValue - $currentDiscountValue || $force) {
+                    $change = $this->changePrice($offer, $valueDown, $discount->value_type);
+                } else {
+                    continue;
+                }
+
+                $currentDiscountValue += $change * $offer['qty'];
+                if ($currentDiscountValue >= $discountValue) {
+                    break(2);
+                }
+            }
+
+            $priceOrders = $this->getPriceOrders();
+            if ($prevCurrentDiscountValue === $currentDiscountValue) {
+                if ($force) {
+                    break;
+                }
+
+                $force = true;
+            }
+
+            $prevCurrentDiscountValue = $currentDiscountValue;
+        }
+
+        return $currentDiscountValue;
+    }
+
+    /**
+     * @param Collection $offerIds
+     * @param bool $asc
+     * @return Collection
+     */
+    protected function sortOrderIdsByTotalPrice(Collection $offerIds, $asc = true)
+    {
+        return $offerIds->sort(function ($offerIdLft, $offerIdRgt) use ($asc) {
+            $offerLft = $this->filter['offers'][$offerIdLft];
+            $totalPriceLft = $offerLft['price'] * $offerLft['qty'];
+            $offerRgt = $this->filter['offers'][$offerIdRgt];
+            $totalPriceRgt = $offerRgt['price'] * $offerRgt['qty'];
+            return ($asc ? 1 : -1) * ($totalPriceLft - $totalPriceRgt);
+        });
+    }
+
+    /**
+     * Вместо равномерного распределения скидки по офферам (applyEvenly), применяет скидку к каждому офферу
      *
      * @param $discount
      * @param Collection $offerIds
@@ -434,50 +531,49 @@ class DiscountCalculator
             return false;
         }
 
-        $changed = false;
+        $changed = 0;
         foreach ($offerIds as $offerId) {
-            if (!$this->filter['offers']->has($offerId)) {
-                continue;
-            }
-
             $offer = &$this->filter['offers'][$offerId];
-            $changed = $changed || $this->changePrice($offer, $discount);
+            $changed += $this->changePrice($offer, $discount->value, $discount->value_type);
         }
 
-        return $changed;
+        return $changed > 0;
     }
 
     /**
+     * Возвращает размер скидки (без учета предыдущих скидок)
      * @param $item
-     * @param $discount
-     * @return bool
+     * @param $value
+     * @param int $valueType
+     * @param bool $apply нужно ли применять скидку
+     * @return int
      */
-    protected function changePrice(&$item, $discount)
+    protected function changePrice(&$item, $value, $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB, $apply = true)
     {
-        if (!isset($item['price'])) {
-            return false;
+        if (!isset($item['price']) || $value <= 0) {
+            return 0;
         }
 
         $currentDiscount = $item['discount'] ?? 0;
         $currentCost = $item['cost'] ?? $item['price'];
-        switch ($discount->value_type) {
+        switch ($valueType) {
             case Discount::DISCOUNT_VALUE_TYPE_PERCENT:
-                $discountValue = min($item['price'], round($item['price'] * $discount->value / 100));
-                $item['discount'] = $currentDiscount + $discountValue;
-                $item['price'] = $currentCost - $item['discount'];
-                $item['cost'] = $currentCost;
+                $discountValue = min($item['price'], round($item['price'] * $value / 100));
                 break;
             case Discount::DISCOUNT_VALUE_TYPE_RUB:
-                $discountValue = $discount->value > $item['price'] ? $item['price'] : $discount->value;
-                $item['discount'] = $currentDiscount + $discountValue;
-                $item['price'] = $currentCost - $item['discount'];
-                $item['cost'] = $currentCost;
+                $discountValue = $value > $item['price'] ? $item['price'] : $value;
                 break;
             default:
-                return false;
+                return 0;
         }
 
-        return $discountValue > 0;
+        if ($apply) {
+            $item['discount'] = $currentDiscount + $discountValue;
+            $item['price'] = $currentCost - $item['discount'];
+            $item['cost'] = $currentCost;
+        }
+
+        return $discountValue;
     }
 
     /**
@@ -772,7 +868,7 @@ class DiscountCalculator
             case Discount::DISCOUNT_TYPE_DELIVERY:
                 return isset($this->filter['delivery']['price']);
             case Discount::DISCOUNT_TYPE_CART_TOTAL:
-                return isset($this->filter['basket']['price']);
+                return $this->filter['offers']->isNotEmpty();
             default:
                 return false;
         }
@@ -948,7 +1044,7 @@ class DiscountCalculator
 
     /**
      * Заказ от определенной суммы
-     * @return float
+     * @return int
      */
     public function getPriceOrders()
     {
@@ -960,7 +1056,7 @@ class DiscountCalculator
     /**
      * Возвращает максимальную сумму товаров среди брендов ($brands)
      * @param array $brands
-     * @return float
+     * @return int
      */
     public function getMaxTotalPriceForBrands($brands)
     {
@@ -979,7 +1075,7 @@ class DiscountCalculator
 
     /**
      * @param array $categories
-     * @return float
+     * @return int
      */
     public function getMaxTotalPriceForCategories($categories)
     {

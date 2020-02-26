@@ -20,7 +20,6 @@ class DiscountCalculatorBuilder
         $this->params->put('promoCode', collect());
         $this->params->put('delivery', collect());
         $this->params->put('payment', collect());
-        $this->params->put('basket', collect());
     }
 
     /**
@@ -70,16 +69,6 @@ class DiscountCalculatorBuilder
     public function payment(Collection $payment)
     {
         $this->params['payment'] = $payment;
-        return $this;
-    }
-
-    /**
-     * @param Collection $basket
-     * @return DiscountCalculatorBuilder
-     */
-    public function basket(Collection $basket)
-    {
-        $this->params['basket'] = $basket;
         return $this;
     }
 
