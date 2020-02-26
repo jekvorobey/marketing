@@ -119,10 +119,13 @@ class Basket implements \JsonSerializable
             }
 
             $offer = $calculation['offers'][$item->offerId];
+            $offer['cost'] = $offer['cost'] ?? $offer['price'];
+            $offer['discount'] = $offer['discount'] ?? 0;
+
             $item->cost = $offer['cost'];
             $item->totalCost = $offer['cost'] * $offer['qty'];
             $item->discount = $offer['discount'] * $offer['qty'];
-            $item->price = $offer['price'];
+            $item->price = $offer['price'] * $offer['qty'];
             $totalCost += $item->totalCost;
             $totalItemDiscount += $item->discount;
         }
