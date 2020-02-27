@@ -69,6 +69,20 @@ class Discount extends AbstractModel
     /** Скидка на сумму корзины */
     const DISCOUNT_TYPE_CART_TOTAL = 6;
 
+    /**
+     * Тип скидки для вывода в корзину/чекаут
+     */
+    /** Скидка "На товар" */
+    const EXT_TYPE_OFFER = 1;
+    /** Скидка "На доставку" */
+    const EXT_TYPE_DELIVERY = 2;
+    /** Скидка "На корзину" */
+    const EXT_TYPE_CART = 3;
+    /** Скидка "Для Вас" */
+    const EXT_TYPE_PERSONAL = 4;
+    /** Скидка "По промокоду" */
+    const EXT_TYPE_PROMO = 5;
+
     /** Спонсор скидки */
     const DISCOUNT_MERCHANT_SPONSOR = 1;
     const DISCOUNT_ADMIN_SPONSOR = 2;
@@ -137,6 +151,49 @@ class Discount extends AbstractModel
             self::STATUS_PAUSED,
             self::STATUS_EXPIRED,
         ];
+    }
+
+    /**
+     * @param int $discountType
+     * @param array $discountConditions
+     * @param bool $isPromo
+     * @return int|null
+     */
+    public static function getExternalFormat(int $discountType, array $discountConditions, bool $isPromo)
+    {
+        if ($isPromo) {
+            return self::EXT_TYPE_PROMO;
+        }
+
+        foreach ($discountConditions as $discountCondition) {
+            switch ($discountCondition['type']) {
+                case DiscountCondition::FIRST_ORDER:
+                case DiscountCondition::MIN_PRICE_ORDER:
+                case DiscountCondition::MIN_PRICE_BRAND:
+                case DiscountCondition::MIN_PRICE_CATEGORY:
+                case DiscountCondition::EVERY_UNIT_PRODUCT:
+                case DiscountCondition::DELIVERY_METHOD:
+                case DiscountCondition::PAY_METHOD:
+                case DiscountCondition::REGION:
+                case DiscountCondition::CUSTOMER:
+                case DiscountCondition::ORDER_SEQUENCE_NUMBER:
+                    return self::EXT_TYPE_PERSONAL;
+            }
+        }
+
+        switch ($discountType) {
+            case self::DISCOUNT_TYPE_OFFER:
+            case self::DISCOUNT_TYPE_BUNDLE:
+            case self::DISCOUNT_TYPE_BRAND:
+            case self::DISCOUNT_TYPE_CATEGORY:
+                return self::EXT_TYPE_OFFER;
+            case self::DISCOUNT_TYPE_DELIVERY:
+                return self::EXT_TYPE_DELIVERY;
+            case self::DISCOUNT_TYPE_CART_TOTAL:
+                return self::EXT_TYPE_CART;
+        }
+
+        return null;
     }
 
     /**
@@ -220,12 +277,13 @@ class Discount extends AbstractModel
 
     /**
      * Сделать скидку совместимой с другой скидкой
-     * @param Discount $other
+     * @param Discount|int $other
      * @return bool
      */
-    public function makeCompatible(Discount $other)
+    public function makeCompatible($other)
     {
-        if ($this->id === $other->id) {
+        $otherId = is_int($other) ? $other : $other->id;
+        if ($this->id === $otherId) {
             return false;
         }
 
@@ -234,17 +292,17 @@ class Discount extends AbstractModel
 
             /** @var DiscountCondition[] $conditions */
             $conditions = DiscountCondition::query()
-                ->whereIn('discount_id', [$this->id, $other->id])
+                ->whereIn('discount_id', [$this->id, $otherId])
                 ->where('type', DiscountCondition::DISCOUNT_SYNERGY)
                 ->get()
                 ->keyBy('discount_id');
 
             $thisSynergy = collect($conditions[$this->id]['condition'][DiscountCondition::FIELD_SYNERGY] ?? [])
-                ->push($other->id)
+                ->push($otherId)
                 ->unique()
                 ->toArray();
 
-            $otherSynergy = collect($conditions[$other->id]['condition'][DiscountCondition::FIELD_SYNERGY] ?? [])
+            $otherSynergy = collect($conditions[$otherId]['condition'][DiscountCondition::FIELD_SYNERGY] ?? [])
                 ->push($this->id)
                 ->unique()
                 ->toArray();
@@ -260,12 +318,12 @@ class Discount extends AbstractModel
                 ]);
             }
 
-            if ($conditions->has($other->id)) {
-                $conditions[$other->id]->condition = [DiscountCondition::FIELD_SYNERGY => $otherSynergy];
-                $conditions[$other->id]->update();
+            if ($conditions->has($otherId)) {
+                $conditions[$otherId]->condition = [DiscountCondition::FIELD_SYNERGY => $otherSynergy];
+                $conditions[$otherId]->update();
             } else {
                 DiscountCondition::create([
-                    'discount_id' => $other->id,
+                    'discount_id' => $otherId,
                     'type' => DiscountCondition::DISCOUNT_SYNERGY,
                     'condition' => [DiscountCondition::FIELD_SYNERGY => $otherSynergy]
                 ]);

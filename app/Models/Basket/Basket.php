@@ -106,6 +106,9 @@ class Basket implements \JsonSerializable
         });
 
         $calculation = (new DiscountCalculatorBuilder())
+            ->customer([
+                'id' => $this->user,
+            ])
             ->offers($offers)
             ->calculate();
 
@@ -131,7 +134,7 @@ class Basket implements \JsonSerializable
         }
 
         $this->applyBonus();
-        $this->applyPromocode();
+        $this->applyPromoCode();
         $this->applyCertificates();
 
         $basketDiscount = 0;
@@ -156,7 +159,7 @@ class Basket implements \JsonSerializable
         $this->discountByBonus = $this->appliedBonus;
     }
 
-    private function applyPromocode(): void
+    private function applyPromoCode(): void
     {
         if ($this->promocode == 'ADMITAD700') {
             $this->appliedPromocode = 'ADMITAD700';

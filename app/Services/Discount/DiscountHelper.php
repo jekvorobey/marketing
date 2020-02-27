@@ -69,17 +69,18 @@ class DiscountHelper
             throw new HttpException(500);
         }
 
-        self::createRelations($data, $discount->id);
+        self::createRelations($data, $discount);
         return $discount->id;
     }
 
     /**
      * @param $data
-     * @param $discountId
+     * @param Discount $discount
      * @return bool
      */
-    protected static function createRelations($data, $discountId)
+    protected static function createRelations($data, Discount $discount)
     {
+        $discountId = $discount->id;
         foreach ($data['relations'] as $type => $items) {
             if (empty($items)) {
                 continue;
@@ -132,12 +133,20 @@ class DiscountHelper
                         }
                         break;
                     case Discount::DISCOUNT_CONDITION_RELATION:
-                        $r = new DiscountCondition();
-                        $r->discount_id = $discountId;
-                        $r->type = $item['type'];
-                        $r->condition = $item['condition'];
-                        if (!$r->save()) {
-                            throw new HttpException(500);
+                        if (isset($item['condition'][DiscountCondition::FIELD_SYNERGY])) {
+                            foreach ($item['condition'][DiscountCondition::FIELD_SYNERGY] as $other) {
+                                if (!$discount->makeCompatible((int) $other)) {
+                                    throw new HttpException(500);
+                                }
+                            }
+                        } else {
+                            $r = new DiscountCondition();
+                            $r->discount_id = $discountId;
+                            $r->type = $item['type'];
+                            $r->condition = $item['condition'];
+                            if (!$r->save()) {
+                                throw new HttpException(500);
+                            }
                         }
                         break;
                 }

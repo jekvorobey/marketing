@@ -128,7 +128,7 @@ class DiscountController extends Controller
         $payment = collect($request->post('payment', []));
 
         $result = (new DiscountCalculatorBuilder())
-            ->customers($customer)
+            ->customer($customer)
             ->offers($offers)
             ->promoCode($promoCode)
             ->delivery($delivery)

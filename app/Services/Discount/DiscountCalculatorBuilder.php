@@ -15,7 +15,7 @@ class DiscountCalculatorBuilder
     public function __construct()
     {
         $this->params = collect();
-        $this->params->put('customers', collect());
+        $this->params->put('customer', collect());
         $this->params->put('offers', collect());
         $this->params->put('promoCode', collect());
         $this->params->put('delivery', collect());
@@ -23,52 +23,52 @@ class DiscountCalculatorBuilder
     }
 
     /**
-     * @param Collection $customers
+     * @param Collection|array $customers
      * @return DiscountCalculatorBuilder
      */
-    public function customers(Collection $customers)
+    public function customer($customers)
     {
-        $this->params['customers'] = $customers;
+        $this->params['customer'] = collect($customers);
         return $this;
     }
 
     /**
-     * @param Collection $offers
+     * @param Collection|array $offers
      * @return DiscountCalculatorBuilder
      */
-    public function offers(Collection $offers)
+    public function offers($offers)
     {
-        $this->params['offers'] = $offers;
+        $this->params['offers'] = collect($offers);
         return $this;
     }
 
     /**
-     * @param Collection $promoCode
+     * @param Collection|array $promoCode
      * @return DiscountCalculatorBuilder
      */
-    public function promoCode(Collection $promoCode)
+    public function promoCode($promoCode)
     {
-        $this->params['promoCode'] = $promoCode;
+        $this->params['promoCode'] = collect($promoCode);
         return $this;
     }
 
     /**
-     * @param Collection $delivery
+     * @param Collection|array $delivery
      * @return DiscountCalculatorBuilder
      */
-    public function delivery(Collection $delivery)
+    public function delivery($delivery)
     {
-        $this->params['delivery'] = $delivery;
+        $this->params['delivery'] = collect($delivery);
         return $this;
     }
 
     /**
-     * @param Collection $payment
+     * @param Collection|array $payment
      * @return DiscountCalculatorBuilder
      */
-    public function payment(Collection $payment)
+    public function payment($payment)
     {
-        $this->params['payment'] = $payment;
+        $this->params['payment'] = collect($payment);
         return $this;
     }
 

@@ -106,10 +106,30 @@ class DiscountCalculator
             ->apply();
 
         return [
-            'discounts' => $this->appliedDiscounts,
+            'discounts' => $this->getExternalDiscountFormat($this->appliedDiscounts),
             'offers' => $this->filter['offers'],
             'delivery' => $this->filter['delivery'],
         ];
+    }
+
+    /**
+     * @param $discounts
+     * @return array
+     */
+    public function getExternalDiscountFormat($discounts)
+    {
+        $format = [];
+        foreach ($discounts as $discount) {
+            $conditions = $this->relations['conditions']->has($discount['id'])
+                ? $this->relations['conditions'][$discount['id']]->toArray()
+                : [];
+
+            $extType = Discount::getExternalFormat($discount['type'], $conditions, false);
+            $format[$extType] = isset($format[$extType])
+                ? ($format[$extType] + $discount['value'])
+                : $discount['value'];
+        }
+        return $format;
     }
 
     /**
@@ -361,13 +381,6 @@ class DiscountCalculator
                 continue;
             }
 
-            $data = [
-                'id' => $discount->id,
-                'type' => $discount->type,
-                'value' => $discount->value,
-                'value_type' => $discount->value_type,
-            ];
-
             $changed = false;
             switch ($discount->type) {
                 case Discount::DISCOUNT_TYPE_OFFER:
@@ -409,7 +422,14 @@ class DiscountCalculator
             }
 
             if ($changed > 0) {
-                $this->appliedDiscounts->push($data);
+                $this->appliedDiscounts->push([
+                    'id' => $discount->id,
+                    'type' => $discount->type,
+                    'value' => $changed,
+                    'conditions' => $this->relations['conditions']->has($discount->id)
+                        ? $this->relations['conditions'][$discount->id]->pluck('type')
+                        : [],
+                ]);
             }
         }
 
@@ -534,10 +554,10 @@ class DiscountCalculator
         $changed = 0;
         foreach ($offerIds as $offerId) {
             $offer = &$this->filter['offers'][$offerId];
-            $changed += $this->changePrice($offer, $discount->value, $discount->value_type);
+            $changed += $this->changePrice($offer, $discount->value, $discount->value_type) * $offer['qty'];
         }
 
-        return $changed > 0;
+        return $changed;
     }
 
     /**
@@ -558,7 +578,7 @@ class DiscountCalculator
         $currentCost = $item['cost'] ?? $item['price'];
         switch ($valueType) {
             case Discount::DISCOUNT_VALUE_TYPE_PERCENT:
-                $discountValue = min($item['price'], round($item['price'] * $value / 100));
+                $discountValue = min($item['price'], round($currentCost * $value / 100));
                 break;
             case Discount::DISCOUNT_VALUE_TYPE_RUB:
                 $discountValue = $value > $item['price'] ? $item['price'] : $value;
