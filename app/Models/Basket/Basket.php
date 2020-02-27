@@ -106,9 +106,9 @@ class Basket implements \JsonSerializable
         });
 
         $calculation = (new DiscountCalculatorBuilder())
-            ->customer([
-                'id' => $this->user,
-            ])
+            ->customer(['id' => $this->user])
+            ->payment(['method' => $this->payMethod])
+            ->delivery(['method' => $this->deliveryMethod])
             ->offers($offers)
             ->calculate();
 

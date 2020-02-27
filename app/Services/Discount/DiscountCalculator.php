@@ -1127,22 +1127,22 @@ class DiscountCalculator
 
     /**
      * Способ доставки
-     * @param $deliveryMethod
+     * @param $deliveryMethods
      * @return bool
      */
-    public function checkDeliveryMethod($deliveryMethod)
+    public function checkDeliveryMethod($deliveryMethods)
     {
-        return isset($this->filter['delivery']['method']) && $this->filter['delivery']['method'] === $deliveryMethod;
+        return isset($this->filter['delivery']['method']) && in_array($this->filter['delivery']['method'], $deliveryMethods);
     }
 
     /**
      * Способ оплаты
-     * @param $payment
+     * @param $payments
      * @return bool
      */
-    public function checkPayMethod($payment)
+    public function checkPayMethod($payments)
     {
-        return isset($this->filter['payment']['method']) && $this->filter['payment']['method'] === $payment;
+        return isset($this->filter['payment']['method']) && in_array($this->filter['payment']['method'], $payments);
     }
 
     /**
