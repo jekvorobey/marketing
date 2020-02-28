@@ -587,6 +587,11 @@ class DiscountCalculator
                 return 0;
         }
 
+        /** Цена не может быть меньше 1 рубля */
+        if ($item['price'] - $discountValue < 1) {
+            $discountValue = $item['price'] - 1;
+        }
+
         if ($apply) {
             $item['discount'] = $currentDiscount + $discountValue;
             $item['price'] = $currentCost - $item['discount'];
