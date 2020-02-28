@@ -2,7 +2,10 @@
 
 namespace App\Models\Price;
 
+use App\Core\Elastic\IndexFactory;
+use App\Core\Elastic\ScheduleRunner;
 use Greensight\CommonMsa\Models\AbstractModel;
+use Pim\Services\SearchService\SearchService;
 
 /**
  * Класс-модель для сущности "Цена на предложение мерчанта"
@@ -28,4 +31,27 @@ class Price extends AbstractModel
      * @var string
      */
     protected $table = 'prices';
+    
+    protected static function boot()
+    {
+        parent::boot();
+        
+        self::created(function (self $price) {
+            /** @var SearchService $searchService */
+            $searchService = resolve(SearchService::class);
+            $searchService->markProductForIndexViaOffer($price->offer_id);
+        });
+        
+        self::updated(function (self $price) {
+            /** @var SearchService $searchService */
+            $searchService = resolve(SearchService::class);
+            $searchService->markProductForIndexViaOffer($price->offer_id);
+        });
+        
+        self::deleted(function (self $price) {
+            /** @var SearchService $searchService */
+            $searchService = resolve(SearchService::class);
+            $searchService->markProductForIndexViaOffer($price->offer_id);
+        });
+    }
 }
