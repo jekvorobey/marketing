@@ -540,7 +540,7 @@ class DiscountCalculator
      */
     protected function applyEvenly($discount, Collection $offerIds)
     {
-        $priceOrders = $this->getCostOrders();
+        $priceOrders = $this->getPriceOrders();
         if ($priceOrders <= 0) {
             return 0.;
         }
@@ -560,7 +560,7 @@ class DiscountCalculator
          */
         $force = false;
         $prevCurrentDiscountValue = 0;
-        while ($currentDiscountValue < $discountValue || $priceOrders === 0) {
+        while ($currentDiscountValue < $discountValue && $priceOrders !== 0) {
             /**
              * Сортирует ID офферов.
              * Сначала применяем скидки на самые дорогие товары (цена * количество)
@@ -572,12 +572,12 @@ class DiscountCalculator
                 $offer = &$this->filter['offers'][$offerId];
                 $valueUp = ceil($offer['price'] * $coefficient);
                 $valueDown = floor($offer['price'] * $coefficient);
-                $changeUp = $this->changePrice($offer, $valueUp, $discount->value_type, false);
-                $changeDown = $this->changePrice($offer, $valueDown, $discount->value_type, false);
+                $changeUp = $this->changePrice($offer, $valueUp, Discount::DISCOUNT_VALUE_TYPE_RUB, false);
+                $changeDown = $this->changePrice($offer, $valueDown, Discount::DISCOUNT_VALUE_TYPE_RUB, false);
                 if ($changeUp * $offer['qty'] <= $discountValue - $currentDiscountValue || $force) {
-                    $change = $this->changePrice($offer, $valueUp, $discount->value_type);
+                    $change = $this->changePrice($offer, $valueUp, Discount::DISCOUNT_VALUE_TYPE_RUB);
                 } elseif ($changeDown * $offer['qty'] <= $discountValue - $currentDiscountValue || $force) {
-                    $change = $this->changePrice($offer, $valueDown, $discount->value_type);
+                    $change = $this->changePrice($offer, $valueDown, Discount::DISCOUNT_VALUE_TYPE_RUB);
                 } else {
                     continue;
                 }
