@@ -53,12 +53,12 @@ class DiscountCalculatorBuilder
     }
 
     /**
-     * @param Collection|array $delivery
+     * @param Collection|array $deliveries
      * @return DiscountCalculatorBuilder
      */
-    public function delivery($delivery)
+    public function deliveries($deliveries)
     {
-        $this->params['delivery'] = collect($delivery);
+        $this->params['deliveries'] = collect($deliveries);
         return $this;
     }
 

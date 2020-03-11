@@ -2,8 +2,6 @@
 
 namespace App\Models\Basket;
 
-use App\Models\Price\Price;
-use App\Services\Discount\DiscountCalculator;
 use App\Services\Discount\DiscountCalculatorBuilder;
 use Illuminate\Support\Collection;
 use Exception;
@@ -35,8 +33,8 @@ class Basket implements \JsonSerializable
     public $user;
     /** @var string */
     public $referalCode;
-    /** @var int */
-    public $deliveryMethod;
+    /** @var Collection|array */
+    public $deliveries;
     /** @var int */
     public $payMethod;
     /** @var int */
@@ -70,7 +68,7 @@ class Basket implements \JsonSerializable
 
         @([
             'referal_code' => $basket->referalCode,
-            'delivery_method' => $basket->deliveryMethod,
+            'deliveries' => $basket->deliveries,
             'pay_method' => $basket->payMethod,
 
             'bonus' => $basket->bonus,
@@ -99,6 +97,9 @@ class Basket implements \JsonSerializable
         $this->user = $userId;
     }
 
+    /**
+     * @throws Exception
+     */
     public function addPrices()
     {
         $offers = collect($this->items)->transform(function(BasketItem $item) {
@@ -108,11 +109,12 @@ class Basket implements \JsonSerializable
         $calculation = (new DiscountCalculatorBuilder())
             ->customer(['id' => $this->user])
             ->payment(['method' => $this->payMethod])
-            ->delivery(['method' => $this->deliveryMethod])
+            ->deliveries($this->deliveries)
             ->offers($offers)
             ->calculate();
 
         $this->appliedDiscount = $calculation['discounts'];
+        $this->deliveries = $calculation['deliveries'];
 
         $totalCost = 0;
         $totalItemDiscount = 0;
@@ -193,6 +195,7 @@ class Basket implements \JsonSerializable
             'price' => $this->price,
             'discounts' => $this->appliedDiscount,
             'items' => $this->items,
+            'deliveries' => $this->deliveries,
         ];
     }
 }

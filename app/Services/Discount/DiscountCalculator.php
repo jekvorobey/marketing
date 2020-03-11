@@ -28,7 +28,7 @@ class DiscountCalculator
 {
     /**
      * Входные условия, влияющие на получения скидки
-     * @var Collection|Collection[]
+     * @var array
      */
     protected $filter;
 
@@ -45,10 +45,16 @@ class DiscountCalculator
     protected $relations;
 
     /**
-     * Список скидок, которые можно применить (отдельно друг от друга)
+     * Список активных скидок
      * @var Collection
      */
     protected $discounts;
+
+    /**
+     * Список скидок, которые можно применить (отдельно друг от друга)
+     * @var Collection
+     */
+    protected $possibleDiscounts;
 
     /**
      * Список категорий
@@ -64,7 +70,7 @@ class DiscountCalculator
      *      'customer': ['id' => int],
      *      'offers': [['id' => int, 'qty' => int|null], ...]]
      *      'promoCode': todo
-     *      'delivery': ['method' => int, 'price' => int, 'region' => int]
+     *      'deliveries': [['method' => int, 'price' => int, 'region' => int, 'selected' => bool], ...]
      *      'payment': ['method' => int]
      *  }
      */
@@ -80,12 +86,30 @@ class DiscountCalculator
         $this->filter['payment'] = [
             'method' => isset($params['payment']['method']) ? intval($params['payment']['method']) : null
         ];
-        $this->filter['delivery'] = [
-            'price' => isset($params['delivery']['price']) ? intval($params['delivery']['price']) : null,
-            'method' => isset($params['delivery']['method']) ? intval($params['delivery']['method']) : null,
-        ];
+
+        /** Все возможные типы доставки */
+        $this->filter['deliveries'] = collect();
+        if (is_iterable($params['deliveries'])) {
+            $id = 0;
+            foreach ($params['deliveries'] as $delivery) {
+                $id++;
+                $this->filter['deliveries']->put($id, [
+                    'id' => $id,
+                    'price' => isset($delivery['price']) ? intval($delivery['price']) : null,
+                    'method' => isset($delivery['method']) ? intval($delivery['method']) : null,
+                    'region' => isset($delivery['region']) ? intval($delivery['region']) : null,
+                    'selected' => isset($delivery['selected']) ? boolval($delivery['selected']) : false,
+                ]);
+            }
+        }
+
+        /** Доставки, для которых необходимо посчитать только возможную скидку */
+        $this->filter['notSelectedDeliveries'] = $this->filter['deliveries']->filter(function ($delivery) {
+            return !$delivery['selected'];
+        });
 
         $this->discounts = collect();
+        $this->possibleDiscounts = collect();
         $this->relations = collect();
         $this->categories = collect();
         $this->appliedDiscounts = collect();
@@ -99,16 +123,27 @@ class DiscountCalculator
      */
     public function calculate()
     {
-        $this->getActiveDiscounts()
-            ->fetchData()
-            ->filter()
-            ->sort()
-            ->apply();
+        $calculator = $this->getActiveDiscounts()->fetchData();
+
+        /**
+         * Применяем скидки при заданной доставке,
+         * сохраняем только скидку на заданную доставку,
+         * затем откатываем изменения
+         */
+        foreach ($this->filter['notSelectedDeliveries'] as $delivery) {
+            $deliveryId = $delivery['id'];
+            $calculator->filter($delivery)->sort()->apply();
+            $deliveryWithDiscount = $this->filter['deliveries'][$deliveryId];
+            $this->rollback();
+            $this->filter['deliveries'][$deliveryId] = $deliveryWithDiscount;
+        }
+
+        $calculator->filter()->sort()->apply();
 
         return [
             'discounts' => $this->getExternalDiscountFormat($this->appliedDiscounts),
             'offers' => $this->filter['offers'],
-            'delivery' => $this->filter['delivery'],
+            'deliveries' => $this->filter['deliveries']->values(),
         ];
     }
 
@@ -332,17 +367,24 @@ class DiscountCalculator
     /**
      * Фильтрует все актуальные скидки и оставляет только те, которые можно применить
      *
+     * @param array|null $currentDelivery
      * @return $this
      */
-    protected function filter()
+    protected function filter($currentDelivery = null)
     {
-        $this->discounts = $this->discounts->filter(function (Discount $discount) {
+        $this->filter['delivery'] = $currentDelivery ??
+            $this->filter['deliveries']->filter(function ($delivery) {
+                return $delivery['selected'];
+            })->first();
+
+
+        $this->possibleDiscounts = $this->discounts->filter(function (Discount $discount) {
             return $this->checkDiscount($discount);
         })->values();
 
-        $discountIds = $this->discounts->pluck('id');
+        $discountIds = $this->possibleDiscounts->pluck('id');
         $this->fetchDiscountConditions($discountIds);
-        $this->discounts = $this->discounts->filter(function (Discount $discount) {
+        $this->possibleDiscounts = $this->possibleDiscounts->filter(function (Discount $discount) {
             if ($this->relations['conditions']->has($discount->id)) {
                 return $this->checkConditions($this->relations['conditions'][$discount->id]);
             }
@@ -369,6 +411,35 @@ class DiscountCalculator
     }
 
     /**
+     * Откатывает все примененные скидки
+     * @return $this
+     */
+    protected function rollback()
+    {
+        $this->appliedDiscounts = collect();
+
+        $offers = collect();
+        foreach ($this->filter['offers'] as $offer) {
+            $offer['price'] = $offer['cost'] ?? $offer['price'];
+            unset($offer['discount']);
+            unset($offer['cost']);
+            $offers->put($offer['id'], $offer);
+        }
+        $this->filter['offers'] = $offers;
+
+        $deliveries = collect();
+        foreach ($this->filter['deliveries'] as $delivery) {
+            $delivery['price'] = $delivery['cost'] ?? $delivery['price'];
+            unset($delivery['discount']);
+            unset($delivery['cost']);
+            $deliveries->put($delivery['id'], $delivery);
+        }
+        $this->filter['deliveries'] = $deliveries;
+
+        return $this;
+    }
+
+    /**
      * Применяет скидки
      *
      * @return $this
@@ -376,7 +447,7 @@ class DiscountCalculator
     protected function apply()
     {
         /** @var Discount $discount */
-        foreach ($this->discounts as $discount) {
+        foreach ($this->possibleDiscounts as $discount) {
             if (!$this->isCompatible($discount)) {
                 continue;
             }
@@ -414,7 +485,17 @@ class DiscountCalculator
                     $changed = $this->applyDiscountToOffer($discount, $offerIds);
                     break;
                 case Discount::DISCOUNT_TYPE_DELIVERY:
-                    $changed = $this->changePrice($this->filter['delivery'], $discount->value, $discount->value_type);
+                    $deliveryId = $this->filter['delivery']['id'] ?? null;
+                    if ($this->filter['deliveries']->has($deliveryId)) {
+                        $changed = $this->changePrice(
+                            $this->filter['delivery'],
+                            $discount->value,
+                            $discount->value_type
+                        );
+
+                        $this->filter['deliveries'][$deliveryId] = $this->filter['delivery'];
+                    }
+
                     break;
                 case Discount::DISCOUNT_TYPE_CART_TOTAL:
                     $changed = $this->applyDiscountToBasket($discount);
@@ -459,7 +540,7 @@ class DiscountCalculator
      */
     protected function applyEvenly($discount, Collection $offerIds)
     {
-        $priceOrders = $this->getPriceOrders();
+        $priceOrders = $this->getCostOrders();
         if ($priceOrders <= 0) {
             return 0.;
         }
@@ -1000,7 +1081,7 @@ class DiscountCalculator
                     break;
                 /** Скидка на заказ от заданной суммы */
                 case DiscountCondition::MIN_PRICE_ORDER:
-                    $r = $this->getPriceOrders() >= $condition->getMinPrice();
+                    $r = $this->getCostOrders() >= $condition->getMinPrice();
                     break;
                 /** Скидка на заказ от заданной суммы на один из брендов */
                 case DiscountCondition::MIN_PRICE_BRAND:
@@ -1079,6 +1160,17 @@ class DiscountCalculator
     }
 
     /**
+     * Сумма заказа без учета скидки
+     * @return int
+     */
+    public function getCostOrders()
+    {
+        return $this->filter['offers']->map(function ($offer) {
+            return ($offer['cost'] ?? $offer['price']) * $offer['qty'];
+        })->sum();
+    }
+
+    /**
      * Возвращает максимальную сумму товаров среди брендов ($brands)
      * @param array $brands
      * @return int
@@ -1152,11 +1244,11 @@ class DiscountCalculator
 
     /**
      * Регион доставки
-     * @param $region
+     * @param $regions
      * @return bool
      */
-    public function checkRegion($region)
+    public function checkRegion($regions)
     {
-        return isset($this->filter['delivery']['region']) && $this->filter['delivery']['region'] === $region;
+        return isset($this->filter['delivery']['region']) && in_array($this->filter['delivery']['region'], $regions);
     }
 }
