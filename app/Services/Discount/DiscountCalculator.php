@@ -153,18 +153,27 @@ class DiscountCalculator
      */
     public function getExternalDiscountFormat($discounts)
     {
-        $format = [];
+        $discountsByType = [];
         foreach ($discounts as $discount) {
             $conditions = $this->relations['conditions']->has($discount['id'])
                 ? $this->relations['conditions'][$discount['id']]->toArray()
                 : [];
 
             $extType = Discount::getExternalFormat($discount['type'], $conditions, false);
-            $format[$extType] = isset($format[$extType])
-                ? ($format[$extType] + $discount['value'])
+            $discountsByType[$extType] = isset($discountsByType[$extType])
+                ? ($discountsByType[$extType] + $discount['value'])
                 : $discount['value'];
         }
-        return $format;
+
+        $result = [];
+        foreach ($discountsByType as $type => $value) {
+            $result[] = [
+                'type' => $type,
+                'value' => $value,
+            ];
+        }
+
+        return $result;
     }
 
     /**
