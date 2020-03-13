@@ -276,6 +276,23 @@ class Discount extends AbstractModel
     }
 
     /**
+     * Скидки, которые могут быть показаны (рассчитаны) в каталоге
+     * @param Builder $query
+     * @return Builder
+     */
+    public function scopeShowInCatalog(Builder $query): Builder
+    {
+        return $query
+            ->active()
+            ->where('promo_code_only', false)
+            ->whereIn('type', [
+                self::DISCOUNT_TYPE_OFFER,
+                self::DISCOUNT_TYPE_BRAND,
+                self::DISCOUNT_TYPE_CATEGORY,
+            ]);
+    }
+
+    /**
      * Сделать скидку совместимой с другой скидкой
      * @param Discount|int $other
      * @return bool

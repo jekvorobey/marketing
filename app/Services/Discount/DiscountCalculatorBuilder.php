@@ -18,7 +18,7 @@ class DiscountCalculatorBuilder
         $this->params->put('customer', collect());
         $this->params->put('offers', collect());
         $this->params->put('promoCode', collect());
-        $this->params->put('delivery', collect());
+        $this->params->put('deliveries', collect());
         $this->params->put('payment', collect());
     }
 
@@ -78,5 +78,13 @@ class DiscountCalculatorBuilder
     public function calculate()
     {
         return (new DiscountCalculator($this->params))->calculate();
+    }
+
+    /**
+     * @return Collection
+     */
+    public function getParams()
+    {
+        return $this->params;
     }
 }

@@ -4,7 +4,9 @@ namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Price\Price;
+use App\Services\Discount\DiscountCatalogPrice;
 use Greensight\CommonMsa\Rest\Controller\ReadAction;
+use Greensight\CommonMsa\Services\RequestInitiator\RequestInitiator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -18,8 +20,26 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  */
 class PriceController extends Controller
 {
-    use ReadAction;
-    
+    protected function read(Request $request, RequestInitiator $client)
+    {
+        try {
+            $params = $request->validate([
+                'offer_ids' => 'array',
+                'role_id' => 'integer',
+                'segment_id' => 'integer',
+                'user_id' => 'integer',
+            ]);
+
+            $params['user_id'] = $params['user_id'] ?? $client->userId();
+            $discountPriceCalculator = new DiscountCatalogPrice($params);
+            return response()->json([
+                'items' => $discountPriceCalculator->calculate()
+            ]);
+        } catch (\Exception $ex) {
+            return response()->json(['error' => $ex->getMessage()], 400);
+        }
+    }
+
     /**
      * Получить список полей, которые можно редактировать через стандартные rest действия.
      * Пример return ['name', 'status'];
@@ -29,7 +49,7 @@ class PriceController extends Controller
     {
         return Price::FILLABLE;
     }
-    
+
     /**
      * Получить класс модели в виде строки
      * Пример: return MyModel::class;
@@ -39,7 +59,7 @@ class PriceController extends Controller
     {
         return Price::class;
     }
-    
+
     /**
      * Задать права для выполнения стандартных rest действий.
      * Пример: return [ RestAction::$DELETE => 'permission' ];
@@ -51,7 +71,7 @@ class PriceController extends Controller
             // todo добавить необходимые права
         ];
     }
-    
+
     /**
      * Получить цену на предложение мерчанта
      * @param  int  $offerId - id предложения
@@ -74,12 +94,12 @@ class PriceController extends Controller
                 'result' => 0,
             ];
         }
-    
+
         return response()->json([
             'item' => $result
         ]);
     }
-    
+
     /**
      * Установить цену для предложения мерчанта
      * @param  int  $offerId
@@ -90,7 +110,7 @@ class PriceController extends Controller
     {
         // todo Добавить проверку прав
         $price = (float) $request->input('price');
-        
+
         $ok = true;
         $priceModel = Price::query()
             ->where('offer_id', $offerId)
@@ -108,11 +128,11 @@ class PriceController extends Controller
             }
             $priceModel->updateOrCreate(['offer_id' => $offerId], ['price' => $price]);
         }
-        
+
         if (!$ok) {
             throw new HttpException(500);
         }
-        
+
         return response('', 204);
     }
 

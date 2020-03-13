@@ -63,6 +63,13 @@ class DiscountCalculator
     protected $categories;
 
     /**
+     * Офферы со скидками в формате:
+     * [offer_id => [['id' => discount_id, 'value' => value, 'value_type' => value_type], ...]]
+     * @var Collection
+     */
+    protected $offersByDiscounts;
+
+    /**
      * DiscountCalculator constructor.
      * @param Collection $params
      * Формат:
@@ -113,6 +120,7 @@ class DiscountCalculator
         $this->relations = collect();
         $this->categories = collect();
         $this->appliedDiscounts = collect();
+        $this->offersByDiscounts = collect();
         $this->loadData();
     }
 
@@ -183,6 +191,7 @@ class DiscountCalculator
     protected function loadData()
     {
         $this->fetchCategories();
+        /** @var Collection $offerIds */
         $offerIds = $this->filter['offers']->pluck('id');
         if ($offerIds->isNotEmpty()) {
             $this->hydrateOfferPrice();
@@ -426,6 +435,7 @@ class DiscountCalculator
     protected function rollback()
     {
         $this->appliedDiscounts = collect();
+        $this->offersByDiscounts = collect();
 
         $offers = collect();
         foreach ($this->filter['offers'] as $offer) {
@@ -637,6 +647,10 @@ class DiscountCalculator
      */
     protected function applyDiscountToOffer($discount, Collection $offerIds)
     {
+        $offerIds = $offerIds->filter(function ($offerId) use ($discount) {
+            return $this->applicableToOffer($discount, $offerId);
+        });
+
         if ($offerIds->isEmpty()) {
             return false;
         }
@@ -644,7 +658,22 @@ class DiscountCalculator
         $changed = 0;
         foreach ($offerIds as $offerId) {
             $offer = &$this->filter['offers'][$offerId];
-            $changed += $this->changePrice($offer, $discount->value, $discount->value_type) * $offer['qty'];
+            $change = $this->changePrice($offer, $discount->value, $discount->value_type);
+            if ($change <= 0) {
+                continue;
+            }
+
+            if (!$this->offersByDiscounts->has($offerId)) {
+                $this->offersByDiscounts->put($offerId, collect());
+            }
+
+            $this->offersByDiscounts[$offerId]->push([
+                'id' => $discount->id,
+                'change' => $change,
+                'value' => $discount->value,
+                'value_type' => $discount->value_type
+            ]);
+            $changed += $change * $offer['qty'];
         }
 
         return $changed;
@@ -758,6 +787,18 @@ class DiscountCalculator
     }
 
     /**
+     * Можно ли применить скидку к офферу.
+     * В корзине или чекауте всегда true
+     * @param $discount
+     * @param $offerId
+     * @return bool
+     */
+    protected function applicableToOffer($discount, $offerId)
+    {
+        return true;
+    }
+
+    /**
      * Получаем все возможные скидки и офферы из DiscountOffer
      * @return $this
      */
@@ -836,11 +877,6 @@ class DiscountCalculator
      */
     protected function fetchDiscountSegments()
     {
-        if (!isset($this->filter['customer']['segment'])) {
-            $this->relations['segments'] = collect();
-            return $this;
-        }
-
         $this->relations['segments'] = DiscountSegment::select(['discount_id', 'segment_id'])
             ->whereIn('discount_id', $this->discounts->pluck('id'))
             ->get()
@@ -1116,6 +1152,7 @@ class DiscountCalculator
                 case DiscountCondition::REGION:
                     $r = $this->checkRegion($condition->getRegions());
                     break;
+                /** Скидка для определенных покупателей */
                 case DiscountCondition::CUSTOMER:
                     $r = in_array($this->getCustomerId(), $condition->getCustomerIds());
                     break;
