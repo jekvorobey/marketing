@@ -109,7 +109,6 @@ class DiscountHelper
                         $r = new DiscountCategory();
                         $r->discount_id = $discountId;
                         $r->category_id = $item['category_id'];
-                        $r->except = $item['except'];
                         if (!$r->save()) {
                             throw new HttpException(500);
                         }
@@ -118,7 +117,6 @@ class DiscountHelper
                         $r = new DiscountSegment();
                         $r->discount_id = $discountId;
                         $r->segment_id = $item['segment_id'];
-                        $r->except = $item['except'];
                         if (!$r->save()) {
                             throw new HttpException(500);
                         }
@@ -127,7 +125,6 @@ class DiscountHelper
                         $r = new DiscountUserRole();
                         $r->discount_id = $discountId;
                         $r->role_id = $item['role_id'];
-                        $r->except = $item['except'];
                         if (!$r->save()) {
                             throw new HttpException(500);
                         }

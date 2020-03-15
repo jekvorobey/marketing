@@ -25,12 +25,11 @@ class PriceController extends Controller
         try {
             $params = $request->validate([
                 'offer_ids' => 'array',
-                'role_id' => 'integer',
+                'offer_ids.*' => 'integer',
+                'role_ids' => 'array',
                 'segment_id' => 'integer',
-                'user_id' => 'integer',
             ]);
 
-            $params['user_id'] = $params['user_id'] ?? $client->userId();
             $discountPriceCalculator = new DiscountCatalogPrice($params);
             return response()->json([
                 'items' => $discountPriceCalculator->calculate()
@@ -77,26 +76,33 @@ class PriceController extends Controller
      * @param  int  $offerId - id предложения
      * @return JsonResponse
      */
-    public function price(int $offerId): JsonResponse
+    public function price(int $offerId, Request $request): JsonResponse
     {
-        //todo Добавить проверку прав
-        $price = Price::query()
-            ->where('offer_id', $offerId)
-            ->first();
-        if ($price) {
-            $result = [
-                'base' => $price->price,
-                'result' => $price->price - 5, // todo тут надо расчитывать стоимость со скидкой
-            ];
-        } else {
-            $result = [
-                'base' => 0,
-                'result' => 0,
-            ];
+        try {
+            $params = $request->validate([
+                'role_ids'    => 'array',
+                'segment_id'  => 'integer',
+            ]);
+        } catch (\Exception $ex) {
+            return response()->json(['error' => $ex->getMessage()], 400);
+        }
+
+        $items = (new DiscountCatalogPrice([
+            'offer_ids' => [$offerId],
+            'role_ids' => $params['role_ids'] ?? null,
+            'segment_id' => $params['segment_id'] ?? null,
+        ]))->calculate();
+
+        if (count($items) === 0) {
+            return response()->json(null, 404);
         }
 
         return response()->json([
-            'item' => $result
+            'item' => [
+                'cost' => $items[0]['cost'],
+                'price' => $items[0]['price'],
+                'discount' => $items[0]['discounts'] ?? null,
+            ]
         ]);
     }
 

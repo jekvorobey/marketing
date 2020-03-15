@@ -88,7 +88,9 @@ class DiscountCalculator
         $this->filter['offers'] = $params['offers'] ?? collect();
         $this->filter['promoCode'] = $params['promoCode'] ?? collect();
         $this->filter['customer'] = [
-            'id' => isset($params['customer']['id']) ? intval($params['customer']['id']) : null
+            'id' => isset($params['customer']['id']) ? intval($params['customer']['id']) : null,
+            'roles' => $params['customer']['roles'] ?? [],
+            'segment' => isset($params['customer']['segment']) ? intval($params['customer']['segment']) : null,
         ];
         $this->filter['payment'] = [
             'method' => isset($params['payment']['method']) ? intval($params['payment']['method']) : null

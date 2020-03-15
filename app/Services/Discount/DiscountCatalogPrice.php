@@ -22,33 +22,17 @@ use Pim\Services\ProductService\ProductService;
 class DiscountCatalogPrice extends DiscountCalculator
 {
     /**
-     * @var int|null
-     */
-    protected $roleId;
-
-    /**
      * @var Collection
      */
     protected $offerIds;
 
     /**
-     * @var int|null
-     */
-    protected $segmentId;
-
-    /**
-     * @var int|null
-     */
-    protected $userId;
-
-    /**
      * DiscountPriceCalculator constructor.
      * @param array|null $params
      * [
-     *  'offer_ids' => array|null, – ID офферов
-     *  'role_id' => int|null, – Роль пользователя
+     *  'offer_id' => array|int|null, – ID офферов
+     *  'role_ids' => int[]|null, – Роли пользователя
      *  'segment_id' => int|null, – Сегмент пользователя
-     *  'user_id' => int|null – ID пользователя (используется, если не указаны role_id и segment_id)
      * ]
      */
     public function __construct(array $params = [])
@@ -57,12 +41,13 @@ class DiscountCatalogPrice extends DiscountCalculator
             ? collect($params['offer_ids'])->flip()
             : collect();
 
-        $this->roleId = $params['role_id'] ?? null;
-        $this->segmentId = $params['segment_id'] ?? null;
-        $this->userId = $params['user_id'] ?? null;
+        $params = (new DiscountCalculatorBuilder())
+            ->customer([
+                'roles' => $params['role_ids'] ?? null,
+                'segment' => $params['segment_id'] ?? null,
+            ])
+            ->getParams();
 
-        // todo Учитывать роль и сегмент пользователя
-        $params = (new DiscountCalculatorBuilder())->getParams();
         parent::__construct($params);
     }
 
@@ -82,9 +67,11 @@ class DiscountCatalogPrice extends DiscountCalculator
                 'offer_id' => $offerId,
                 'price' => $offer['price'],
                 'cost' => $offer['cost'] ?? $offer['price'],
-                'discounts' => $this->offersByDiscounts[$offerId] ?? null
+                'discounts' => $this->offersByDiscounts->has($offerId)
+                    ? $this->offersByDiscounts[$offerId]->values()->toArray()
+                    : null
             ];
-        })->values();
+        })->values()->toArray();
     }
 
     /**

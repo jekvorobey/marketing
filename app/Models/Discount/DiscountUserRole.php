@@ -19,7 +19,7 @@ class DiscountUserRole extends AbstractModel
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = ['discount_id', 'role_id', 'except'];
+    const FILLABLE = ['discount_id', 'role_id'];
 
     /**
      * @var array
