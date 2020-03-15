@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Discount\Discount;
 use App\Services\Discount\DiscountCalculatorBuilder;
 use App\Services\Discount\DiscountHelper;
+use Carbon\Carbon;
 use Greensight\CommonMsa\Rest\Controller\DeleteAction;
 use Greensight\CommonMsa\Rest\Controller\UpdateAction;
 use Greensight\CommonMsa\Services\RequestInitiator\RequestInitiator;
@@ -26,6 +27,18 @@ class DiscountController extends Controller
     use UpdateAction;
 
     /**
+     * Задать права для выполнения стандартных rest действий.
+     * Пример: return [ RestAction::$DELETE => 'permission' ];
+     * @return array
+     */
+    public function permissionMap(): array
+    {
+        return [
+            // todo добавить необходимые права
+        ];
+    }
+
+    /**
      * @param Request $request
      * @param RequestInitiator $client
      * @return JsonResponse
@@ -38,27 +51,35 @@ class DiscountController extends Controller
     }
 
     /**
-     * @param Request $request
-     * @param RequestInitiator $client
+     * @param $id
+     *
      * @return JsonResponse
      */
-    public function read(Request $request, RequestInitiator $client)
+    public function find($id)
+    {
+        $discount = Discount::find((int) $id);
+        if (!$discount) {
+            throw new NotFoundHttpException();
+        }
+
+        return response()->json($discount);
+    }
+
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function read(Request $request)
     {
         $id = $request->route('id');
         if ($id > 0) {
-            $discount = Discount::find((int) $id);
-            if (!$discount) {
-                throw new NotFoundHttpException();
-            }
-
-            return response()->json($discount);
+            return $this->find($id);
         }
 
-        $query = Discount::query();
-        $query = $this->modifyQuery($request, $query);
-        $items = $query->get();
         return response()->json([
-            'items' => $items
+            'items' => $this->modifyQuery($request, Discount::query())
+                ->orderBy('id', $request->get('sort') === 'asc' ? 'asc' : 'desc')
+                ->get()
         ]);
     }
 
@@ -113,6 +134,42 @@ class DiscountController extends Controller
     }
 
     /**
+     * Возвращаент IDs авторов создания скидок
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
+    public function getAuthors(Request $request)
+    {
+        return response()->json($this->authors($request));
+    }
+
+    /**
+     * Возвращаент IDs инициаторов (спонсоров) скидок
+     * @param Request $request
+     *
+     * @return array
+     */
+    public function getInitiators(Request $request)
+    {
+        return response()->json($this->initiators($request));
+    }
+
+    /**
+     * Возвращаент IDs авторов и инициаторов скидок
+     * @param Request $request
+     *
+     * @return array
+     */
+    public function getUsers(Request $request)
+    {
+        return response()->json([
+            'authors' => $this->authors($request),
+            'initiators' => $this->initiators($request),
+        ]);
+    }
+
+    /**
      * Возвращает данные о примененных скидках
      *
      * @param Request $request
@@ -139,6 +196,36 @@ class DiscountController extends Controller
     }
 
     /**
+     * @param Request $request
+     *
+     * @return array
+     */
+    protected function initiators(Request $request)
+    {
+        return $this->modifyQuery($request, Discount::query())
+            ->select(['merchant_id'])
+            ->distinct()
+            ->get()
+            ->pluck('merchant_id')
+            ->toArray();
+    }
+
+    /**
+     * @param Request $request
+     *
+     * @return array
+     */
+    protected function authors(Request $request)
+    {
+        return $this->modifyQuery($request, Discount::query())
+            ->select(['user_id'])
+            ->distinct()
+            ->get()
+            ->pluck('user_id')
+            ->toArray();
+    }
+
+    /**
      * Получить список полей, которые можно редактировать через стандартные rest действия.
      * Пример return ['name', 'status'];
      * @return array
@@ -156,18 +243,6 @@ class DiscountController extends Controller
     public function modelClass(): string
     {
         return Discount::class;
-    }
-
-    /**
-     * Задать права для выполнения стандартных rest действий.
-     * Пример: return [ RestAction::$DELETE => 'permission' ];
-     * @return array
-     */
-    public function permissionMap(): array
-    {
-        return [
-            // todo добавить необходимые права
-        ];
     }
 
     /**
@@ -193,7 +268,11 @@ class DiscountController extends Controller
                 case 'merchant_id':
                 case 'user_id':
                 case 'promo_code_only':
-                    $query->where($key, (int)$value);
+                    if (is_array($value)) {
+                        $query->whereIn($key, $value);
+                    } else {
+                        $query->where($key, (int)$value);
+                    }
                     break;
                 case 'type':
                 case 'status':
@@ -215,6 +294,11 @@ class DiscountController extends Controller
                 case 'name':
                     $query->where($key, 'like', "%{$value}%");
                     break;
+                case 'created_at':
+                    $start = Carbon::createFromDate($value);
+                    $finish = Carbon::createFromDate($value)->endOfDay();
+                    $query->whereBetween($key, [$start, $finish]);
+                    break;
                 case 'start_date':
                 case 'end_date':
                     if (isset($filter['fix_' . $key]) && $filter['fix_' . $key]) {
@@ -232,7 +316,6 @@ class DiscountController extends Controller
             }
         }
 
-        $query->orderBy('id', $params['sort'] === 'asc' ? 'asc' : 'desc');
         return $query;
     }
 }

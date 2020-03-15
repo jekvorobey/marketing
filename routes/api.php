@@ -17,6 +17,9 @@ Route::namespace('V1')->prefix('v1')->group(function () {
     Route::prefix('discounts')->group(function () {
         Route::get('count', 'DiscountController@count');
         Route::get('', 'DiscountController@read');
+        Route::get('authors', 'DiscountController@getAuthors');
+        Route::get('initiators', 'DiscountController@getInitiators');
+        Route::get('users', 'DiscountController@getUsers');
         Route::post('', 'DiscountController@create');
 
         Route::post('calculate', 'DiscountController@calculate');
