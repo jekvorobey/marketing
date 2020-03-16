@@ -78,7 +78,7 @@ class DiscountController extends Controller
 
         return response()->json([
             'items' => $this->modifyQuery($request, Discount::query())
-                ->orderBy('id', $request->get('sort') === 'asc' ? 'asc' : 'desc')
+                ->orderBy('id', $request->get('sortDirection') === 'asc' ? 'asc' : 'desc')
                 ->get()
         ]);
     }
@@ -254,7 +254,6 @@ class DiscountController extends Controller
     {
         $params['page'] = $request->get('page', null);
         $params['perPage'] = $request->get('perPage', null);
-        $params['sort'] = $request->get('sort', 'asc');
         $filter = $request->get('filter', []);
 
         if ($params['page'] > 0 && $params['perPage'] > 0) {
@@ -269,16 +268,28 @@ class DiscountController extends Controller
                 case 'user_id':
                 case 'promo_code_only':
                     if (is_array($value)) {
-                        $query->whereIn($key, $value);
+                        $values = collect($value);
+                        $includeNull = $values->filter(function ($v) { return $v <= 0; })->isNotEmpty();
+                        $ids = $values->filter(function ($v) { return $v > 0; });
+                        if ($ids->isNotEmpty()) {
+                            $query->whereIn($key, $ids);
+                        }
+
+                        if ($includeNull) {
+                            $query->orWhereNull($key);
+                        }
                     } else {
                         $query->where($key, (int)$value);
                     }
                     break;
                 case 'type':
                 case 'status':
-                    if (is_array($value)) {
-                        $query->whereIn($key, $value);
-                    }
+                    $value = is_array($value) ? $value : [$value];
+                    $query->whereIn($key, $value);
+                    break;
+                case '!type':
+                    $value = is_array($value) ? $value : [$value];
+                    $query->whereNotIn('type', $value);
                     break;
                 case '!status':
                     if (is_array($value)) {
@@ -295,9 +306,12 @@ class DiscountController extends Controller
                     $query->where($key, 'like', "%{$value}%");
                     break;
                 case 'created_at':
-                    $start = Carbon::createFromDate($value);
-                    $finish = Carbon::createFromDate($value)->endOfDay();
-                    $query->whereBetween($key, [$start, $finish]);
+                    if (isset($value['from'])) {
+                        $query->where($key, '>=', Carbon::createFromDate($value['from']));
+                    }
+                    if (isset($value['to'])) {
+                        $query->where($key, '<=', Carbon::createFromDate($value['to'])->endOfDay());
+                    }
                     break;
                 case 'start_date':
                 case 'end_date':
