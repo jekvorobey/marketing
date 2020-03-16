@@ -99,6 +99,7 @@ class PriceController extends Controller
 
         return response()->json([
             'item' => [
+                'offer_id' => $offerId,
                 'cost' => $items[0]['cost'],
                 'price' => $items[0]['price'],
                 'discount' => $items[0]['discounts'] ?? null,
