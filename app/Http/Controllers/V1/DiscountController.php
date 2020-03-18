@@ -254,6 +254,30 @@ class DiscountController extends Controller
     {
         $params['page'] = $request->get('page', null);
         $params['perPage'] = $request->get('perPage', null);
+        $relations = $request->get('relations', []);
+        foreach ($relations as $relation) {
+            switch ($relation) {
+                case Discount::DISCOUNT_OFFER_RELATION:
+                    $query->with('offers');
+                    break;
+                case Discount::DISCOUNT_BRAND_RELATION:
+                    $query->with('brands');
+                    break;
+                case Discount::DISCOUNT_CATEGORY_RELATION:
+                    $query->with('categories');
+                    break;
+                case Discount::DISCOUNT_SEGMENT_RELATION:
+                    $query->with('segments');
+                    break;
+                case Discount::DISCOUNT_USER_ROLE_RELATION:
+                    $query->with('roles');
+                    break;
+                case Discount::DISCOUNT_CONDITION_RELATION:
+                    $query->with('conditions');
+                    break;
+            }
+        }
+
         $filter = $request->get('filter', []);
 
         if ($params['page'] > 0 && $params['perPage'] > 0) {
