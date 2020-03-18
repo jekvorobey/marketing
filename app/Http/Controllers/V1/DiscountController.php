@@ -24,7 +24,6 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 class DiscountController extends Controller
 {
     use DeleteAction;
-    use UpdateAction;
 
     /**
      * Задать права для выполнения стандартных rest действий.
@@ -81,6 +80,18 @@ class DiscountController extends Controller
                 ->orderBy('id', $request->get('sortDirection') === 'asc' ? 'asc' : 'desc')
                 ->get()
         ]);
+    }
+
+    /**
+     * @param int $id
+     * @param Request $request
+     * @param RequestInitiator $client
+     * @return \Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\Response
+     */
+    public function update(int $id, Request $request, RequestInitiator $client)
+    {
+        // todo
+        return response('', 204);
     }
 
     /**
