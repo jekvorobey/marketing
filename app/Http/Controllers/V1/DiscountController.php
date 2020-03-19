@@ -12,6 +12,7 @@ use Greensight\CommonMsa\Rest\Controller\UpdateAction;
 use Greensight\CommonMsa\Services\RequestInitiator\RequestInitiator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -85,12 +86,53 @@ class DiscountController extends Controller
     /**
      * @param int $id
      * @param Request $request
-     * @param RequestInitiator $client
-     * @return \Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\Response
+     * @return Response
      */
-    public function update(int $id, Request $request, RequestInitiator $client)
+    public function update(int $id, Request $request)
     {
-        // todo
+        /** @var Discount $discount */
+        $discount = Discount::find($id);
+        if (!$discount) {
+            throw new NotFoundHttpException();
+        }
+
+        $data = $request->validate([
+            'name' => 'string',
+            'type' => 'numeric',
+            'value' => 'numeric',
+            'value_type' => 'numeric',
+            'start_date' => 'date|nullable',
+            'end_date' => 'date|nullable',
+            'promo_code_only' => 'boolean',
+            'status' => 'numeric',
+            'merchant_id' => 'numeric|nullable',
+            'relations' => 'array',
+        ]);
+
+        foreach ($data as $field => $value) {
+            if ($field != 'relations') {
+                $discount[$field] = $value;
+            }
+        }
+
+        try {
+            DiscountHelper::validate($discount->toArray());
+        } catch (HttpException $ex) {
+            return response($ex->getMessage(), $ex->getStatusCode());
+        } catch (\Exception $ex) {
+            return response($ex->getMessage(), 500);
+        }
+
+        try {
+            DB::beginTransaction();
+            $discount->save();
+            DiscountHelper::updateRelations($discount, $data['relations'] ?? []);
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new HttpException(400, $e->getMessage());
+        }
+
         return response('', 204);
     }
 

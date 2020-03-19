@@ -31,6 +31,7 @@ use DB;
  * @property-read Collection|DiscountCategory[] $categories
  * @property-read Collection|DiscountUserRole[] $roles
  * @property-read Collection|DiscountUserRole[] $segments
+ * @property-read Collection|DiscountCondition[] $conditions
  *
  */
 class Discount extends AbstractModel
@@ -352,5 +353,39 @@ class Discount extends AbstractModel
             DB::rollBack();
             return false;
         }
+    }
+
+    /**
+     * Проверяет корректные ли данные хранятся в сущнсоти Discount
+     * (не проверяет корректность связанных сущностей)
+     * @return bool
+     */
+    public function validate(): bool
+    {
+        return $this->value >= 1 &&
+            in_array($this->type, [
+                self::DISCOUNT_TYPE_OFFER,
+                self::DISCOUNT_TYPE_BUNDLE,
+                self::DISCOUNT_TYPE_BRAND,
+                self::DISCOUNT_TYPE_CATEGORY,
+                self::DISCOUNT_TYPE_DELIVERY,
+                self::DISCOUNT_TYPE_CART_TOTAL,
+            ]) && in_array($this->value_type, [
+                self::DISCOUNT_VALUE_TYPE_PERCENT,
+                self::DISCOUNT_VALUE_TYPE_RUB
+            ]) && (
+                $this->value_type == self::DISCOUNT_VALUE_TYPE_RUB || $this->value <= 100
+            ) && in_array($this->status, [
+                self::STATUS_CREATED,
+                self::STATUS_SENT,
+                self::STATUS_ON_CHECKING,
+                self::STATUS_REJECTED,
+                self::STATUS_PAUSED,
+                self::STATUS_EXPIRED
+            ]) && (
+                !isset($this->start_date)
+                || !isset($this->end_date)
+                || Carbon::parse($this->start_date)->lte(Carbon::parse($this->end_date))
+            );
     }
 }

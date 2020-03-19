@@ -10,7 +10,6 @@ use Greensight\CommonMsa\Models\AbstractModel;
  *
  * @property int $discount_id
  * @property int $category_id
- * @property boolean $except
  * @mixin \Eloquent
  *
  */
