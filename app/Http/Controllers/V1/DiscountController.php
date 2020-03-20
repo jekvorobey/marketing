@@ -120,15 +120,17 @@ class DiscountController extends Controller
         ]);
 
 
-        $r = true;
-        $discounts = Discount::query()->whereIn('id', $data['ids'])->get();
-        foreach ($discounts as $discount) {
-            $r &= $discount->delete();
-        }
+        DB::transaction(function () use ($data) {
+            $r = true;
+            $discounts = Discount::query()->whereIn('id', $data['ids'])->get();
+            foreach ($discounts as $discount) {
+                $r &= $discount->delete();
+            }
 
-        if (!$r) {
-            throw new HttpException(500, 'Status update error');
-        }
+            if (!$r) {
+                throw new HttpException(500, 'Status update error');
+            }
+        });
 
         return response('', 204);
     }
