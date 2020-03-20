@@ -8,7 +8,6 @@ use App\Services\Discount\DiscountCalculatorBuilder;
 use App\Services\Discount\DiscountHelper;
 use Carbon\Carbon;
 use Greensight\CommonMsa\Rest\Controller\DeleteAction;
-use Greensight\CommonMsa\Rest\Controller\UpdateAction;
 use Greensight\CommonMsa\Services\RequestInitiator\RequestInitiator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -126,7 +125,11 @@ class DiscountController extends Controller
         try {
             DB::beginTransaction();
             $discount->save();
-            DiscountHelper::updateRelations($discount, $data['relations'] ?? []);
+            if (array_key_exists('relations', $data)) {
+                DiscountHelper::updateRelations($discount, $data['relations'] ?? []);
+            } else {
+                DiscountHelper::validateRelations($discount, []);
+            }
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();

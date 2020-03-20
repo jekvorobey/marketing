@@ -15,6 +15,8 @@ use Greensight\CommonMsa\Models\AbstractModel;
  */
 class DiscountCategory extends AbstractModel
 {
+    use DiscountHash;
+
     /**
      * Заполняемые поля модели
      */

@@ -16,10 +16,12 @@ use Greensight\CommonMsa\Models\AbstractModel;
  */
 class DiscountSegment extends AbstractModel
 {
+    use DiscountHash;
+
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = ['discount_id', 'segment_id', 'except'];
+    const FILLABLE = ['discount_id', 'segment_id'];
 
     /**
      * @var array

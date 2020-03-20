@@ -16,6 +16,8 @@ use Greensight\CommonMsa\Models\AbstractModel;
  */
 class DiscountBrand extends AbstractModel
 {
+    use DiscountHash;
+
     /**
      * Заполняемые поля модели
      */

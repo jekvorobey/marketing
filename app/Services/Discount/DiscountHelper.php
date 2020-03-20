@@ -10,6 +10,7 @@ use App\Models\Discount\DiscountOffer;
 use App\Models\Discount\DiscountSegment;
 use App\Models\Discount\DiscountUserRole;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -57,14 +58,14 @@ class DiscountHelper
      * @param Discount $discount
      * @return bool
      */
-    public static function validateRelations(Discount $discount)
+    public static function validateRelations(Discount $discount, array $relations)
     {
         /** @var Collection $offers */
-        $offers = $discount->offers;
+        $offers = $relations[Discount::DISCOUNT_OFFER_RELATION] ?? $discount->offers;
         /** @var Collection $brands */
-        $brands = $discount->brands;
+        $brands = $relations[Discount::DISCOUNT_BRAND_RELATION] ?? $discount->brands;
         /** @var Collection $categories */
-        $categories = $discount->categories;
+        $categories = $relations[Discount::DISCOUNT_CATEGORY_RELATION] ?? $discount->categories;
 
         switch ($discount->type) {
             case Discount::DISCOUNT_TYPE_OFFER:
@@ -115,43 +116,17 @@ class DiscountHelper
             throw new HttpException(500);
         }
 
-        self::createRelations($data['relations'] ?? [], $discount);
-        return $discount->id;
-    }
-
-    /**
-     * @param Discount $discount
-     * @param array $relationTypes
-     * @return bool
-     */
-    public static function removeRelations(Discount $discount, array $relationTypes)
-    {
-        foreach ($relationTypes as $relationType) {
-            switch ($relationType) {
-                case Discount::DISCOUNT_OFFER_RELATION:
-                    $discount->offers()->forceDelete();
-                    break;
-                case Discount::DISCOUNT_BRAND_RELATION:
-                    $discount->brands()->forceDelete();
-                    break;
-                case Discount::DISCOUNT_CATEGORY_RELATION:
-                    $discount->categories()->forceDelete();
-                    break;
-                case Discount::DISCOUNT_USER_ROLE_RELATION:
-                    $discount->roles()->forceDelete();
-                    break;
-                case Discount::DISCOUNT_SEGMENT_RELATION:
-                    $discount->segments()->forceDelete();
-                    break;
-                case Discount::DISCOUNT_CONDITION_RELATION:
-                    $discount->conditions()->forceDelete();
-                    break;
-                default:
-                    return false;
-            }
+        $relations = $data['relations'] ?? [];
+        foreach ($discount->getMappingRelations() as $relation => $value) {
+            collect($relations[$relation] ?? [])->each(function (array $item) use ($discount, $value) {
+                $item['discount_id'] = $discount->id;
+                /** @var Model $model */
+                $model = new $value['class']($item);
+                $model->save();
+            });
         }
 
-        return true;
+        return $discount->id;
     }
 
     /**
@@ -161,101 +136,33 @@ class DiscountHelper
      */
     public static function updateRelations(Discount $discount, array $relations)
     {
-        DiscountHelper::removeRelations($discount, [
-            Discount::DISCOUNT_OFFER_RELATION,
-            Discount::DISCOUNT_BRAND_RELATION,
-            Discount::DISCOUNT_CATEGORY_RELATION,
-            Discount::DISCOUNT_CONDITION_RELATION,
-            Discount::DISCOUNT_USER_ROLE_RELATION,
-            Discount::DISCOUNT_SEGMENT_RELATION,
-        ]);
-
-        if (!empty($relations)) {
-            DiscountHelper::createRelations($relations, $discount);
+        $diffs = collect();
+        foreach (Discount::availableRelations() as $relation) {
+            $relations[$relation] = collect($relations[$relation] ?? []);
         }
 
-        if (!DiscountHelper::validateRelations($discount)) {
+        foreach ($discount->getMappingRelations() as $relation => $value) {
+            $diffs->put($relation, $value['class']::hashDiffItems(
+                $value['items'],
+                $relations[$relation]->transform(function (array $item) use ($discount, $value) {
+                    $item['discount_id'] = $discount->id;
+                    return new $value['class']($item);
+                })
+            ));
+        }
+
+        $diffs->map(function ($item) { return $item['removed']; })
+              ->map(function (Collection $items) {
+                  $items->each(function (Model $model) { $model->delete(); });
+               });
+
+        $diffs->map(function ($item) { return $item['added']; })
+            ->map(function (Collection $items) {
+                $items->each(function (Model $model) { $model->save(); });
+            });
+
+        if (!self::validateRelations($discount, $relations)) {
             throw new HttpException(400, 'The discount relations are corrupted');
-        }
-
-        return true;
-    }
-
-    /**
-     * @param array $relations
-     * @param Discount $discount
-     * @return bool
-     */
-    public static function createRelations(array $relations, Discount $discount)
-    {
-        $discountId = $discount->id;
-        foreach ($relations as $type => $items) {
-            if (empty($items)) {
-                continue;
-            }
-
-            foreach ($items as $item) {
-                switch ($type) {
-                    case Discount::DISCOUNT_OFFER_RELATION:
-                        $r = new DiscountOffer();
-                        $r->discount_id = $discountId;
-                        $r->offer_id = $item['offer_id'];
-                        $r->except = $item['except'];
-                        $r->save();
-
-                        break;
-                    case Discount::DISCOUNT_BRAND_RELATION:
-                        $r = new DiscountBrand();
-                        $r->discount_id = $discountId;
-                        $r->brand_id = $item['brand_id'];
-                        $r->except = $item['except'];
-                        if (!$r->save()) {
-                            throw new HttpException(500);
-                        }
-                        break;
-                    case Discount::DISCOUNT_CATEGORY_RELATION:
-                        $r = new DiscountCategory();
-                        $r->discount_id = $discountId;
-                        $r->category_id = $item['category_id'];
-                        if (!$r->save()) {
-                            throw new HttpException(500);
-                        }
-                        break;
-                    case Discount::DISCOUNT_SEGMENT_RELATION:
-                        $r = new DiscountSegment();
-                        $r->discount_id = $discountId;
-                        $r->segment_id = $item['segment_id'];
-                        if (!$r->save()) {
-                            throw new HttpException(500);
-                        }
-                        break;
-                    case Discount::DISCOUNT_USER_ROLE_RELATION:
-                        $r = new DiscountUserRole();
-                        $r->discount_id = $discountId;
-                        $r->role_id = $item['role_id'];
-                        if (!$r->save()) {
-                            throw new HttpException(500);
-                        }
-                        break;
-                    case Discount::DISCOUNT_CONDITION_RELATION:
-                        if (isset($item['condition'][DiscountCondition::FIELD_SYNERGY])) {
-                            foreach ($item['condition'][DiscountCondition::FIELD_SYNERGY] as $other) {
-                                if (!$discount->makeCompatible((int) $other)) {
-                                    throw new HttpException(500);
-                                }
-                            }
-                        } else {
-                            $r = new DiscountCondition();
-                            $r->discount_id = $discountId;
-                            $r->type = $item['type'];
-                            $r->condition = $item['condition'];
-                            if (!$r->save()) {
-                                throw new HttpException(500);
-                            }
-                        }
-                        break;
-                }
-            }
         }
 
         return true;

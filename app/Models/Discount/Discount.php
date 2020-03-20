@@ -155,6 +155,21 @@ class Discount extends AbstractModel
     }
 
     /**
+     * @return array
+     */
+    public static function availableRelations()
+    {
+        return [
+            Discount::DISCOUNT_OFFER_RELATION,
+            Discount::DISCOUNT_BRAND_RELATION,
+            Discount::DISCOUNT_CATEGORY_RELATION,
+            Discount::DISCOUNT_SEGMENT_RELATION,
+            Discount::DISCOUNT_USER_ROLE_RELATION,
+            Discount::DISCOUNT_CONDITION_RELATION,
+        ];
+    }
+
+    /**
      * @param int $discountType
      * @param array $discountConditions
      * @param bool $isPromo
@@ -195,6 +210,21 @@ class Discount extends AbstractModel
         }
 
         return null;
+    }
+
+    /**
+     * @return array
+     */
+    public function getMappingRelations()
+    {
+        return [
+            Discount::DISCOUNT_OFFER_RELATION => ['class' => DiscountOffer::class, 'items' => $this->offers],
+            Discount::DISCOUNT_BRAND_RELATION => ['class' => DiscountBrand::class, 'items' => $this->brands],
+            Discount::DISCOUNT_CATEGORY_RELATION => ['class' => DiscountCategory::class, 'items' => $this->categories],
+            Discount::DISCOUNT_SEGMENT_RELATION => ['class' => DiscountSegment::class, 'items' => $this->segments],
+            Discount::DISCOUNT_USER_ROLE_RELATION => ['class' => DiscountUserRole::class, 'items' => $this->roles],
+            Discount::DISCOUNT_CONDITION_RELATION => ['class' => DiscountCondition::class, 'items' => $this->conditions],
+        ];
     }
 
     /**
@@ -317,28 +347,28 @@ class Discount extends AbstractModel
 
             $thisSynergy = collect($conditions[$this->id]['condition'][DiscountCondition::FIELD_SYNERGY] ?? [])
                 ->push($otherId)
+                ->values()
                 ->unique()
                 ->toArray();
 
             $otherSynergy = collect($conditions[$otherId]['condition'][DiscountCondition::FIELD_SYNERGY] ?? [])
                 ->push($this->id)
+                ->values()
                 ->unique()
                 ->toArray();
 
-            if ($conditions->has($this->id)) {
+            if ($conditions->has($this->id) && $conditions->has($otherId)) {
                 $conditions[$this->id]->condition = [DiscountCondition::FIELD_SYNERGY => $thisSynergy];
                 $conditions[$this->id]->update();
-            } else {
+
+                $conditions[$otherId]->condition = [DiscountCondition::FIELD_SYNERGY => $otherSynergy];
+                $conditions[$otherId]->update();
+            } elseif (!$conditions->has($this->id)) {
                 DiscountCondition::create([
                     'discount_id' => $this->id,
                     'type' => DiscountCondition::DISCOUNT_SYNERGY,
                     'condition' => [DiscountCondition::FIELD_SYNERGY => $thisSynergy]
                 ]);
-            }
-
-            if ($conditions->has($otherId)) {
-                $conditions[$otherId]->condition = [DiscountCondition::FIELD_SYNERGY => $otherSynergy];
-                $conditions[$otherId]->update();
             } else {
                 DiscountCondition::create([
                     'discount_id' => $otherId,

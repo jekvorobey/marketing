@@ -16,6 +16,8 @@ use Greensight\CommonMsa\Models\AbstractModel;
  */
 class DiscountCondition extends AbstractModel
 {
+    use DiscountHash;
+
     /**
      * Тип условия возникновения права на скидку
      */
@@ -172,5 +174,73 @@ class DiscountCondition extends AbstractModel
     public function getSynergy()
     {
         return $this->condition[self::FIELD_SYNERGY] ?? [];
+    }
+
+    public static function boot()
+    {
+        parent::boot();
+
+        self::created(function (DiscountCondition $item) {
+            if ($item->type !== self::DISCOUNT_SYNERGY || empty($item->condition[self::FIELD_SYNERGY] ?? [])) {
+                return;
+            }
+
+            $discountIds = $item->condition[self::FIELD_SYNERGY];
+            $conditions = DiscountCondition::query()
+                ->where('type', self::DISCOUNT_SYNERGY)
+                ->whereIn('discount_id', $discountIds)
+                ->get()
+                ->keyBy('discount_id');
+
+            /** @var DiscountCondition $condition */
+            foreach ($conditions as $condition) {
+                $synergy = collect($condition->condition[DiscountCondition::FIELD_SYNERGY])
+                    ->push($item->discount_id)
+                    ->values()
+                    ->unique()
+                    ->toArray();
+
+                $condition->condition = [DiscountCondition::FIELD_SYNERGY => $synergy];
+                $condition->save();
+            }
+
+            foreach ($discountIds as $discountId) {
+                if ($conditions->has($discountId)) {
+                    continue;
+                }
+
+                $condition = new DiscountCondition();
+                $condition->type = self::DISCOUNT_SYNERGY;
+                $condition->condition = [DiscountCondition::FIELD_SYNERGY => [$item->discount_id]];
+                $condition->discount_id = $discountId;
+                $condition->save();
+            }
+        });
+
+        self::deleted(function (DiscountCondition $item) {
+            if ($item->type !== self::DISCOUNT_SYNERGY) {
+                return;
+            }
+
+            $conditions = DiscountCondition::query()
+                ->where('type', self::DISCOUNT_SYNERGY)
+                ->whereJsonContains('condition->synergy', $item->discount_id)
+                ->get();
+
+            /** @var DiscountCondition $condition */
+            foreach ($conditions as $condition) {
+                $synergy = $condition->condition[DiscountCondition::FIELD_SYNERGY];
+                if (($key = array_search($item->discount_id, $synergy)) !== false) {
+                    unset($synergy[$key]);
+                    $synergy = array_values($synergy);
+                    if (empty($synergy)) {
+                        $condition->delete();
+                    } else {
+                        $condition->condition = [DiscountCondition::FIELD_SYNERGY => $synergy];
+                        $condition->save();
+                    }
+                }
+            }
+        });
     }
 }
