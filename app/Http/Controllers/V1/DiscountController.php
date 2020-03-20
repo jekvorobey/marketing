@@ -7,7 +7,6 @@ use App\Models\Discount\Discount;
 use App\Services\Discount\DiscountCalculatorBuilder;
 use App\Services\Discount\DiscountHelper;
 use Carbon\Carbon;
-use Greensight\CommonMsa\Rest\Controller\DeleteAction;
 use Greensight\CommonMsa\Services\RequestInitiator\RequestInitiator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -23,8 +22,6 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class DiscountController extends Controller
 {
-    use DeleteAction;
-
     /**
      * Задать права для выполнения стандартных rest действий.
      * Пример: return [ RestAction::$DELETE => 'permission' ];
@@ -80,6 +77,60 @@ class DiscountController extends Controller
                 ->orderBy('id', $request->get('sortDirection') === 'asc' ? 'asc' : 'desc')
                 ->get()
         ]);
+    }
+
+    /**
+     * @param Request $request
+     *
+     * @return Response
+     */
+    public function updateStatus(Request $request)
+    {
+        $data = $request->validate([
+            'ids' => 'array|required',
+            'ids.*' => 'integer|required',
+            'status' => 'integer|required',
+        ]);
+
+        if (!in_array($data['status'], Discount::availableStatuses())) {
+            throw new HttpException(400, 'Status not found');
+        }
+
+        $r = Discount::query()
+            ->whereIn('id', $data['ids'])
+            ->update(['status' => $data['status']]);
+
+        if (!$r) {
+            throw new HttpException(500, 'Status update error');
+        }
+
+        return response('', 204);
+    }
+
+    /**
+     * @param Request $request
+     *
+     * @return Response
+     */
+    public function delete(Request $request)
+    {
+        $data = $request->validate([
+            'ids' => 'array|required',
+            'ids.*' => 'integer|required',
+        ]);
+
+
+        $r = true;
+        $discounts = Discount::query()->whereIn('id', $data['ids'])->get();
+        foreach ($discounts as $discount) {
+            $r &= $discount->delete();
+        }
+
+        if (!$r) {
+            throw new HttpException(500, 'Status update error');
+        }
+
+        return response('', 204);
     }
 
     /**

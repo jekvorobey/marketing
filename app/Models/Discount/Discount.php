@@ -418,4 +418,20 @@ class Discount extends AbstractModel
                 || Carbon::parse($this->start_date)->lte(Carbon::parse($this->end_date))
             );
     }
+
+    public static function boot()
+    {
+        parent::boot();
+
+        self::deleting(function (Discount $item) {
+            $synergy = DiscountCondition::query()
+                ->where('discount_id', $item->id)
+                ->where('type', DiscountCondition::DISCOUNT_SYNERGY)
+                ->first();
+
+            if ($synergy) {
+                $synergy->delete();
+            }
+        });
+    }
 }

@@ -17,17 +17,17 @@ Route::namespace('V1')->prefix('v1')->group(function () {
     Route::prefix('discounts')->group(function () {
         Route::get('count', 'DiscountController@count');
         Route::get('', 'DiscountController@read');
+        Route::post('', 'DiscountController@create');
+        Route::delete('', 'DiscountController@delete');
         Route::get('authors', 'DiscountController@getAuthors');
         Route::get('initiators', 'DiscountController@getInitiators');
         Route::get('users', 'DiscountController@getUsers');
-        Route::post('', 'DiscountController@create');
-
         Route::post('calculate', 'DiscountController@calculate');
+        Route::put('status', 'DiscountController@updateStatus');
 
         Route::prefix('{id}')->group(function () {
             Route::get('', 'DiscountController@read');
             Route::put('', 'DiscountController@update');
-            Route::delete('', 'DiscountController@delete');
         });
 
     });
