@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Discount\DiscountSegment;
+use App\Models\Discount\DiscountUserRole;
 use App\Models\Price\Price;
 use App\Services\Discount\DiscountCatalogPrice;
 use Greensight\CommonMsa\Rest\Controller\ReadAction;
@@ -70,10 +72,11 @@ class PriceController extends Controller
             // todo добавить необходимые права
         ];
     }
-
+    
     /**
      * Получить цену на предложение мерчанта
-     * @param  int  $offerId - id предложения
+     * @param int $offerId - id предложения
+     * @param Request $request
      * @return JsonResponse
      */
     public function price(int $offerId, Request $request): JsonResponse
@@ -106,6 +109,48 @@ class PriceController extends Controller
             ]
         ]);
     }
+    
+    public function catalogCombinations(int $offerId)
+    {
+        $segments = DiscountSegment::query()->select(['id', 'segment_id'])->get()->pluck('segment_id')->unique()->all();
+        $segments[] = null;
+        $roles = DiscountUserRole::query()->select(['id', 'role_id'])->get()->pluck('role_id')->unique()->all();
+        $roles[] = null;
+        
+        $prices = [];
+        foreach ($segments as $segment) {
+            foreach ($roles as $role) {
+                $items = (new DiscountCatalogPrice([
+                    'offer_ids' => [$offerId],
+                    'role_ids' => $role,
+                    'segment_id' => $segment,
+                ]))->calculate();
+                if (!$items) {
+                    continue;
+                }
+                
+                $discounts = $items[0]['discounts'] ?? null;
+                if (!$discounts && ($segment || $role)) {
+                    continue;
+                }
+                
+                $segmentKey = $segment ?? "0";
+                $roleKey = $role ?? "0";
+                
+                if (!isset($prices[$segmentKey])) {
+                    $prices[$segmentKey] = [];
+                }
+                
+                $prices[$segmentKey][$roleKey] = [
+                    'cost' => $items[0]['cost'],
+                    'price' => $items[0]['price'],
+                    'discounts' => $items[0]['discounts'] ?? null,
+                ];
+            }
+        }
+        
+        return response()->json($prices);
+    }
 
     /**
      * Установить цену для предложения мерчанта
@@ -115,7 +160,6 @@ class PriceController extends Controller
      */
     public function setPrice(int $offerId, Request $request): Response
     {
-        // todo Добавить проверку прав
         $price = (float) $request->input('price');
 
         $ok = true;

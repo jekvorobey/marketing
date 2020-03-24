@@ -43,6 +43,7 @@ Route::namespace('V1')->prefix('v1')->group(function () {
                 Route::get('', 'PriceController@price');
                 Route::put('', 'PriceController@setPrice');
             });
+            Route::get('catalogCombinations', 'PriceController@catalogCombinations');
         });
     });
 

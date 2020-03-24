@@ -2,8 +2,6 @@
 
 namespace App\Models\Price;
 
-use App\Core\Elastic\IndexFactory;
-use App\Core\Elastic\ScheduleRunner;
 use Greensight\CommonMsa\Models\AbstractModel;
 use Pim\Services\SearchService\SearchService;
 
