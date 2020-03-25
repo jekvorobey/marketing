@@ -152,9 +152,27 @@ class DiscountCalculator
 
         return [
             'discounts' => $this->getExternalDiscountFormat($this->appliedDiscounts),
-            'offers' => $this->filter['offers'],
+            'offers' => $this->getFormatOffers(),
             'deliveries' => $this->filter['deliveries']->values(),
         ];
+    }
+
+    /**
+     * @return array
+     */
+    public function getFormatOffers()
+    {
+        return $this->filter['offers']->map(function ($offer, $offerId) {
+            return [
+                'offer_id' => $offerId,
+                'price' => $offer['price'],
+                'qty' => floatval($offer['qty']),
+                'cost' => $offer['cost'] ?? $offer['price'],
+                'discount' => $this->offersByDiscounts->has($offerId)
+                    ? $this->offersByDiscounts[$offerId]->values()->sum('change')
+                    : null
+            ];
+        })->values()->toArray();
     }
 
     /**
@@ -321,7 +339,7 @@ class DiscountCalculator
     protected function hydrateProductInfo()
     {
         $offerIds = $this->filter['offers']->pluck('id')->toArray();
-        /** @var ProductService $offerService */
+        /** @var ProductService $productService */
         $productService = resolve(ProductService::class);
         $productQuery = $productService
             ->newQuery()
@@ -762,12 +780,25 @@ class DiscountCalculator
     }
 
     /**
+     * Совместимы ли скидки (даже если они не пересекаются)
+     * P.S. По умолчанию всегда совместимы
      * @param Discount $discount
      * @return bool
      */
     protected function isCompatible(Discount $discount)
     {
-        if ($this->appliedDiscounts->isEmpty()) {
+        return true;
+    }
+
+    /**
+     * Можно ли применить скидку к офферу
+     * @param $discount
+     * @param $offerId
+     * @return bool
+     */
+    protected function applicableToOffer($discount, $offerId)
+    {
+        if ($this->appliedDiscounts->isEmpty() || !$this->offersByDiscounts->has($offerId)) {
             return true;
         }
 
@@ -775,29 +806,17 @@ class DiscountCalculator
             return false;
         }
 
-        $discountIds = $this->appliedDiscounts->pluck('id');
-
+        /** @var Collection $discountIdsForOffer */
+        $discountIdsForOffer = $this->offersByDiscounts[$offerId]->pluck('id');
         /** @var DiscountCondition $condition */
         foreach ($this->relations['conditions'][$discount->id] as $condition) {
             if ($condition->type === DiscountCondition::DISCOUNT_SYNERGY) {
                 $synergyDiscountIds = $condition->getSynergy();
-                return $discountIds->intersect($synergyDiscountIds)->count() === $discountIds->count();
+                return $discountIdsForOffer->intersect($synergyDiscountIds)->count() === $discountIdsForOffer->count();
             }
         }
 
         return false;
-    }
-
-    /**
-     * Можно ли применить скидку к офферу.
-     * В корзине или чекауте всегда true
-     * @param $discount
-     * @param $offerId
-     * @return bool
-     */
-    protected function applicableToOffer($discount, $offerId)
-    {
-        return true;
     }
 
     /**
