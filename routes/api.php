@@ -34,7 +34,7 @@ Route::namespace('V1')->prefix('v1')->group(function () {
 
     Route::prefix('offers')->group(function () {
         Route::prefix('prices')->group(function () {
-            Route::get('', 'PriceController@read');
+            Route::post('', 'PriceController@read');
             Route::put('', 'PriceController@setPrices');
         });
 
