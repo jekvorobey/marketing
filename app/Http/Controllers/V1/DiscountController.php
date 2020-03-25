@@ -268,7 +268,7 @@ class DiscountController extends Controller
      * Возвращаент IDs авторов и инициаторов скидок
      * @param Request $request
      *
-     * @return array
+     * @return JsonResponse
      */
     public function getUsers(Request $request)
     {
