@@ -43,8 +43,8 @@ Route::namespace('V1')->prefix('v1')->group(function () {
                 Route::get('', 'PriceController@price');
                 Route::put('', 'PriceController@setPrice');
             });
-            Route::get('catalogCombinations', 'PriceController@catalogCombinations');
         });
+        Route::post('catalogCombinations', 'PriceController@catalogCombinations');
     });
 
     Route::prefix('price-reactor')->group(function () {

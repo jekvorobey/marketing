@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
@@ -110,8 +111,13 @@ class PriceController extends Controller
         ]);
     }
     
-    public function catalogCombinations(int $offerId)
+    public function catalogCombinations(Request $request)
     {
+        $offerIds = $request->get('offer_ids');
+        if (!$offerIds) {
+            throw new BadRequestHttpException('offer_ids is required');
+        }
+        
         $segments = DiscountSegment::query()->select(['id', 'segment_id'])->get()->pluck('segment_id')->unique()->all();
         $segments[] = null;
         $roles = DiscountUserRole::query()->select(['id', 'role_id'])->get()->pluck('role_id')->unique()->all();
@@ -120,32 +126,35 @@ class PriceController extends Controller
         $prices = [];
         foreach ($segments as $segment) {
             foreach ($roles as $role) {
-                $items = (new DiscountCatalogPrice([
-                    'offer_ids' => [$offerId],
-                    'role_ids' => $role,
-                    'segment_id' => $segment,
-                ]))->calculate();
-                if (!$items) {
-                    continue;
-                }
-                
-                $discounts = $items[0]['discounts'] ?? null;
-                if (!$discounts && ($segment || $role)) {
-                    continue;
-                }
-                
                 $segmentKey = $segment ?? "0";
                 $roleKey = $role ?? "0";
                 
-                if (!isset($prices[$segmentKey])) {
-                    $prices[$segmentKey] = [];
-                }
+                $items = (new DiscountCatalogPrice([
+                    'offer_ids' => $offerIds,
+                    'role_ids' => $role,
+                    'segment_id' => $segment,
+                ]))->calculate();
                 
-                $prices[$segmentKey][$roleKey] = [
-                    'cost' => $items[0]['cost'],
-                    'price' => $items[0]['price'],
-                    'discounts' => $items[0]['discounts'] ?? null,
-                ];
+                foreach ($items as $item) {
+                    $discounts = $item['discounts'] ?? null;
+                    if (!$discounts && ($segment || $role)) {
+                        continue;
+                    }
+                    $offerId = $item['offer_id'];
+                    if (!isset($prices[$offerId])) {
+                        $prices[$offerId] = [];
+                    }
+                    
+                    if (!isset($prices[$offerId][$segmentKey])) {
+                        $prices[$offerId][$segmentKey] = [];
+                    }
+    
+                    $prices[$offerId][$segmentKey][$roleKey] = [
+                        'cost' => $item['cost'],
+                        'price' => $item['price'],
+                        'discounts' => $item['discounts'] ?? null,
+                    ];
+                }
             }
         }
         
