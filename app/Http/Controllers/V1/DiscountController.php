@@ -200,6 +200,7 @@ class DiscountController extends Controller
     public function create(Request $request, RequestInitiator $client)
     {
         try {
+
             $data = $request->validate([
                 'name' => 'string|required',
                 'type' => 'numeric|required',
@@ -210,10 +211,11 @@ class DiscountController extends Controller
                 'promo_code_only' => 'boolean|required',
                 'status' => 'numeric|required',
                 'merchant_id' => 'numeric|nullable',
-                'relations' => 'array|required',
+                'relations' => 'array',
             ]);
 
             $data['user_id'] = $client->userId();
+            $data['relations'] = $data['relations'] ?? [];
         } catch (\Exception $ex) {
             return response()->json(['error' => $ex->getMessage()], 400);
         }
