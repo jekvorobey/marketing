@@ -29,7 +29,7 @@ class PriceController extends Controller
                 'offer_ids' => 'array',
                 'offer_ids.*' => 'integer',
                 'role_ids' => 'array',
-                'segment_id' => 'integer',
+                'segment_id' => 'integer|nullable',
             ]);
 
             $discountPriceCalculator = new DiscountCatalogPrice($params);
@@ -72,7 +72,7 @@ class PriceController extends Controller
             // todo добавить необходимые права
         ];
     }
-    
+
     /**
      * Получить цену на предложение мерчанта
      * @param int $offerId - id предложения
@@ -109,14 +109,14 @@ class PriceController extends Controller
             ]
         ]);
     }
-    
+
     public function catalogCombinations(int $offerId)
     {
         $segments = DiscountSegment::query()->select(['id', 'segment_id'])->get()->pluck('segment_id')->unique()->all();
         $segments[] = null;
         $roles = DiscountUserRole::query()->select(['id', 'role_id'])->get()->pluck('role_id')->unique()->all();
         $roles[] = null;
-        
+
         $prices = [];
         foreach ($segments as $segment) {
             foreach ($roles as $role) {
@@ -128,19 +128,19 @@ class PriceController extends Controller
                 if (!$items) {
                     continue;
                 }
-                
+
                 $discounts = $items[0]['discounts'] ?? null;
                 if (!$discounts && ($segment || $role)) {
                     continue;
                 }
-                
+
                 $segmentKey = $segment ?? "0";
                 $roleKey = $role ?? "0";
-                
+
                 if (!isset($prices[$segmentKey])) {
                     $prices[$segmentKey] = [];
                 }
-                
+
                 $prices[$segmentKey][$roleKey] = [
                     'cost' => $items[0]['cost'],
                     'price' => $items[0]['price'],
@@ -148,7 +148,7 @@ class PriceController extends Controller
                 ];
             }
         }
-        
+
         return response()->json($prices);
     }
 
