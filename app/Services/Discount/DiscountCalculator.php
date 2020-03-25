@@ -172,7 +172,7 @@ class DiscountCalculator
                     ? $this->offersByDiscounts[$offerId]->values()->sum('change')
                     : null
             ];
-        })->values()->toArray();
+        });
     }
 
     /**
