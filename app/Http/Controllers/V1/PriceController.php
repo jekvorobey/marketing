@@ -30,7 +30,7 @@ class PriceController extends Controller
                 'offer_ids' => 'array',
                 'offer_ids.*' => 'integer',
                 'role_ids' => 'array',
-                'segment_id' => 'integer',
+                'segment_id' => 'integer|nullable',
             ]);
 
             $discountPriceCalculator = new DiscountCatalogPrice($params);
@@ -73,7 +73,7 @@ class PriceController extends Controller
             // todo добавить необходимые права
         ];
     }
-    
+
     /**
      * Получить цену на предложение мерчанта
      * @param int $offerId - id предложения
