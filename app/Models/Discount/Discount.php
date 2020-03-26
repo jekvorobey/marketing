@@ -122,6 +122,13 @@ class Discount extends AbstractModel
     protected $fillable = self::FILLABLE;
 
     /**
+     * @var array
+     */
+    protected $casts = [
+        'promo_code_only' => 'bool',
+    ];
+
+    /**
      * Доступные типы скидок
      * @return array
      */
@@ -175,7 +182,7 @@ class Discount extends AbstractModel
      * @param bool $isPromo
      * @return int|null
      */
-    public static function getExternalFormat(int $discountType, array $discountConditions, bool $isPromo)
+    public static function getExternalType(int $discountType, array $discountConditions, bool $isPromo)
     {
         if ($isPromo) {
             return self::EXT_TYPE_PROMO;

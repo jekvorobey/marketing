@@ -29,6 +29,12 @@ class BasketItem implements \JsonSerializable
     public $discount;
 
     /**
+     * Примененные скидки
+     * @var array
+     */
+    public $discounts;
+
+    /**
      * Количество единиц товара в элементе корзины.
      * @var int
      */
@@ -64,9 +70,11 @@ class BasketItem implements \JsonSerializable
     {
         return [
             'id' => $this->id,
+            'offerId' => $this->offerId,
             'qty' => $this->qty,
             'price' => $this->price,
             'discount' => $this->discount,
+            'discounts' => $this->discounts,
             'totalCost' => $this->totalCost,
             'cost' => $this->cost,
         ];

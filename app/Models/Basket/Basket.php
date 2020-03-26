@@ -57,7 +57,7 @@ class Basket implements \JsonSerializable
     private $discountByCertificates = 0;
 
     /** @var array */
-    private $appliedDiscount;
+    private $appliedDiscounts;
 
     /** @var BasketItem[] */
     public $items;
@@ -113,8 +113,8 @@ class Basket implements \JsonSerializable
             ->offers($offers)
             ->calculate();
 
-        $this->appliedDiscount = $calculation['discounts'];
-        $this->deliveries = $calculation['deliveries'];
+        $this->appliedDiscounts = $calculation['discounts'];
+        $this->deliveries       = $calculation['deliveries'];
 
         $totalCost = 0;
         $totalItemDiscount = 0;
@@ -130,6 +130,7 @@ class Basket implements \JsonSerializable
             $item->cost = $offer['cost'];
             $item->totalCost = $offer['cost'] * $offer['qty'];
             $item->discount = $offer['discount'] * $offer['qty'];
+            $item->discounts = $offer['discounts'] ?? [];
             $item->price = $offer['price'] * $offer['qty'];
             $totalCost += $item->totalCost;
             $totalItemDiscount += $item->discount;
@@ -193,7 +194,7 @@ class Basket implements \JsonSerializable
         return [
             'cost' => $this->cost,
             'price' => $this->price,
-            'discounts' => $this->appliedDiscount,
+            'discounts' => $this->appliedDiscounts,
             'items' => $this->items,
             'deliveries' => $this->deliveries,
         ];

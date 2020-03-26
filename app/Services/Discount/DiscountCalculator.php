@@ -151,7 +151,7 @@ class DiscountCalculator
         $calculator->filter()->sort()->apply();
 
         return [
-            'discounts' => $this->getExternalDiscountFormat($this->appliedDiscounts),
+            'discounts' => $this->getExternalDiscountFormat(),
             'offers' => $this->getFormatOffers(),
             'deliveries' => $this->filter['deliveries']->values(),
         ];
@@ -170,7 +170,10 @@ class DiscountCalculator
                 'cost' => $offer['cost'] ?? $offer['price'],
                 'discount' => $this->offersByDiscounts->has($offerId)
                     ? $this->offersByDiscounts[$offerId]->values()->sum('change')
-                    : null
+                    : null,
+                'discounts' => $this->offersByDiscounts->has($offerId)
+                    ? $this->offersByDiscounts[$offerId]->values()->toArray()
+                    : null,
             ];
         });
     }
@@ -179,29 +182,33 @@ class DiscountCalculator
      * @param $discounts
      * @return array
      */
-    public function getExternalDiscountFormat($discounts)
+    public function getExternalDiscountFormat()
     {
-        $discountsByType = [];
+        $discounts = $this->discounts->filter(function ($discount) {
+            return $this->appliedDiscounts->has($discount->id);
+        })->keyBy('id');
+
+        $items = [];
         foreach ($discounts as $discount) {
-            $conditions = $this->relations['conditions']->has($discount['id'])
-                ? $this->relations['conditions'][$discount['id']]->toArray()
+            $discountId = $discount->id;
+            $conditions = $this->relations['conditions']->has($discountId)
+                ? $this->relations['conditions'][$discountId]->toArray()
                 : [];
 
-            $extType = Discount::getExternalFormat($discount['type'], $conditions, false);
-            $discountsByType[$extType] = isset($discountsByType[$extType])
-                ? ($discountsByType[$extType] + $discount['value'])
-                : $discount['value'];
-        }
-
-        $result = [];
-        foreach ($discountsByType as $type => $value) {
-            $result[] = [
-                'type' => $type,
-                'value' => $value,
+            $extType = Discount::getExternalType($discount['type'], $conditions, $discount->promo_code_only);
+            $items[] = [
+                'id' => $discountId,
+                'name' => $discount->name,
+                'type' => $discount->type,
+                'external_type' => $extType,
+                'change' => $this->appliedDiscounts[$discountId]['change'],
+                'merchant_id' => $discount->merchant_id,
+                'visible_in_catalog' => $extType === Discount::EXT_TYPE_OFFER,
+                'promo_code_only' => $discount->promo_code_only,
             ];
         }
 
-        return $result;
+        return $items;
     }
 
     /**
@@ -379,7 +386,15 @@ class DiscountCalculator
      */
     protected function getActiveDiscounts()
     {
-        $this->discounts = Discount::select(['id', 'type', 'value', 'value_type', 'promo_code_only'])
+        $this->discounts = Discount::select([
+            'id',
+            'type',
+            'name',
+            'merchant_id',
+            'value',
+            'value_type',
+            'promo_code_only'
+        ])
             ->active()
             ->orderBy('promo_code_only')
             ->orderBy('type')
@@ -542,10 +557,9 @@ class DiscountCalculator
             }
 
             if ($changed > 0) {
-                $this->appliedDiscounts->push([
-                    'id' => $discount->id,
-                    'type' => $discount->type,
-                    'value' => $changed,
+                $this->appliedDiscounts->put($discount->id, [
+                    'discountId' => $discount->id,
+                    'change' => $changed,
                     'conditions' => $this->relations['conditions']->has($discount->id)
                         ? $this->relations['conditions'][$discount->id]->pluck('type')
                         : [],
@@ -1017,7 +1031,7 @@ class DiscountCalculator
      */
     protected function checkPromo(Discount $discount): bool
     {
-        return !$discount->promo_code_only || $this->appliedDiscounts->search($discount->id) !== false;
+        return !$discount->promo_code_only || $this->appliedDiscounts->has($discount->id);
     }
 
     /**
