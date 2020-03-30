@@ -627,9 +627,6 @@
                 }
             ],
             "description": "iBT Merchant Management service client",
-            "support": {
-                "issues": "https://gitlab.com/api/v4/projects/12949457/issues"
-            },
             "time": "2020-03-13T11:32:05+00:00"
         },
         {
@@ -689,12 +686,12 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.com:greensight/ibt-pim-lib.git",
-                "reference": "94b1d451660b6fec07f962c5535ac84691b4d287"
+                "reference": "344c36e80e63db1ffd3b8e9fd11ecd9199e2ee8f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://gitlab.com/api/v4/projects/greensight%2Fibt-pim-lib/repository/archive.zip?sha=94b1d451660b6fec07f962c5535ac84691b4d287",
-                "reference": "94b1d451660b6fec07f962c5535ac84691b4d287",
+                "url": "https://gitlab.com/api/v4/projects/greensight%2Fibt-pim-lib/repository/archive.zip?sha=344c36e80e63db1ffd3b8e9fd11ecd9199e2ee8f",
+                "reference": "344c36e80e63db1ffd3b8e9fd11ecd9199e2ee8f",
                 "shasum": ""
             },
             "require": {
@@ -721,7 +718,7 @@
             "support": {
                 "issues": "https://gitlab.com/api/v4/projects/12911877/issues"
             },
-            "time": "2020-03-26T13:23:15+00:00"
+            "time": "2020-03-30T11:31:07+00:00"
         },
         {
             "name": "guzzlehttp/guzzle",
@@ -1292,12 +1289,6 @@
                 "s3",
                 "sftp",
                 "storage"
-            ],
-            "funding": [
-                {
-                    "url": "https://offset.earth/frankdejonge",
-                    "type": "other"
-                }
             ],
             "time": "2020-03-17T18:58:12+00:00"
         },
@@ -3732,12 +3723,6 @@
                 "dotenv",
                 "env",
                 "environment"
-            ],
-            "funding": [
-                {
-                    "url": "https://tidelift.com/funding/github/packagist/vlucas/phpdotenv",
-                    "type": "tidelift"
-                }
             ],
             "time": "2020-03-12T13:44:00+00:00"
         }

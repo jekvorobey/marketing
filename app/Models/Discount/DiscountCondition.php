@@ -3,6 +3,7 @@
 namespace App\Models\Discount;
 
 use Greensight\CommonMsa\Models\AbstractModel;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Класс-модель для сущности "Условие возникновения скидки"
@@ -11,6 +12,7 @@ use Greensight\CommonMsa\Models\AbstractModel;
  * @property int $discount_id
  * @property int $type
  * @property array $condition
+ * @property-read Discount $discount
  * @mixin \Eloquent
  *
  */
@@ -176,6 +178,11 @@ class DiscountCondition extends AbstractModel
         return $this->condition[self::FIELD_SYNERGY] ?? [];
     }
 
+    public function discount(): BelongsTo
+    {
+        return $this->belongsTo(Discount::class);
+    }
+
     public static function boot()
     {
         parent::boot();
@@ -215,6 +222,8 @@ class DiscountCondition extends AbstractModel
                 $condition->discount_id = $discountId;
                 $condition->save();
             }
+
+            $item->discount->updateProducts();
         });
 
         self::deleted(function (DiscountCondition $item) {
@@ -241,6 +250,8 @@ class DiscountCondition extends AbstractModel
                     }
                 }
             }
+
+            $item->discount->updateProducts();
         });
     }
 }

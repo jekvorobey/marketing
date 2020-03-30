@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Eloquent;
 use DB;
+use Pim\Services\SearchService\SearchService;
 
 /**
  * Класс-модель для сущности "Скидка"
@@ -430,15 +431,32 @@ class Discount extends AbstractModel
     {
         parent::boot();
 
-        self::deleting(function (Discount $item) {
+        self::saved(function (self $discount) {
+            $discount->updateProducts();
+        });
+
+        self::deleting(function (self $discount) {
             $synergy = DiscountCondition::query()
-                ->where('discount_id', $item->id)
+                ->where('discount_id', $discount->id)
                 ->where('type', DiscountCondition::DISCOUNT_SYNERGY)
                 ->first();
 
             if ($synergy) {
                 $synergy->delete();
             }
+
+            $discount->updateProducts();
         });
+    }
+
+    public function updateProducts()
+    {
+        static $actionPerformed = false;
+        if (!$actionPerformed) {
+            /** @var SearchService $searchService */
+            $searchService = resolve(SearchService::class);
+            $searchService->markAllProductsForIndex();
+            $actionPerformed = true;
+        }
     }
 }
