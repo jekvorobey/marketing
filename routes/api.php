@@ -32,6 +32,16 @@ Route::namespace('V1')->prefix('v1')->group(function () {
 
     });
 
+    Route::prefix('promoCodes')->group(function () {
+        Route::get('', 'PromoCodeController@read');
+        Route::post('', 'PromoCodeController@create');
+        Route::get('generate', 'PromoCodeController@generate');
+
+        Route::prefix('{id}')->group(function () {
+            Route::get('', 'DiscountController@read');
+        });
+    });
+
     Route::prefix('offers')->group(function () {
         Route::prefix('prices')->group(function () {
             Route::post('', 'PriceController@read');
