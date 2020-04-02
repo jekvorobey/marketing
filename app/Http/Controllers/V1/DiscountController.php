@@ -459,6 +459,9 @@ class DiscountController extends Controller
                         });
                     }
                     break;
+                case 'indefinitely':
+                    $query->whereNull('start_date')->whereNull('end_date');
+                    break;
                 case 'role_id':
                     $query = $query->forRoleId((int) $value);
                     break;
