@@ -4,6 +4,7 @@ use Illuminate\Database\Seeder;
 use App\Models\PromoCode\PromoCode;
 use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\Customer\Services\CustomerService\CustomerService;
+use MerchantManagement\Services\MerchantService\MerchantService;
 use App\Models\Discount\Discount;
 use Greensight\CommonMsa\Dto\UserDto;
 
@@ -25,6 +26,9 @@ class PromoCodesTableSeeder extends Seeder
 
     /** @var array */
     protected $segmentIds;
+
+    /** @var array */
+    protected $merchantsIds;
 
     /** @var array */
     protected $userRoles;
@@ -50,6 +54,11 @@ class PromoCodesTableSeeder extends Seeder
         for ($i = 0; $i < 100; $i++) {
             $promo = new PromoCode();
             $promo->creator_id = $this->faker->randomElement($this->userIds);
+
+            $promo->merchant_id = $this->faker->boolean(10)
+                ? $this->faker->randomElement($this->merchantsIds)
+                : null;
+
             $promo->owner_id = ($this->faker->boolean() && !empty($this->ownerIds) )
                 ? $this->faker->randomElement($this->ownerIds)
                 : null;
@@ -66,7 +75,9 @@ class PromoCodesTableSeeder extends Seeder
                 : null;
 
             $promo->status = $this->faker->randomElement(PromoCode::availableStatuses());
-            $promo->type = $this->faker->randomElement(PromoCode::availableTypes());
+            $promo->type = $promo->merchant_id
+                ? $this->faker->randomElement(PromoCode::availableTypesForMerchant())
+                : $this->faker->randomElement(PromoCode::availableTypes());
 
             switch ($promo->type) {
                 case PromoCode::TYPE_DISCOUNT:
@@ -121,6 +132,10 @@ class PromoCodesTableSeeder extends Seeder
             })->pluck('id')
             ->values()
             ->toArray();
+
+        /** @var MerchantService $merchantService */
+        $merchantService = resolve(MerchantService::class);
+        $this->merchantsIds = $merchantService->merchants($merchantService->newQuery())->pluck('id')->toArray();
 
         $this->segmentIds = [1, 2, 3]; // todo: ID сегментов
 

@@ -67,8 +67,19 @@ class PromoCodeHelper
             throw new HttpException(400, 'PromoCode counter error');
         }
 
-        if (isset($data['discount_id']) && !Discount::find($data['discount_id'])) {
+        $discount = $data['discount_id'] ? Discount::find($data['discount_id']) : null;
+        if (isset($data['discount_id']) && !$discount) {
             throw new HttpException(400, 'PromoCode discount error');
+        }
+
+        if (isset($data['merchant_id'])) {
+            if (!in_array($data['type'], PromoCode::availableTypesForMerchant())) {
+                throw new HttpException(400, 'PromoCode merchant type error');
+            }
+
+            if ($data['discount_id'] && $discount->merchant_id != $data['merchant_id']) {
+                throw new HttpException(400, 'PromoCode discount type error');
+            }
         }
 
         return true;

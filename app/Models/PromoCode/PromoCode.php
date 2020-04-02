@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @package App\Models\PromoCode
  *
  * @property int $creator_id
+ * @property int|null $merchant_id
  * @property int|null $owner_id
  * @property string $name
  * @property string $code
@@ -79,6 +80,7 @@ class PromoCode extends AbstractModel
      */
     const FILLABLE = [
         'creator_id',
+        'merchant_id',
         'owner_id',
         'name',
         'code',
@@ -132,6 +134,18 @@ class PromoCode extends AbstractModel
         return [
             self::TYPE_DISCOUNT,
             self::TYPE_DELIVERY,
+            self::TYPE_GIFT,
+            self::TYPE_BONUS
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    public static function availableTypesForMerchant()
+    {
+        return [
+            self::TYPE_DISCOUNT,
             self::TYPE_GIFT,
             self::TYPE_BONUS
         ];

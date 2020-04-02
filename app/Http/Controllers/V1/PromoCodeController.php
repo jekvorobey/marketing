@@ -36,6 +36,7 @@ class PromoCodeController extends Controller
         try {
             $data = $request->validate([
                 'creator_id' => 'numeric|required',
+                'merchant_id' => 'numeric|nullable',
                 'owner_id' => 'numeric|nullable',
                 'name' => 'string|required',
                 'code' => 'string|required',
