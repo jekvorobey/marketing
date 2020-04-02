@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Discount\Discount;
 use App\Models\PromoCode\PromoCode;
 use App\Services\PromoCode\PromoCodeHelper;
 use Illuminate\Database\Eloquent\Builder;
@@ -102,7 +103,26 @@ class PromoCodeController extends Controller
         }
 
         foreach ($filter as $key => $value) {
-            // todo
+            switch ($key) {
+                // todo
+                case 'id':
+                case 'merchant_id':
+                    if (is_array($value)) {
+                        $values = collect($value);
+                        $includeNull = $values->filter(function ($v) { return $v <= 0; })->isNotEmpty();
+                        $ids = $values->filter(function ($v) { return $v > 0; });
+                        if ($ids->isNotEmpty()) {
+                            $query->whereIn($key, $ids);
+                        }
+
+                        if ($includeNull) {
+                            $query->orWhereNull($key);
+                        }
+                    } else {
+                        $query->where($key, (int)$value);
+                    }
+                    break;
+            }
         }
 
         return $query;

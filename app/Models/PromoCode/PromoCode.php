@@ -220,6 +220,21 @@ class PromoCode extends AbstractModel
         parent::boot();
 
         self::saved(function (self $item) {
+            /**
+             * Скидка доступна только по промокоду
+             */
+            if ($item->discount_id) {
+                /** @var Discount $discount */
+                $discount = Discount::find($item->discount_id);
+                if ($discount) {
+                    $discount->promo_code_only = true;
+                    $discount->save();
+                }
+            }
+
+            /**
+             * Суммируется с другими промокодами
+             */
             $promoCodeIds = $item->conditions[self::CONDITION_TYPE_SYNERGY] ?? [];
             if (empty($promoCodeIds)) {
                 return;
