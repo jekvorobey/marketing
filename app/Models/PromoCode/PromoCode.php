@@ -226,7 +226,7 @@ class PromoCode extends AbstractModel
             if ($item->discount_id) {
                 /** @var Discount $discount */
                 $discount = Discount::find($item->discount_id);
-                if ($discount) {
+                if ($discount && !$discount->promo_code_only) {
                     $discount->promo_code_only = true;
                     $discount->save();
                 }
