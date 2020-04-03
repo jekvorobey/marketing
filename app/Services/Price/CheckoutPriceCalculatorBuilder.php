@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Services\Discount;
+namespace App\Services\Price;
 
 use Illuminate\Support\Collection;
 
 /**
- * Class DiscountCalculatorBuilder
+ * Class PriceCalculatorBuilder
  * @package App\Core\Discount
  */
-class DiscountCalculatorBuilder
+class CheckoutPriceCalculatorBuilder
 {
     private $params;
 
@@ -17,14 +17,15 @@ class DiscountCalculatorBuilder
         $this->params = collect();
         $this->params->put('customer', collect());
         $this->params->put('offers', collect());
-        $this->params->put('promoCode', collect());
+        $this->params->put('promoCode', null);
         $this->params->put('deliveries', collect());
         $this->params->put('payment', collect());
     }
 
     /**
      * @param Collection|array $customers
-     * @return DiscountCalculatorBuilder
+     *
+     * @return CheckoutPriceCalculatorBuilder
      */
     public function customer($customers)
     {
@@ -34,7 +35,8 @@ class DiscountCalculatorBuilder
 
     /**
      * @param Collection|array $offers
-     * @return DiscountCalculatorBuilder
+     *
+     * @return CheckoutPriceCalculatorBuilder
      */
     public function offers($offers)
     {
@@ -43,18 +45,20 @@ class DiscountCalculatorBuilder
     }
 
     /**
-     * @param Collection|array $promoCode
-     * @return DiscountCalculatorBuilder
+     * @param string|null $promoCode
+     *
+     * @return CheckoutPriceCalculatorBuilder
      */
-    public function promoCode($promoCode)
+    public function promoCode(?string $promoCode)
     {
-        $this->params['promoCode'] = collect($promoCode);
+        $this->params['promoCode'] = $promoCode;
         return $this;
     }
 
     /**
      * @param Collection|array $deliveries
-     * @return DiscountCalculatorBuilder
+     *
+     * @return CheckoutPriceCalculatorBuilder
      */
     public function deliveries($deliveries)
     {
@@ -64,7 +68,8 @@ class DiscountCalculatorBuilder
 
     /**
      * @param Collection|array $payment
-     * @return DiscountCalculatorBuilder
+     *
+     * @return CheckoutPriceCalculatorBuilder
      */
     public function payment($payment)
     {
@@ -77,7 +82,7 @@ class DiscountCalculatorBuilder
      */
     public function calculate()
     {
-        return (new DiscountCalculator($this->params))->calculate();
+        return (new CheckoutPriceCalculator($this->params))->calculate();
     }
 
     /**

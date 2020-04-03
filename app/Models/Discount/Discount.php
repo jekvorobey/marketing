@@ -306,7 +306,7 @@ class Discount extends AbstractModel
     {
         $date = $date ?? Carbon::now();
         return $query
-            ->where('status', Discount::STATUS_ACTIVE)
+            ->where('status', self::STATUS_ACTIVE)
             ->where(function ($query) use ($date) {
                 $query->where('start_date', '<=', $date)->orWhereNull('start_date');
             })->where(function ($query) use ($date) {

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Discount\Discount;
-use App\Services\Discount\DiscountCalculatorBuilder;
+use App\Services\Price\CheckoutPriceCalculatorBuilder;
 use App\Services\Discount\DiscountHelper;
 use Carbon\Carbon;
 use Greensight\CommonMsa\Services\RequestInitiator\RequestInitiator;
@@ -291,11 +291,11 @@ class DiscountController extends Controller
     {
         $customer = collect($request->post('customer', []));
         $offers = collect($request->post('offers', []));
-        $promoCode = collect($request->post('promo_code', []));
         $deliveries = collect($request->post('deliveries', []));
         $payment = collect($request->post('payment', []));
+        $promoCode = $request->post('promoCode', null);
 
-        $result = (new DiscountCalculatorBuilder())
+        $result = (new CheckoutPriceCalculatorBuilder())
             ->customer($customer)
             ->offers($offers)
             ->promoCode($promoCode)

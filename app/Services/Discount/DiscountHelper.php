@@ -4,11 +4,7 @@ namespace App\Services\Discount;
 
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountBrand;
-use App\Models\Discount\DiscountCategory;
-use App\Models\Discount\DiscountCondition;
 use App\Models\Discount\DiscountOffer;
-use App\Models\Discount\DiscountSegment;
-use App\Models\Discount\DiscountUserRole;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;

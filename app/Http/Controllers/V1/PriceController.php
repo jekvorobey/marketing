@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Discount\DiscountSegment;
 use App\Models\Discount\DiscountUserRole;
 use App\Models\Price\Price;
-use App\Services\Discount\DiscountCatalogPrice;
+use App\Services\Price\CatalogPriceCalculator;
 use Greensight\CommonMsa\Rest\Controller\ReadAction;
 use Greensight\CommonMsa\Services\RequestInitiator\RequestInitiator;
 use Illuminate\Http\JsonResponse;
@@ -33,7 +33,7 @@ class PriceController extends Controller
                 'segment_id' => 'integer|nullable',
             ]);
 
-            $discountPriceCalculator = new DiscountCatalogPrice($params);
+            $discountPriceCalculator = new CatalogPriceCalculator($params);
             return response()->json([
                 'items' => $discountPriceCalculator->calculate()
             ]);
@@ -91,7 +91,7 @@ class PriceController extends Controller
             return response()->json(['error' => $ex->getMessage()], 400);
         }
 
-        $items = (new DiscountCatalogPrice([
+        $items = (new CatalogPriceCalculator([
             'offer_ids' => [$offerId],
             'role_ids' => $params['role_ids'] ?? null,
             'segment_id' => $params['segment_id'] ?? null,
@@ -129,7 +129,7 @@ class PriceController extends Controller
                 $segmentKey = $segment ?? "0";
                 $roleKey = $role ?? "0";
                 
-                $items = (new DiscountCatalogPrice([
+                $items = (new CatalogPriceCalculator([
                     'offer_ids' => $offerIds,
                     'role_ids' => $role,
                     'segment_id' => $segment,

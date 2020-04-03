@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Discount;
+namespace App\Services\Price;
 
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountBrand;
@@ -16,10 +16,10 @@ use Pim\Services\ProductService\ProductService;
 
 /**
  * Класс для расчета скидок (цен) для отображения в каталоге
- * Class DiscountPriceCalculator
+ * Class CatalogPriceCalculator
  * @package App\Services\Discount
  */
-class DiscountCatalogPrice extends DiscountCalculator
+class CatalogPriceCalculator extends CheckoutPriceCalculator
 {
     /**
      * @var Collection
@@ -41,7 +41,7 @@ class DiscountCatalogPrice extends DiscountCalculator
             ? collect($params['offer_ids'])->flip()
             : collect();
 
-        $params = (new DiscountCalculatorBuilder())
+        $params = (new CheckoutPriceCalculatorBuilder())
             ->customer([
                 'roles' => $params['role_ids'] ?? null,
                 'segment' => $params['segment_id'] ?? null,
@@ -84,7 +84,7 @@ class DiscountCatalogPrice extends DiscountCalculator
 
     /**
      * Загружает все необходимые данные
-     * @return $this|DiscountCalculator
+     * @return $this|CheckoutPriceCalculator
      * @throws PimException
      */
     protected function loadData()

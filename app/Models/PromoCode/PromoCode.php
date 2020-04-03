@@ -72,7 +72,7 @@ class PromoCode extends AbstractModel
     const CONDITION_TYPE_SEGMENT_IDS = 'segments';
     /** Для определенной(ых) роли(ей) */
     const CONDITION_TYPE_ROLE_IDS = 'roles';
-    /** Взаимодействует с другими промокодами */
+    /** Суммируется с другими промокодами */
     const CONDITION_TYPE_SYNERGY = 'synergy';
 
     /**
@@ -213,6 +213,66 @@ class PromoCode extends AbstractModel
         $conditions[self::CONDITION_TYPE_SYNERGY] = $promoCodeIds;
         $this->conditions = $conditions;
         return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getCompatiblePromoCodes()
+    {
+        return $this->conditions[self::CONDITION_TYPE_SYNERGY] ?? [];
+    }
+
+    /**
+     * @return array
+     */
+    public function getCustomerIds()
+    {
+        return $this->conditions[self::CONDITION_TYPE_CUSTOMER_IDS] ?? [];
+    }
+
+    /**
+     * @return array
+     */
+    public function getSegmentIds()
+    {
+        return $this->conditions[self::CONDITION_TYPE_SEGMENT_IDS] ?? [];
+    }
+
+    /**
+     * @return array
+     */
+    public function getRoleIds()
+    {
+        return $this->conditions[self::CONDITION_TYPE_ROLE_IDS] ?? [];
+    }
+
+    /**
+     * Является ли промокод персональным (личный промокод РП)
+     * @return bool
+     */
+    public function isPersonal()
+    {
+        return $this->owner_id > 0;
+    }
+
+    /**
+     * Активные и доступные на заданную дату скидки
+     *
+     * @param Builder $query
+     * @param Carbon|null $date
+     * @return Builder
+     */
+    public function scopeActive(Builder $query, ?Carbon $date = null): Builder
+    {
+        $date = $date ?? Carbon::now();
+        return $query
+            ->whereIn('status', [self::STATUS_ACTIVE, self::STATUS_TEST])
+            ->where(function ($query) use ($date) {
+                $query->where('start_date', '<=', $date)->orWhereNull('start_date');
+            })->where(function ($query) use ($date) {
+                $query->where('end_date', '>=', $date)->orWhereNull('end_date');
+            });
     }
 
     public static function boot()

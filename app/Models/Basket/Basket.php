@@ -2,7 +2,7 @@
 
 namespace App\Models\Basket;
 
-use App\Services\Discount\DiscountCalculatorBuilder;
+use App\Services\Price\CheckoutPriceCalculatorBuilder;
 use Illuminate\Support\Collection;
 use Exception;
 
@@ -40,24 +40,22 @@ class Basket implements \JsonSerializable
     /** @var int */
     public $bonus;
     /** @var string */
-    public $promocode;
+    public $promoCode;
     /** @var array */
     public $certificates;
 
     /** @var int */
     private $appliedBonus;
     private $discountByBonus = 0;
-    /** @var int */
-    private $newBonus;
-    /** @var string */
-    private $appliedPromocode;
-    private $discountByPromocode = 0;
+
     /** @var array */
     private $appliedCertificates;
     private $discountByCertificates = 0;
 
     /** @var array */
     private $appliedDiscounts;
+    /** @var array */
+    private $appliedPromoCodes = [];
 
     /** @var BasketItem[] */
     public $items;
@@ -70,13 +68,17 @@ class Basket implements \JsonSerializable
             'referal_code' => $basket->referalCode,
             'deliveries' => $basket->deliveries,
             'pay_method' => $basket->payMethod,
-
+            'marketing' => $marketing,
             'bonus' => $basket->bonus,
-            'promocode' => $basket->promocode,
+            'promoCode' => $basket->promoCode,
             'certificates' => $basket->certificates,
 
             'items' => $items
         ] = $data);
+
+         $basket->promoCode = $marketing['promoCode'] ?? '';
+         $basket->bonus = $marketing['bonus'] ?? 0;
+         $basket->certificates = $marketing['certificates'] ?? [];
 
         foreach ($items as $itemData) {
             [
@@ -106,13 +108,15 @@ class Basket implements \JsonSerializable
             return ['id' => $item->offerId, 'qty' => $item->qty];
         });
 
-        $calculation = (new DiscountCalculatorBuilder())
+        $calculation = (new CheckoutPriceCalculatorBuilder())
             ->customer(['id' => $this->user])
             ->payment(['method' => $this->payMethod])
             ->deliveries($this->deliveries)
             ->offers($offers)
+            ->promoCode($this->promoCode)
             ->calculate();
 
+        $this->appliedPromoCodes = $calculation['promoCodes'];
         $this->appliedDiscounts = $calculation['discounts'];
         $this->deliveries       = $calculation['deliveries'];
 
@@ -137,7 +141,6 @@ class Basket implements \JsonSerializable
         }
 
         $this->applyBonus();
-        $this->applyPromoCode();
         $this->applyCertificates();
 
         $basketDiscount = 0;
@@ -160,16 +163,6 @@ class Basket implements \JsonSerializable
             $this->appliedBonus = $available;
         }
         $this->discountByBonus = $this->appliedBonus;
-    }
-
-    private function applyPromoCode(): void
-    {
-        if ($this->promocode == 'ADMITAD700') {
-            $this->appliedPromocode = 'ADMITAD700';
-            $this->discountByPromocode = 700;
-        } else {
-            $this->appliedPromocode = '';
-        }
     }
 
     private function applyCertificates(): void
@@ -195,6 +188,7 @@ class Basket implements \JsonSerializable
             'cost' => $this->cost,
             'price' => $this->price,
             'discounts' => $this->appliedDiscounts,
+            'promoCodes' => $this->appliedPromoCodes,
             'items' => $this->items,
             'deliveries' => $this->deliveries,
         ];
