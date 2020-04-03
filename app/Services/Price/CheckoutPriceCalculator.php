@@ -527,7 +527,9 @@ class CheckoutPriceCalculator
     protected function filterPromoCodes()
     {
         $this->promoCodes = $this->promoCodes->filter(function (PromoCode $promoCode) {
-            return $this->checkPromoCodeConditions($promoCode) && $this->checkPromoCodeCounter($promoCode);
+            return $this->checkPromoCodeConditions($promoCode)
+                && $this->checkPromoCodeOwner($promoCode)
+                && $this->checkPromoCodeCounter($promoCode);
         });
 
         return $this;
@@ -561,6 +563,17 @@ class CheckoutPriceCalculator
         }
 
         return true;
+    }
+
+    /**
+     * Проверяет принадлежность промокода (для РП или для Всех)
+     * @param PromoCode $promoCode
+     *
+     * @return bool
+     */
+    protected function checkPromoCodeOwner(PromoCode $promoCode)
+    {
+        return !isset($promoCode->owner_id) || ($promoCode->owner_id === $this->filter['customer']['id']);
     }
 
     /**
