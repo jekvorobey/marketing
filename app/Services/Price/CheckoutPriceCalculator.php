@@ -584,11 +584,13 @@ class CheckoutPriceCalculator
      */
     protected function checkPromoCodeCounter(PromoCode $promoCode)
     {
-        if ($promoCode->counter > 0) {
+        if (!isset($promoCode->counter)) {
             return true;
         }
 
-        return true; // todo
+        /** @var OrderService $orderService */
+        $orderService = resolve(OrderService::class);
+        return $promoCode->counter > $orderService->orderPromoCodeCount($promoCode->id);
     }
 
     /**
