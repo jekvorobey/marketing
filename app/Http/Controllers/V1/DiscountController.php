@@ -53,7 +53,18 @@ class DiscountController extends Controller
      */
     public function find($id)
     {
-        $discount = Discount::find((int) $id);
+        $discount = Discount::query()
+            ->with([
+                'offers',
+                'brands',
+                'categories',
+                'segments',
+                'roles',
+                'conditions'
+            ])
+            ->where('id', (int) $id)
+            ->first();
+
         if (!$discount) {
             throw new NotFoundHttpException();
         }
