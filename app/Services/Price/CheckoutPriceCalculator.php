@@ -711,8 +711,12 @@ class CheckoutPriceCalculator
             $this->appliedPromoCodes->put($promoCode->code, [
                 'id' => $promoCode->id,
                 'type' => $promoCode->type,
+                'name' => $promoCode->name,
                 'code' => $promoCode->code,
-                'isPersonal' => $promoCode->isPersonal(),
+                'discount_id' => $promoCode->discount_id,
+                'gift_id' => $promoCode->gift_id,
+                'bonus_id' => $promoCode->bonus_id,
+                'is_personal' => $promoCode->isPersonal(),
                 'change' => $change
             ]);
         }
