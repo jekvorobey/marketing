@@ -37,8 +37,10 @@ Route::namespace('V1')->prefix('v1')->group(function () {
         Route::post('', 'PromoCodeController@create');
         Route::get('generate', 'PromoCodeController@generate');
 
+        Route::get('customers/{id}', 'PromoCodeController@customer');
+
         Route::prefix('{id}')->group(function () {
-            Route::get('', 'DiscountController@read');
+            Route::get('', 'PromoCodeController@read');
         });
     });
 

@@ -3,16 +3,32 @@
 namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\Discount\Discount;
 use App\Models\PromoCode\PromoCode;
 use App\Services\PromoCode\PromoCodeHelper;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class PromoCodeController extends Controller
 {
+    /**
+     * @param $id
+     *
+     * @return JsonResponse
+     */
+    public function find($id)
+    {
+        $discount = PromoCode::find((int) $id);
+        if (!$discount) {
+            throw new NotFoundHttpException();
+        }
+
+        return response()->json($discount);
+    }
+
     public function read(Request $request)
     {
         $id = $request->route('id');
@@ -24,6 +40,18 @@ class PromoCodeController extends Controller
             'items' => $this->modifyQuery($request, PromoCode::query())
                 ->orderBy('id', $request->get('sortDirection') === 'asc' ? 'asc' : 'desc')
                 ->get()
+        ]);
+    }
+
+    /**
+     * @param int $id
+     *
+     * @return JsonResponse
+     */
+    public function customer(int $id)
+    {
+        return response()->json([
+            'items' => PromoCode::query()->where('owner_id', $id)->get()
         ]);
     }
 
