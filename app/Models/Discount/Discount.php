@@ -284,6 +284,16 @@ class Discount extends AbstractModel
     }
 
     /**
+     * @return bool
+     */
+    public function isExpired()
+    {
+        $now = Carbon::now();
+        return (isset($this->start_date) && $now->lt($this->start_date))
+            || (isset($this->end_date) && $now->gt($this->end_date));
+    }
+
+    /**
      * @param Builder $query
      * @param $roleId
      * @return Builder
