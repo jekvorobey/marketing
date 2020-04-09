@@ -28,6 +28,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $bonus_id
  * @property array $conditions
  * @mixin Eloquent
+ *
+ * @property-read Discount|null $discount
  */
 class PromoCode extends AbstractModel
 {
