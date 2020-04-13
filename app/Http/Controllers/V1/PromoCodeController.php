@@ -179,6 +179,7 @@ class PromoCodeController extends Controller
                 // todo
                 case 'id':
                 case 'merchant_id':
+                case 'discount_id':
                     if (is_array($value)) {
                         $values = collect($value);
                         $includeNull = $values->filter(function ($v) { return $v <= 0; })->isNotEmpty();

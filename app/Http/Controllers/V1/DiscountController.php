@@ -4,15 +4,21 @@ namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Discount\Discount;
-use App\Services\Price\CheckoutPriceCalculatorBuilder;
 use App\Services\Discount\DiscountHelper;
+use App\Services\Price\CheckoutPriceCalculatorBuilder;
 use Carbon\Carbon;
+use Exception;
+use Greensight\CommonMsa\Rest\RestQuery;
 use Greensight\CommonMsa\Services\RequestInitiator\RequestInitiator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Http\JsonResponse;
+use Pim\Dto\Offer\OfferDto;
+use Pim\Dto\Product\ProductDto;
+use Pim\Services\OfferService\OfferService;
+use Pim\Services\ProductService\ProductService;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -182,7 +188,7 @@ class DiscountController extends Controller
             DiscountHelper::validate($discount->toArray());
         } catch (HttpException $ex) {
             return response($ex->getMessage(), $ex->getStatusCode());
-        } catch (\Exception $ex) {
+        } catch (Exception $ex) {
             return response($ex->getMessage(), 500);
         }
 
@@ -195,7 +201,7 @@ class DiscountController extends Controller
                 DiscountHelper::validateRelations($discount, []);
             }
             DB::commit();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             throw new HttpException(400, $e->getMessage());
         }
@@ -227,7 +233,7 @@ class DiscountController extends Controller
 
             $data['user_id'] = $client->userId();
             $data['relations'] = $data['relations'] ?? [];
-        } catch (\Exception $ex) {
+        } catch (Exception $ex) {
             return response()->json(['error' => $ex->getMessage()], 400);
         }
 
@@ -235,7 +241,7 @@ class DiscountController extends Controller
             DiscountHelper::validate($data);
         } catch (HttpException $ex) {
             return response()->json(['error' => $ex->getMessage()], $ex->getStatusCode());
-        } catch (\Exception $ex) {
+        } catch (Exception $ex) {
             return response()->json(['error' => $ex->getMessage()], 500);
         }
 
@@ -243,7 +249,7 @@ class DiscountController extends Controller
             DB::beginTransaction();
             $discountId = DiscountHelper::create($data);
             DB::commit();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
                 'error' => $e->getMessage(),
@@ -476,9 +482,79 @@ class DiscountController extends Controller
                 case 'role_id':
                     $query = $query->forRoleId((int) $value);
                     break;
+                case 'relateToMerchant':
+                    $this->modifyQueryRelateToMerchant($query, $value);
+                    break;
             }
         }
 
         return $query;
+    }
+
+    /**
+     * Добавить условие на принадрежность скидки к мерчанту
+     * @param Builder $query
+     * @param $value
+     */
+    protected function modifyQueryRelateToMerchant(Builder $query, $value)
+    {
+        /** @var OfferService $offerService */
+        $offerService = resolve(OfferService::class);
+
+        /** @var ProductService $productService */
+        $productService = resolve(ProductService::class);
+
+        $offers = $offerService->offers(
+            (new RestQuery())
+                ->setFilter('merchant_id', $value)
+                ->addFields(OfferDto::entity(), 'id', 'product_id')
+        );
+        $brandIds = [];
+        $categoryIds = [];
+        $offerIds = [];
+        if ($offers->isNotEmpty()) {
+            $offerIds = $offers->pluck('id')->all();
+            $products = $productService->products(
+                (new RestQuery())
+                    ->setFilter('id', $offers->pluck('product_id'))
+                    ->addFields(ProductDto::entity(), 'id', 'category_id', 'brand_id')
+                    ->include('category.ancestors')
+            );
+
+            foreach ($products as $product) {
+                if ($product->brand_id) {
+                    $brandIds[] = $product->brand_id;
+                }
+                if ($product->category_id) {
+                    $categoryIds[$product->category_id] = $product->category_id;
+                    foreach ($product->category()->ancestors() as $ancestor) {
+                        $categoryIds[$ancestor->id] = $ancestor->id;
+                    }
+                }
+            }
+        }
+
+        $query->where(function (Builder $query) use ($value, $offerIds, $brandIds, $categoryIds) {
+            $query->where('merchant_id', $value);
+
+            if ($offerIds) {
+                $query->orWhereHas('offers', function (Builder $query) use ($offerIds) {
+                    $query->whereIn('offer_id', $offerIds)->where('except', 0);
+                });
+            }
+
+            if ($brandIds) {
+                $query->orWhereHas('brands', function (Builder $query) use ($brandIds) {
+                    $query->whereIn('brand_id', $brandIds)->where('except', 0);
+                });
+            }
+
+            if ($categoryIds) {
+                $query->orWhereHas('categories', function (Builder $query) use ($categoryIds) {
+                    $query->whereIn('category_id', $categoryIds);
+                });
+            }
+
+        });
     }
 }
