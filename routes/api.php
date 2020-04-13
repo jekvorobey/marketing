@@ -41,6 +41,8 @@ Route::namespace('V1')->prefix('v1')->group(function () {
 
         Route::prefix('{id}')->group(function () {
             Route::get('', 'PromoCodeController@read');
+            Route::put('', 'PromoCodeController@update');
+            Route::delete('', 'PromoCodeController@delete');
         });
     });
 

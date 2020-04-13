@@ -55,55 +55,99 @@ class PromoCodeController extends Controller
         ]);
     }
 
-    /**
-     * @param Request $request
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function create(Request $request)
+    public function create()
     {
         try {
-            $data = $request->validate([
-                'creator_id' => 'numeric|required',
-                'merchant_id' => 'numeric|nullable',
-                'owner_id' => 'numeric|nullable',
-                'name' => 'string|required',
-                'code' => 'string|required',
-                'counter' => 'numeric|nullable',
-                'start_date' => 'date|nullable',
-                'end_date' => 'date|nullable',
-                'status' => 'numeric|required',
-                'type' => 'numeric|required',
-                'discount_id' => 'numeric|nullable',
-                'gift_id' => 'numeric|nullable',
-                'bonus_id' => 'numeric|nullable',
-                'conditions' => 'array|nullable',
-                'conditions.segments' => 'array|nullable',
-                'conditions.segments.*' => 'numeric|nullable',
-                'conditions.roles' => 'array|nullable',
-                'conditions.roles.*' => 'numeric|nullable',
-                'conditions.customers' => 'array|nullable',
-                'conditions.customers.*' => 'numeric|nullable',
-                'conditions.synergy' => 'array|nullable',
-                'conditions.synergy.*' => 'numeric|nullable'
-            ]);
-        } catch (\Exception $ex) {
-            return response()->json(['error' => $ex->getMessage()], 400);
+            $promoCode = new PromoCode();
+            $this->save($promoCode);
+        } catch (HttpException $e) {
+            return response()->json(['error' => $e->getMessage()], $e->getStatusCode());
+        }
+
+        return response()->json(['id' => $promoCode->id], 201);
+    }
+
+    public function update($id)
+    {
+        /** @var PromoCode|null $promoCode */
+        $promoCode = PromoCode::query()->where('id', $id)->first();
+        if (!$promoCode) {
+            throw new NotFoundHttpException();
         }
 
         try {
+            $this->save($promoCode);
+        } catch (HttpException $e) {
+            return response()->json(['error' => $e->getMessage()], $e->getStatusCode());
+        }
+
+        return response('', 204);
+    }
+
+    protected function save(PromoCode $promoCode)
+    {
+        $required_rule = $promoCode->id ? 'nullable' : 'required';
+
+        $rules = [
+            'merchant_id' => 'numeric|nullable',
+            'owner_id' => 'numeric|nullable',
+            'name' => "string|{$required_rule}",
+            'code' => "string|{$required_rule}",
+            'counter' => 'numeric|nullable',
+            'start_date' => 'date|nullable',
+            'end_date' => 'date|nullable',
+            'status' => "numeric|{$required_rule}",
+            'type' => "numeric|{$required_rule}",
+            'discount_id' => 'numeric|nullable',
+            'gift_id' => 'numeric|nullable',
+            'bonus_id' => 'numeric|nullable',
+            'conditions' => 'array|nullable',
+            'conditions.segments' => 'array|nullable',
+            'conditions.segments.*' => 'numeric|nullable',
+            'conditions.roles' => 'array|nullable',
+            'conditions.roles.*' => 'numeric|nullable',
+            'conditions.customers' => 'array|nullable',
+            'conditions.customers.*' => 'numeric|nullable',
+            'conditions.synergy' => 'array|nullable',
+            'conditions.synergy.*' => 'numeric|nullable'
+        ];
+
+        if (!$promoCode->exists) {
+            $rules['creator_id'] = 'numeric|required';
+        }
+
+        try {
+            $data = $this->validate(request(), $rules);
+        } catch (\Exception $e) {
+            throw new HttpException(400, $e->getMessage());
+        }
+
+
+        try {
             DB::beginTransaction();
-            PromoCodeHelper::validate($data);
-            $promoCodeId = PromoCode::create($data);
+            $promoCode->fill($data);
+            PromoCodeHelper::validate($promoCode->attributesToArray());
+            $promoCode->save();
             DB::commit();
-            return response()->json(['id' => $promoCodeId], 201);
-        } catch (HttpException $ex) {
+        } catch (HttpException $e) {
             DB::rollBack();
-            return response()->json(['error' => $ex->getMessage()], $ex->getStatusCode());
+            throw $e;
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['error' => $e->getMessage()], 500);
+            throw new HttpException(500, $e->getMessage());
         }
+    }
+
+    public function delete($id)
+    {
+        /** @var PromoCode|null $promoCode */
+        $promoCode = PromoCode::query()->where('id', $id)->first();
+        if (!$promoCode) {
+            return response('', 204);
+        }
+
+        $promoCode->delete();
+        return response('', 204);
     }
 
     /**

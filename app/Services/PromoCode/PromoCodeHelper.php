@@ -28,10 +28,6 @@ class PromoCodeHelper
             throw new HttpException(400, 'PromoCode period error');
         }
 
-        if (isset($data['owner_id']) && !empty($data['conditions'])) {
-            throw new HttpException(400, 'PromoCode owner conditions error');
-        }
-
         switch ($data['type']) {
             case PromoCode::TYPE_DISCOUNT:
                 if (!isset($data['discount_id']) || isset($data['gift_id']) || isset($data['bonus_id'])) {
@@ -59,7 +55,11 @@ class PromoCodeHelper
             throw new HttpException(400, 'PromoCode code error');
         }
 
-        if (PromoCode::where('code', $data['code'])->first()) {
+        $builder = PromoCode::query()->where('code', $data['code']);
+        if (isset($data['id'])) {
+            $builder->where('id', '!=', $data['id']);
+        }
+        if ($builder->first()) {
             throw new HttpException(400, 'PromoCode duplicate error');
         }
 
