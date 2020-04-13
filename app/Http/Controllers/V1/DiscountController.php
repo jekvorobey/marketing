@@ -535,26 +535,51 @@ class DiscountController extends Controller
         }
 
         $query->where(function (Builder $query) use ($value, $offerIds, $brandIds, $categoryIds) {
-            $query->where('merchant_id', $value);
+            $query
+                ->orWhere('merchant_id', $value)
+                ->orWhere(function (Builder $query) use ($value, $offerIds, $brandIds, $categoryIds) {
+                    $query->orWhereNull('merchant_id');
+                    if ($offerIds) {
+                        $query->orWhereHas('offers', function (Builder $query) use ($offerIds) {
+                            $query->whereIn('offer_id', $offerIds)->where('except', 0);
+                        });
+                    }
 
-            if ($offerIds) {
-                $query->orWhereHas('offers', function (Builder $query) use ($offerIds) {
-                    $query->whereIn('offer_id', $offerIds)->where('except', 0);
+                    if ($brandIds) {
+                        $query->orWhereHas('brands', function (Builder $query) use ($brandIds) {
+                            $query->whereIn('brand_id', $brandIds)->where('except', 0);
+                        });
+                    }
+
+                    if ($categoryIds) {
+                        $query->orWhereHas('categories', function (Builder $query) use ($categoryIds) {
+                            $query->whereIn('category_id', $categoryIds);
+                        });
+                    }
                 });
-            }
-
-            if ($brandIds) {
-                $query->orWhereHas('brands', function (Builder $query) use ($brandIds) {
-                    $query->whereIn('brand_id', $brandIds)->where('except', 0);
-                });
-            }
-
-            if ($categoryIds) {
-                $query->orWhereHas('categories', function (Builder $query) use ($categoryIds) {
-                    $query->whereIn('category_id', $categoryIds);
-                });
-            }
-
         });
+
+//        $query->where(function (Builder $query) use ($value, $offerIds, $brandIds, $categoryIds) {
+//            $query->where('merchant_id', $value);
+//
+//            if ($offerIds) {
+//                $query->orWhereHas('offers', function (Builder $query) use ($offerIds) {
+//                    $query->whereIn('offer_id', $offerIds)->where('except', 0);
+//                });
+//            }
+//
+//            if ($brandIds) {
+//                $query->orWhereHas('brands', function (Builder $query) use ($brandIds) {
+//                    $query->whereIn('brand_id', $brandIds)->where('except', 0);
+//                });
+//            }
+//
+//            if ($categoryIds) {
+//                $query->orWhereHas('categories', function (Builder $query) use ($categoryIds) {
+//                    $query->whereIn('category_id', $categoryIds);
+//                });
+//            }
+//
+//        });
     }
 }

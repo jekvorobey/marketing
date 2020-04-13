@@ -184,13 +184,15 @@ class PromoCodeController extends Controller
                         $values = collect($value);
                         $includeNull = $values->filter(function ($v) { return $v <= 0; })->isNotEmpty();
                         $ids = $values->filter(function ($v) { return $v > 0; });
-                        if ($ids->isNotEmpty()) {
-                            $query->whereIn($key, $ids);
-                        }
+                        $query->where(function (Builder $query) use ($ids, $key, $includeNull) {
+                            if ($ids->isNotEmpty()) {
+                                $query->whereIn($key, $ids);
+                            }
 
-                        if ($includeNull) {
-                            $query->orWhereNull($key);
-                        }
+                            if ($includeNull) {
+                                $query->orWhereNull($key);
+                            }
+                        });
                     } else {
                         $query->where($key, (int)$value);
                     }
