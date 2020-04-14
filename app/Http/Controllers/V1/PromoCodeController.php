@@ -43,18 +43,6 @@ class PromoCodeController extends Controller
         ]);
     }
 
-    /**
-     * @param int $id
-     *
-     * @return JsonResponse
-     */
-    public function customer(int $id)
-    {
-        return response()->json([
-            'items' => PromoCode::query()->where('owner_id', $id)->get()
-        ]);
-    }
-
     public function create()
     {
         try {
@@ -180,6 +168,8 @@ class PromoCodeController extends Controller
                 case 'id':
                 case 'merchant_id':
                 case 'discount_id':
+                case 'owner_id':
+                case 'status':
                     if (is_array($value)) {
                         $values = collect($value);
                         $includeNull = $values->filter(function ($v) { return $v <= 0; })->isNotEmpty();
