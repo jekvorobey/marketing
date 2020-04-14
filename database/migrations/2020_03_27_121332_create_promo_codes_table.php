@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class CreatePromoCodesTable extends Migration
 {
@@ -16,7 +16,7 @@ class CreatePromoCodesTable extends Migration
         Schema::create('promo_codes', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->bigInteger('creator_id'); /** Создатель */
-            $table->bigInteger('owner_id')->nullable(); /** Кому принадлежит промокод, ID РП или null – Маркетплейс */
+            $table->bigInteger('owner_id')->nullable(); /** РП, который промоутирует промокод */
             $table->string('name', 255); /** Название промокода */
             $table->string('code', 255)->unique(); /** Код */
             $table->integer('counter')->nullable(); /** Ограничение на количество применений, null – ограничений нет */

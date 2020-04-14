@@ -2,6 +2,7 @@
 
 namespace App\Services\Price;
 
+use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountBrand;
 use App\Models\Discount\DiscountCategory;
 use App\Models\Discount\DiscountCondition;
@@ -9,18 +10,16 @@ use App\Models\Discount\DiscountOffer;
 use App\Models\Discount\DiscountSegment;
 use App\Models\Discount\DiscountUserRole;
 use App\Models\Price\Price;
-use App\Models\Discount\Discount;
 use App\Models\PromoCode\PromoCode;
+use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\Customer\Dto\CustomerDto;
+use Greensight\Customer\Services\CustomerService\CustomerService;
 use Greensight\Oms\Services\OrderService\OrderService;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Pim\Dto\CategoryDto;
 use Pim\Dto\Product\ProductDto;
 use Pim\Services\CategoryService\CategoryService;
 use Pim\Services\ProductService\ProductService;
-use Greensight\Customer\Services\CustomerService\CustomerService;
-use Greensight\CommonMsa\Services\AuthService\UserService;
-use Illuminate\Support\Collection;
 
 /**
  * Класс для расчета скидок (цен) для отображения в чекауте
@@ -463,22 +462,14 @@ class CheckoutPriceCalculator
      */
     protected function getActivePromoCodes()
     {
-        if (!$this->filter['promoCode'] && !$this->filter['customer']['id']) {
+        if (!$this->filter['promoCode']) {
             $this->promoCodes = collect();
             return $this;
         }
 
         $this->promoCodes = PromoCode::query()
             ->active()
-            ->where(function (Builder $query) {
-                if ($this->filter['promoCode']) {
-                    $query->where('code', $this->filter['promoCode']);
-                }
-                if ($this->filter['customer']['id']) {
-                    $query->orWhere('owner_id', $this->filter['customer']['id']);
-                }
-            })
-            ->orderBy('owner_id')
+            ->where('code', $this->filter['promoCode'])
             ->get();
 
         return $this;
@@ -528,7 +519,6 @@ class CheckoutPriceCalculator
     {
         $this->promoCodes = $this->promoCodes->filter(function (PromoCode $promoCode) {
             return $this->checkPromoCodeConditions($promoCode)
-                && $this->checkPromoCodeOwner($promoCode)
                 && $this->checkPromoCodeCounter($promoCode);
         });
 
@@ -563,17 +553,6 @@ class CheckoutPriceCalculator
         }
 
         return true;
-    }
-
-    /**
-     * Проверяет принадлежность промокода (для РП или для Всех)
-     * @param PromoCode $promoCode
-     *
-     * @return bool
-     */
-    protected function checkPromoCodeOwner(PromoCode $promoCode)
-    {
-        return !isset($promoCode->owner_id) || ($promoCode->owner_id === $this->filter['customer']['id']);
     }
 
     /**
@@ -718,7 +697,7 @@ class CheckoutPriceCalculator
                 'discount_id' => $promoCode->discount_id,
                 'gift_id' => $promoCode->gift_id,
                 'bonus_id' => $promoCode->bonus_id,
-                'is_personal' => $promoCode->isPersonal(),
+                'owner_id' => $promoCode->owner_id,
                 'change' => $change
             ]);
         }

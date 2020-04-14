@@ -250,15 +250,6 @@ class PromoCode extends AbstractModel
     }
 
     /**
-     * Является ли промокод персональным (личный промокод РП)
-     * @return bool
-     */
-    public function isPersonal()
-    {
-        return $this->owner_id > 0;
-    }
-
-    /**
      * @return bool
      */
     public function isExpired()

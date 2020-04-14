@@ -1,12 +1,12 @@
 <?php
 
-use Illuminate\Database\Seeder;
+use App\Models\Discount\Discount;
 use App\Models\PromoCode\PromoCode;
+use Greensight\CommonMsa\Dto\UserDto;
 use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\Customer\Services\CustomerService\CustomerService;
+use Illuminate\Database\Seeder;
 use MerchantManagement\Services\MerchantService\MerchantService;
-use App\Models\Discount\Discount;
-use Greensight\CommonMsa\Dto\UserDto;
 
 class PromoCodesTableSeeder extends Seeder
 {
@@ -65,7 +65,7 @@ class PromoCodesTableSeeder extends Seeder
 
             $promo->name = $this->faker->numerify($this->faker->randomElement($this->names));
             $promo->code = PromoCode::generate();
-            $promo->counter = $promo->owner_id ? null : $this->faker->numberBetween(1, 10);
+            $promo->counter = $this->faker->numberBetween(1, 10);
 
             $promo->start_date = $this->faker->boolean()
                 ? $this->faker->dateTimeBetween($startDate = '-6 month', $endDate = '+1 month')
@@ -93,23 +93,21 @@ class PromoCodesTableSeeder extends Seeder
                     break;
             }
 
-            if (!$promo->owner_id) {
-                if ($this->faker->boolean(33)) {
-                    $promo->setCustomerIds($this->faker->randomElements(
-                        $this->customerIds,
-                        $this->faker->numberBetween(1, 3)
-                    ));
-                } elseif ($this->faker->boolean(33)) {
-                    $promo->setSegmentIds($this->faker->randomElements(
-                        $this->segmentIds,
-                        $this->faker->numberBetween(1, 3)
-                    ));
-                } elseif ($this->faker->boolean(33)) {
-                    $promo->setRoleIds($this->faker->randomElements(
-                        $this->userRoles,
-                        $this->faker->numberBetween(1, 2)
-                    ));
-                }
+            if ($this->faker->boolean(33)) {
+                $promo->setCustomerIds($this->faker->randomElements(
+                    $this->customerIds,
+                    $this->faker->numberBetween(1, 3)
+                ));
+            } elseif ($this->faker->boolean(33)) {
+                $promo->setSegmentIds($this->faker->randomElements(
+                    $this->segmentIds,
+                    $this->faker->numberBetween(1, 3)
+                ));
+            } elseif ($this->faker->boolean(33)) {
+                $promo->setRoleIds($this->faker->randomElements(
+                    $this->userRoles,
+                    $this->faker->numberBetween(1, 2)
+                ));
             }
 
             $promo->save();
