@@ -495,7 +495,8 @@ class CheckoutPriceCalculator
             'merchant_id',
             'value',
             'value_type',
-            'promo_code_only'
+            'promo_code_only',
+            'merchant_id'
         ])
             ->active()
             ->orderBy('promo_code_only')
