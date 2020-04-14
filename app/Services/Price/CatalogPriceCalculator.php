@@ -6,9 +6,9 @@ use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountBrand;
 use App\Models\Discount\DiscountCondition;
 use App\Models\Discount\DiscountOffer;
-use Pim\Core\PimException;
 use App\Models\Price\Price;
 use Illuminate\Support\Collection;
+use Pim\Core\PimException;
 use Pim\Dto\Offer\OfferDto;
 use Pim\Dto\Product\ProductDto;
 use Pim\Services\OfferService\OfferService;
@@ -121,7 +121,8 @@ class CatalogPriceCalculator extends CheckoutPriceCalculator
         $offerQuery = $offerService->newQuery()->addFields(
             OfferDto::entity(),
             'id',
-            'product_id'
+            'product_id',
+            'merchant_id'
         );
         $offers = $offerService->offers($offerQuery);
         /** @var OfferDto $offer */
@@ -137,6 +138,7 @@ class CatalogPriceCalculator extends CheckoutPriceCalculator
                 'price' => null,
                 'brand_id' => null,
                 'category_id' => null,
+                'merchant_id' => $offer->merchant_id,
             ]));
         }
 

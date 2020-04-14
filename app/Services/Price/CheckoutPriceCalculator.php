@@ -11,14 +11,17 @@ use App\Models\Discount\DiscountSegment;
 use App\Models\Discount\DiscountUserRole;
 use App\Models\Price\Price;
 use App\Models\PromoCode\PromoCode;
+use Greensight\CommonMsa\Rest\RestQuery;
 use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\Customer\Dto\CustomerDto;
 use Greensight\Customer\Services\CustomerService\CustomerService;
 use Greensight\Oms\Services\OrderService\OrderService;
 use Illuminate\Support\Collection;
 use Pim\Dto\CategoryDto;
+use Pim\Dto\Offer\OfferDto;
 use Pim\Dto\Product\ProductDto;
 use Pim\Services\CategoryService\CategoryService;
+use Pim\Services\OfferService\OfferService;
 use Pim\Services\ProductService\ProductService;
 
 /**
@@ -273,6 +276,7 @@ class CheckoutPriceCalculator
         /** @var Collection $offerIds */
         $offerIds = $this->filter['offers']->pluck('id');
         if ($offerIds->isNotEmpty()) {
+            $this->hydrateOffer();
             $this->hydrateOfferPrice();
             $this->hydrateProductInfo();
         } else {
@@ -356,6 +360,50 @@ class CheckoutPriceCalculator
     }
 
     /**
+     * Заполняет информацию по офферам
+     * @return $this
+     */
+    protected function hydrateOffer()
+    {
+        /** @var Collection $offerIds */
+        $offerIds = $this->filter['offers']->pluck('id')->filter();
+
+        if ($offerIds->isEmpty()) {
+            return $this;
+        }
+        /** @var OfferService $offerService */
+        $offerService = resolve(OfferService::class);
+
+        $offersDto = $offerService->offers(
+            (new RestQuery())->setFilter('id', $offerIds)->addFields(OfferDto::entity(), 'id', 'merchant_id')
+        )->keyBy('id');
+        $offers = collect();
+        foreach ($this->filter['offers'] as $offer) {
+            if (!isset($offer['id'])) {
+                continue;
+            }
+
+            $offerId = (int)$offer['id'];
+            if (!$offersDto->has($offerId)) {
+                continue;
+            }
+            /** @var OfferDto $offerDto */
+            $offerDto = $offersDto->get($offerId);
+
+            $offers->put($offerId, collect([
+                'id' => $offerId,
+                'price' => $offer['price'] ?? null,
+                'qty' => $offer['qty'] ?? 1,
+                'brand_id' => $offer['brand_id'] ?? null,
+                'category_id' => $offer['category_id'] ?? null,
+                'merchant_id' => $offerDto->merchant_id,
+            ]));
+        }
+        $this->filter['offers'] = $offers;
+        return $this;
+    }
+
+    /**
      * Заполняет цены офферов
      * @return $this
      */
@@ -385,6 +433,7 @@ class CheckoutPriceCalculator
                 'qty' => $offer['qty'] ?? 1,
                 'brand_id' => $offer['brand_id'] ?? null,
                 'category_id' => $offer['category_id'] ?? null,
+                'merchant_id' => $offer['merchant_id'] ?? null,
             ]));
         }
         $this->filter['offers'] = $offers;
@@ -424,6 +473,7 @@ class CheckoutPriceCalculator
                 'qty' => $offer['qty'] ?? 1,
                 'brand_id' => $product['brand_id'],
                 'category_id' => $product['category_id'],
+                'merchant_id' => $offer['merchant_id'] ?? null,
             ]));
         }
         $this->filter['offers'] = $offers;
@@ -752,7 +802,7 @@ class CheckoutPriceCalculator
                 # За исключением офферов
                 $exceptOfferIds = $this->getExceptOffersForDiscount($discount->id);
                 # Отбираем нужные офферы
-                $offerIds = $this->filterForDiscountBrand($brandIds, $exceptOfferIds);
+                $offerIds = $this->filterForDiscountBrand($brandIds, $exceptOfferIds, $discount->merchant_id);
                 $change = $this->applyDiscountToOffer($discount, $offerIds);
                 break;
             case Discount::DISCOUNT_TYPE_CATEGORY:
@@ -764,7 +814,7 @@ class CheckoutPriceCalculator
                 # За исключением офферов
                 $exceptOfferIds = $this->getExceptOffersForDiscount($discount->id);
                 # Отбираем нужные офферы
-                $offerIds = $this->filterForDiscountCategory($categoryIds, $exceptBrandIds, $exceptOfferIds);
+                $offerIds = $this->filterForDiscountCategory($categoryIds, $exceptBrandIds, $exceptOfferIds, $discount->merchant_id);
                 $change = $this->applyDiscountToOffer($discount, $offerIds);
                 break;
             case Discount::DISCOUNT_TYPE_DELIVERY:
@@ -1000,13 +1050,15 @@ class CheckoutPriceCalculator
     /**
      * @param $brandIds
      * @param $exceptOfferIds
+     * @param $merchantId
      * @return Collection
      */
-    protected function filterForDiscountBrand($brandIds, $exceptOfferIds)
+    protected function filterForDiscountBrand($brandIds, $exceptOfferIds, $merchantId)
     {
-        return $this->filter['offers']->filter(function ($offer) use ($brandIds, $exceptOfferIds) {
+        return $this->filter['offers']->filter(function ($offer) use ($brandIds, $exceptOfferIds, $merchantId) {
             return $brandIds->search($offer['brand_id']) !== false
-                && $exceptOfferIds->search($offer['id']) === false;
+                && $exceptOfferIds->search($offer['id']) === false
+                && (!$merchantId || $offer['merchant_id'] == $merchantId);
         })->pluck('id');
     }
 
@@ -1014,11 +1066,12 @@ class CheckoutPriceCalculator
      * @param $categoryIds
      * @param $exceptBrandIds
      * @param $exceptOfferIds
+     * @param $merchantId
      * @return Collection
      */
-    protected function filterForDiscountCategory($categoryIds, $exceptBrandIds, $exceptOfferIds)
+    protected function filterForDiscountCategory($categoryIds, $exceptBrandIds, $exceptOfferIds, $merchantId)
     {
-        return $this->filter['offers']->filter(function ($offer) use ($categoryIds, $exceptBrandIds, $exceptOfferIds) {
+        return $this->filter['offers']->filter(function ($offer) use ($categoryIds, $exceptBrandIds, $exceptOfferIds, $merchantId) {
             $offerCategory = $this->categories->has($offer['category_id'])
                 ? $this->categories[$offer['category_id']]
                 : null;
@@ -1032,7 +1085,8 @@ class CheckoutPriceCalculator
                         );
                 })
                 && $exceptBrandIds->search($offer['brand_id']) === false
-                && $exceptOfferIds->search($offer['id']) === false;
+                && $exceptOfferIds->search($offer['id']) === false
+                && (!$merchantId || $offer['merchant_id'] == $merchantId);
         })->pluck('id');
     }
 
