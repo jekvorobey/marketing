@@ -272,7 +272,7 @@ class CatalogPriceCalculator extends CheckoutPriceCalculator
      */
     protected function getActiveDiscounts()
     {
-        $this->discounts = Discount::select(['id', 'type', 'value', 'value_type', 'promo_code_only'])
+        $this->discounts = Discount::select(['id', 'type', 'value', 'value_type', 'promo_code_only', 'merchant_id'])
             ->showInCatalog()
             ->orderBy('type')
             ->get();
