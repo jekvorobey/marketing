@@ -742,6 +742,7 @@ class CheckoutPriceCalculator
             $this->appliedPromoCodes->put($promoCode->code, [
                 'id' => $promoCode->id,
                 'type' => $promoCode->type,
+                'status' => $promoCode->status,
                 'name' => $promoCode->name,
                 'code' => $promoCode->code,
                 'discount_id' => $promoCode->discount_id,
