@@ -102,6 +102,12 @@ class CheckoutPriceCalculator
     protected $offersByDiscounts;
 
     /**
+     * Если по какой-то скидке есть ограничение на максимальный итоговый размер скидки по офферу
+     * @var array  [discount_id => ['value' => value, 'value_type' => value_type], ...]
+     */
+    protected $maxValueByDiscount = [];
+
+    /**
      * DiscountCalculator constructor.
      * @param Collection $params
      * Формат:
@@ -962,7 +968,7 @@ class CheckoutPriceCalculator
     /**
      * Вместо равномерного распределения скидки по офферам (applyEvenly), применяет скидку к каждому офферу
      *
-     * @param $discount
+     * @param Discount $discount
      * @param Collection $offerIds
      * @return bool Результат применения скидки
      */
@@ -979,7 +985,23 @@ class CheckoutPriceCalculator
         $changed = 0;
         foreach ($offerIds as $offerId) {
             $offer = &$this->filter['offers'][$offerId];
-            $change = $this->changePrice($offer, $discount->value, $discount->value_type);
+            $lowestPossiblePrice = self::LOWEST_POSSIBLE_PRICE;
+
+            // Если в условии на суммирование скидки было "не более x%", то переопределяем минимально возможную цену товара
+            if (isset($this->maxValueByDiscount[$discount->id])) {
+
+                // Получаем величину скидки, которая максимально возможна по условию
+                $maxDiscountValue = $this->calculateDiscountByType(
+                    $offer['cost'],
+                    $this->maxValueByDiscount[$discount->id]['value'],
+                    $this->maxValueByDiscount[$discount->id]['value_type']
+                );
+
+                // Чтобы не получить минимально возможную цену меньше 1р, выбираем наибольшее значение
+                $lowestPossiblePrice = max($lowestPossiblePrice, $offer['cost'] - $maxDiscountValue);
+            }
+
+            $change = $this->changePrice($offer, $discount->value, $discount->value_type, true, $lowestPossiblePrice);
             if ($change <= 0) {
                 continue;
             }
@@ -1024,16 +1046,7 @@ class CheckoutPriceCalculator
 
         $currentDiscount = $item['discount'] ?? 0;
         $currentCost     = $item['cost'] ?? $item['price'];
-        switch ($valueType) {
-            case Discount::DISCOUNT_VALUE_TYPE_PERCENT:
-                $discountValue = min($item['price'], round($currentCost * $value / 100));
-                break;
-            case Discount::DISCOUNT_VALUE_TYPE_RUB:
-                $discountValue = $value > $item['price'] ? $item['price'] : $value;
-                break;
-            default:
-                return 0;
-        }
+        $discountValue = min($item['price'], $this->calculateDiscountByType($currentCost, $value, $valueType));
 
         /** Цена не может быть меньше $lowestPossiblePrice */
         if ($item['price'] - $discountValue < $lowestPossiblePrice) {
@@ -1047,6 +1060,18 @@ class CheckoutPriceCalculator
         }
 
         return $discountValue;
+    }
+
+    protected function calculateDiscountByType($cost, $value, $valueType)
+    {
+        switch ($valueType) {
+            case Discount::DISCOUNT_VALUE_TYPE_PERCENT:
+                return round($cost * $value / 100);
+            case Discount::DISCOUNT_VALUE_TYPE_RUB:
+                return $value;
+            default:
+                return 0;
+        }
     }
 
     /**
@@ -1124,7 +1149,7 @@ class CheckoutPriceCalculator
 
     /**
      * Можно ли применить скидку к офферу
-     * @param $discount
+     * @param Discount $discount
      * @param $offerId
      * @return bool
      */
@@ -1144,7 +1169,18 @@ class CheckoutPriceCalculator
         foreach ($this->relations['conditions'][$discount->id] as $condition) {
             if ($condition->type === DiscountCondition::DISCOUNT_SYNERGY) {
                 $synergyDiscountIds = $condition->getSynergy();
-                return $discountIdsForOffer->intersect($synergyDiscountIds)->count() === $discountIdsForOffer->count();
+                if ($discountIdsForOffer->intersect($synergyDiscountIds)->count() !== $discountIdsForOffer->count()) {
+                    return false;
+                }
+
+                if ($condition->getMaxValueType()) {
+                    $this->maxValueByDiscount[$discount->id] = [
+                        'value_type' => $condition->getMaxValueType(),
+                        'value' => $condition->getMaxValue(),
+                    ];
+                }
+
+                return true;
             }
         }
 

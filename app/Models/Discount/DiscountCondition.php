@@ -64,6 +64,8 @@ class DiscountCondition extends AbstractModel
     const FIELD_BUNDLES = 'bundles';
     const FIELD_CUSTOMER_IDS = 'customerIds';
     const FIELD_SYNERGY = 'synergy';
+    const FIELD_MAX_VALUE_TYPE = 'maxValueType';
+    const FIELD_MAX_VALUE = 'maxValue';
 
     /**
      * Заполняемые поля модели
@@ -178,6 +180,22 @@ class DiscountCondition extends AbstractModel
         return $this->condition[self::FIELD_SYNERGY] ?? [];
     }
 
+    /**
+     * @return int|null
+     */
+    public function getMaxValueType()
+    {
+        return $this->condition[self::FIELD_MAX_VALUE_TYPE] ?? null;
+    }
+
+    /**
+     * @return int|null
+     */
+    public function getMaxValue()
+    {
+        return $this->condition[self::FIELD_MAX_VALUE] ?? null;
+    }
+
     public function discount(): BelongsTo
     {
         return $this->belongsTo(Discount::class);
@@ -207,7 +225,8 @@ class DiscountCondition extends AbstractModel
                     ->unique()
                     ->toArray();
 
-                $condition->condition = [DiscountCondition::FIELD_SYNERGY => $synergy];
+                $conditionFields = array_merge($item->condition, [DiscountCondition::FIELD_SYNERGY => $synergy]);
+                $condition->condition = $conditionFields;
                 $condition->save();
             }
 
@@ -218,7 +237,9 @@ class DiscountCondition extends AbstractModel
 
                 $condition = new DiscountCondition();
                 $condition->type = self::DISCOUNT_SYNERGY;
-                $condition->condition = [DiscountCondition::FIELD_SYNERGY => [$item->discount_id]];
+                $condition->condition = array_merge($item->condition, [
+                    DiscountCondition::FIELD_SYNERGY => [$item->discount_id]
+                ]);
                 $condition->discount_id = $discountId;
                 $condition->save();
             }
@@ -245,7 +266,7 @@ class DiscountCondition extends AbstractModel
                     if (empty($synergy)) {
                         $condition->delete();
                     } else {
-                        $condition->condition = [DiscountCondition::FIELD_SYNERGY => $synergy];
+                        $condition->condition = array_merge($condition->condition, [DiscountCondition::FIELD_SYNERGY => $synergy]);
                         $condition->save();
                     }
                 }
