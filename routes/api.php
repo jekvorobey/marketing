@@ -64,4 +64,9 @@ Route::namespace('V1')->prefix('v1')->group(function () {
     });
 
     Route::get('aggregate/{customer_id}/personal-global-percent', 'AggregateController@getPersonalGlobalPercent')->where('customer_id', '[0-9]+');
+
+    Route::prefix('options/{key}')->group(function () {
+        Route::get('', 'OptionController@getOption');
+        Route::put('', 'OptionController@putOption');
+    });
 });
