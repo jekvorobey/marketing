@@ -32,7 +32,7 @@ class CreateOptionsTable extends Migration
         ]);
         DB::table('options')->insert([
             'key' => 'KEY_ROLES_AVAILABLE_FOR_BONUSES',
-            'value' => json_encode(['value' => [UserDto::SHOWCASE__REFERRAL_PARTNER]]),
+            'value' => json_encode(['value' => [UserDto::SHOWCASE__PROFESSIONAL]]),
             'created_at' => Carbon::now(),
             'updated_at' => Carbon::now(),
         ]);
