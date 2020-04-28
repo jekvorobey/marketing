@@ -110,31 +110,31 @@ class PriceController extends Controller
             ]
         ]);
     }
-    
+
     public function catalogCombinations(Request $request)
     {
         $offerIds = $request->get('offer_ids');
         if (!$offerIds) {
             throw new BadRequestHttpException('offer_ids is required');
         }
-        
+
         $segments = DiscountSegment::query()->select(['id', 'segment_id'])->get()->pluck('segment_id')->unique()->all();
         $segments[] = null;
         $roles = DiscountUserRole::query()->select(['id', 'role_id'])->get()->pluck('role_id')->unique()->all();
         $roles[] = null;
-        
+
         $prices = [];
         foreach ($segments as $segment) {
             foreach ($roles as $role) {
                 $segmentKey = $segment ?? "0";
                 $roleKey = $role ?? "0";
-                
+
                 $items = (new CatalogPriceCalculator([
                     'offer_ids' => $offerIds,
                     'role_ids' => $role,
                     'segment_id' => $segment,
                 ]))->calculate();
-                
+
                 foreach ($items as $item) {
                     $discounts = $item['discounts'] ?? null;
                     if (!$discounts && ($segment || $role)) {
@@ -144,11 +144,11 @@ class PriceController extends Controller
                     if (!isset($prices[$offerId])) {
                         $prices[$offerId] = [];
                     }
-                    
+
                     if (!isset($prices[$offerId][$segmentKey])) {
                         $prices[$offerId][$segmentKey] = [];
                     }
-    
+
                     $prices[$offerId][$segmentKey][$roleKey] = [
                         'cost' => $item['cost'],
                         'price' => $item['price'],
@@ -157,7 +157,7 @@ class PriceController extends Controller
                 }
             }
         }
-        
+
         return response()->json($prices);
     }
 
@@ -239,5 +239,47 @@ class PriceController extends Controller
         }
 
         return response('', 204);
+    }
+
+    public function offersIdsByPricesConditionsAndOffer(Request $request): JsonResponse
+    {
+        try {
+            $params = $request->validate([
+                'offer_ids' => 'array',
+                'offer_ids.*' => 'integer',
+                'role_ids' => 'array',
+                'segment_id' => 'integer|nullable',
+                'price_from' => 'integer',
+                'price_to' => 'integer',
+            ]);
+
+            $discountPriceCalculator = new CatalogPriceCalculator($params);
+            $prices = $discountPriceCalculator->calculate();
+
+            $prices = collect($prices)->keyBy('offer_id')
+                ->map(function ($item, $key) {
+                    return $item['price'];
+                })
+                ->all();
+
+            if (array_key_exists('price_from', $params)) {
+                $priceFrom = $params['price_from'];
+                $prices = array_filter($prices, function ($price) use ($priceFrom) {
+                    return $price >= $priceFrom;
+                });
+            }
+            if (array_key_exists('price_to', $params)) {
+                $priceTo = $params['price_to'];
+                $prices = array_filter($prices, function ($price) use ($priceTo) {
+                    return $price <= $priceTo;
+                });
+            }
+
+            return response()->json([
+                'offer_ids' => array_keys($prices),
+            ]);
+        } catch (\Exception $ex) {
+            return response()->json(['error' => $ex->getMessage()], 400);
+        }
     }
 }
