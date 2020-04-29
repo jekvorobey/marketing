@@ -153,6 +153,7 @@ class PriceController extends Controller
                     $prices[$offerId][$segmentKey][$roleKey] = [
                         'cost' => $item['cost'],
                         'price' => $item['price'],
+                        'bonus' => $item['bonus'],
                         'discounts' => $item['discounts'] ?? null,
                     ];
                 }
