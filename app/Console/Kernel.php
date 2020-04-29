@@ -2,6 +2,7 @@
 
 namespace App\Console;
 
+use App\Console\Commands\ExpiredBonusStatus;
 use App\Console\Commands\ExpiredDiscountStatus;
 use App\Console\Commands\ExpiredPromoCodeStatus;
 use Illuminate\Console\Scheduling\Schedule;
@@ -28,6 +29,7 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command(ExpiredDiscountStatus::class)->dailyAt('00:00');
         $schedule->command(ExpiredPromoCodeStatus::class)->dailyAt('00:00');
+        $schedule->command(ExpiredBonusStatus::class)->dailyAt('00:00');
     }
 
     /**
