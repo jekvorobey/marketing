@@ -107,6 +107,7 @@ class PriceController extends Controller
                 'cost' => $items[0]['cost'],
                 'price' => $items[0]['price'],
                 'discounts' => $items[0]['discounts'] ?? null,
+                'bonus' => $items[0]['bonus'] ?? 0,
             ]
         ]);
     }

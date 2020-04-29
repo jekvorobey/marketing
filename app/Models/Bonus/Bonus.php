@@ -120,7 +120,7 @@ class Bonus extends AbstractModel
      */
     public function offers()
     {
-        return $this->hasMany(BonusOffer::class, 'discount_id');
+        return $this->hasMany(BonusOffer::class, 'bonus_id');
     }
 
     /**
@@ -128,7 +128,7 @@ class Bonus extends AbstractModel
      */
     public function brands()
     {
-        return $this->hasMany(BonusBrand::class, 'discount_id');
+        return $this->hasMany(BonusBrand::class, 'bonus_id');
     }
 
     /**
@@ -136,7 +136,7 @@ class Bonus extends AbstractModel
      */
     public function categories()
     {
-        return $this->hasMany(BonusCategory::class, 'discount_id');
+        return $this->hasMany(BonusCategory::class, 'bonus_id');
     }
 
     /**

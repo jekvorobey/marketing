@@ -2,6 +2,7 @@
 
 namespace App\Services\Price;
 
+use App\Models\Bonus\Bonus;
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountBrand;
 use App\Models\Discount\DiscountCategory;
@@ -16,6 +17,7 @@ use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\Customer\Dto\CustomerDto;
 use Greensight\Customer\Services\CustomerService\CustomerService;
 use Greensight\Oms\Services\OrderService\OrderService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Pim\Dto\CategoryDto;
 use Pim\Dto\Offer\OfferDto;
@@ -95,6 +97,24 @@ class CheckoutPriceCalculator
     protected $freeDelivery = false;
 
     /**
+     * Список возможных бонусов
+     * @var Collection
+     */
+    protected $bonuses;
+
+    /**
+     * @var Collection
+     */
+    protected $appliedBonuses;
+
+    /**
+     * Количество бонусов для каждого оффера:
+     * [offer_id => ['id' => bonus_id], ...]
+     * @var Collection
+     */
+    protected $offersByBonuses;
+
+    /**
      * Офферы со скидками в формате:
      * [offer_id => [['id' => discount_id, 'value' => value, 'value_type' => value_type], ...]]
      * @var Collection
@@ -168,10 +188,13 @@ class CheckoutPriceCalculator
         $this->appliedPromoCodes = collect();
         $this->discounts = collect();
         $this->possibleDiscounts = collect();
+        $this->bonuses = collect();
         $this->relations = collect();
         $this->categories = collect();
         $this->appliedDiscounts = collect();
+        $this->appliedBonuses = collect();
         $this->offersByDiscounts = collect();
+        $this->offersByBonuses = collect();
         $this->loadData();
     }
 
@@ -201,13 +224,18 @@ class CheckoutPriceCalculator
             $this->filter['deliveries'][$deliveryId] = $deliveryWithDiscount;
         }
 
-        /** Считаются окончательные скидки */
+        /** Считаются окончательные скидки + бонусы */
         $this->filter['delivery'] = $this->filter['selectedDelivery'];
-        $calculator->filter()->sort()->apply();
+        $calculator->filter()
+            ->sort()
+            ->apply()
+            ->getActiveBonuses()
+            ->applyBonuses();
 
         return [
             'promoCodes' => $this->appliedPromoCodes->values(),
             'discounts' => $this->getExternalDiscountFormat(),
+            'bonuses' => $this->appliedBonuses->values(),
             'offers' => $this->getFormatOffers(),
             'deliveries' => $this->filter['deliveries']->values(),
         ];
@@ -219,6 +247,7 @@ class CheckoutPriceCalculator
     public function getFormatOffers()
     {
         return $this->filter['offers']->map(function ($offer, $offerId) {
+            $bonuses = $this->offersByBonuses[$offerId] ?? collect();
             return [
                 'offer_id' => $offerId,
                 'price' => $offer['price'],
@@ -230,6 +259,10 @@ class CheckoutPriceCalculator
                 'discounts' => $this->offersByDiscounts->has($offerId)
                     ? $this->offersByDiscounts[$offerId]->values()->toArray()
                     : null,
+                'bonus' => $bonuses->reduce(function ($carry, $bonus) use ($offer) {
+                    return $carry + $bonus['bonus'] * ($offer['qty'] ?? 1);
+                }) ?? 0,
+                'bonuses' => $bonuses,
             ];
         });
     }
@@ -533,6 +566,18 @@ class CheckoutPriceCalculator
     }
 
     /**
+     * @return $this
+     */
+    protected function getActiveBonuses()
+    {
+        $this->bonuses = Bonus::query()
+            ->active()
+            ->get();
+
+        return $this;
+    }
+
+    /**
      * Загружает необходимые данные о полученных скидках ($this->discount)
      * @return $this
      */
@@ -810,7 +855,7 @@ class CheckoutPriceCalculator
                 # За исключением офферов
                 $exceptOfferIds = $this->getExceptOffersForDiscount($discount->id);
                 # Отбираем нужные офферы
-                $offerIds = $this->filterForDiscountBrand($brandIds, $exceptOfferIds, $discount->merchant_id);
+                $offerIds = $this->filterForBrand($brandIds, $exceptOfferIds, $discount->merchant_id);
                 $change = $this->applyDiscountToOffer($discount, $offerIds);
                 break;
             case Discount::DISCOUNT_TYPE_CATEGORY:
@@ -822,7 +867,7 @@ class CheckoutPriceCalculator
                 # За исключением офферов
                 $exceptOfferIds = $this->getExceptOffersForDiscount($discount->id);
                 # Отбираем нужные офферы
-                $offerIds = $this->filterForDiscountCategory($categoryIds, $exceptBrandIds, $exceptOfferIds, $discount->merchant_id);
+                $offerIds = $this->filterForCategory($categoryIds, $exceptBrandIds, $exceptOfferIds, $discount->merchant_id);
                 $change = $this->applyDiscountToOffer($discount, $offerIds);
                 break;
             case Discount::DISCOUNT_TYPE_DELIVERY:
@@ -947,6 +992,133 @@ class CheckoutPriceCalculator
         }
 
         return $currentDiscountValue;
+    }
+
+    /**
+     * @return $this
+     */
+    protected function applyBonuses()
+    {
+        $this->bonuses = $this->bonuses->filter(function (Bonus $bonus) {
+            if (!$bonus->promo_code_only) {
+                return true;
+            }
+
+            return $this->promoCodes->filter(function (PromoCode $promoCode) use ($bonus) {
+                return $promoCode->bonus_id === $bonus->id;
+            })->isNotEmpty();
+        });
+
+        /** @var Bonus $bonus */
+        foreach ($this->bonuses as $bonus) {
+            $bonusValue = 0;
+            switch ($bonus->type) {
+                case Bonus::TYPE_OFFER:
+                    # Бонусы на офферы
+                    $offerIds = $bonus->offers->pluck('offer_id');
+                    $bonusValue = $this->applyBonusToOffer($bonus, $offerIds);
+                    break;
+                case Bonus::TYPE_BRAND:
+                    # Бонусы на бренды
+                    /** @var Collection $brandIds */
+                    $brandIds = $bonus->brands->pluck('brand_id');
+                    # За исключением офферов
+                    $exceptOfferIds = $bonus->offers->pluck('offer_id');
+                    # Отбираем нужные офферы
+                    $offerIds = $this->filterForBrand($brandIds, $exceptOfferIds, null);
+                    $bonusValue = $this->applyBonusToOffer($bonus, $offerIds);
+                    break;
+                case Bonus::TYPE_CATEGORY:
+                    # Скидка на категории
+                    /** @var Collection $categoryIds */
+                    $categoryIds = $bonus->categories->pluck('category_id');
+                    # За исключением брендов
+                    $exceptBrandIds = $bonus->brands->pluck('brand_id');
+                    # За исключением офферов
+                    $exceptOfferIds = $bonus->offers->pluck('offer_id');
+                    # Отбираем нужные офферы
+                    $offerIds = $this->filterForCategory($categoryIds, $exceptBrandIds, $exceptOfferIds, null);
+                    $bonusValue = $this->applyBonusToOffer($bonus, $offerIds);
+                    break;
+                case Bonus::TYPE_SERVICE:
+                    // todo
+                    break;
+                case Bonus::TYPE_CART_TOTAL:
+                    $price = $this->getPriceOrders();
+                    $bonusValue = $this->priceToBonusValue($price, $bonus);
+                    break;
+            }
+
+            if ($bonusValue > 0) {
+                $this->appliedBonuses->put($bonus->id, [
+                    'id' => $bonus->id,
+                    'name' => $bonus->name,
+                    'type' => $bonus->type,
+                    'value' => $bonus->value,
+                    'value_type' => $bonus->value_type,
+                    'valid_period' => $bonus->valid_period,
+                    'promo_code_only' => $bonus->promo_code_only,
+                    'bonus' => $bonusValue,
+                ]);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param       $price
+     * @param Bonus $bonus
+     *
+     * @return int
+     */
+    protected function priceToBonusValue($price, Bonus $bonus)
+    {
+        switch ($bonus->value_type) {
+            case Bonus::VALUE_TYPE_PERCENT:
+                return round($price * $bonus->value / 100);
+            case Bonus::VALUE_TYPE_RUB:
+                return $bonus->value;
+        }
+
+        return 0;
+    }
+
+    /**
+     * @param Bonus $bonus
+     * @param       $offerIds
+     *
+     * @return bool|int
+     */
+    protected function applyBonusToOffer(Bonus $bonus, $offerIds)
+    {
+        $offerIds = $offerIds->filter(function ($offerId) use ($bonus) {
+            return $this->filter['offers']->has($offerId);
+        });
+
+        if ($offerIds->isEmpty()) {
+            return false;
+        }
+
+        $totalBonusValue = 0;
+        foreach ($offerIds as $offerId) {
+            $offer = &$this->filter['offers'][$offerId];
+            $bonusValue = $this->priceToBonusValue($offer['price'], $bonus);
+
+            if (!$this->offersByBonuses->has($offerId)) {
+                $this->offersByBonuses->put($offerId, collect());
+            }
+
+            $this->offersByBonuses[$offerId]->push([
+                'id' => $bonus->id,
+                'bonus' => $bonusValue,
+                'value' => $bonus->value,
+                'value_type' => $bonus->value_type
+            ]);
+            $totalBonusValue += $bonusValue * $offer['qty'];
+        }
+
+        return $totalBonusValue;
     }
 
     /**
@@ -1080,7 +1252,7 @@ class CheckoutPriceCalculator
      * @param $merchantId
      * @return Collection
      */
-    protected function filterForDiscountBrand($brandIds, $exceptOfferIds, $merchantId)
+    protected function filterForBrand($brandIds, $exceptOfferIds, $merchantId)
     {
         return $this->filter['offers']->filter(function ($offer) use ($brandIds, $exceptOfferIds, $merchantId) {
             return $brandIds->search($offer['brand_id']) !== false
@@ -1096,7 +1268,7 @@ class CheckoutPriceCalculator
      * @param $merchantId
      * @return Collection
      */
-    protected function filterForDiscountCategory($categoryIds, $exceptBrandIds, $exceptOfferIds, $merchantId)
+    protected function filterForCategory($categoryIds, $exceptBrandIds, $exceptOfferIds, $merchantId)
     {
         return $this->filter['offers']->filter(function ($offer) use ($categoryIds, $exceptBrandIds, $exceptOfferIds, $merchantId) {
             $offerCategory = $this->categories->has($offer['category_id'])
@@ -1108,7 +1280,7 @@ class CheckoutPriceCalculator
                     return $carry ||
                         (
                             $this->categories->has($categoryId)
-                            && $this->categories[$categoryId]->isAncestorOf($offerCategory)
+                            && $this->categories[$categoryId]->isSelfOrAncestorOf($offerCategory)
                         );
                 })
                 && $exceptBrandIds->search($offer['brand_id']) === false

@@ -12,7 +12,7 @@ class PriceReactorController extends Controller
     public function calculateBasketPrice(Request $request)
     {
         $basket = Basket::fromRequestData($request->all());
-        $basket->addPrices();
+        $basket->addPricesAndBonuses();
         return response()->json($basket);
     }
 }

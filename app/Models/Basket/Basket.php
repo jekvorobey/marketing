@@ -55,6 +55,8 @@ class Basket implements \JsonSerializable
     /** @var array */
     private $appliedDiscounts;
     /** @var array */
+    private $appliedBonuses;
+    /** @var array */
     private $appliedPromoCodes = [];
 
     /** @var BasketItem[] */
@@ -102,7 +104,7 @@ class Basket implements \JsonSerializable
     /**
      * @throws Exception
      */
-    public function addPrices()
+    public function addPricesAndBonuses()
     {
         $offers = collect($this->items)->transform(function(BasketItem $item) {
             return ['id' => $item->offerId, 'qty' => $item->qty];
@@ -117,8 +119,9 @@ class Basket implements \JsonSerializable
             ->calculate();
 
         $this->appliedPromoCodes = $calculation['promoCodes'];
-        $this->appliedDiscounts = $calculation['discounts'];
-        $this->deliveries       = $calculation['deliveries'];
+        $this->appliedDiscounts  = $calculation['discounts'];
+        $this->appliedBonuses    = $calculation['bonuses'];
+        $this->deliveries        = $calculation['deliveries'];
 
         $totalCost = 0;
         $totalItemDiscount = 0;
@@ -136,6 +139,8 @@ class Basket implements \JsonSerializable
             $item->discount = $offer['discount'] * $offer['qty'];
             $item->discounts = $offer['discounts'] ?? [];
             $item->price = $offer['price'] * $offer['qty'];
+            $item->bonus = $offer['bonus'];
+            $item->bonuses = $offer['bonuses']->toArray();
             $totalCost += $item->totalCost;
             $totalItemDiscount += $item->discount;
         }
@@ -188,6 +193,7 @@ class Basket implements \JsonSerializable
             'cost' => $this->cost,
             'price' => $this->price,
             'discounts' => $this->appliedDiscounts,
+            'bonuses' => $this->appliedBonuses,
             'promoCodes' => $this->appliedPromoCodes,
             'items' => $this->items,
             'deliveries' => $this->deliveries,

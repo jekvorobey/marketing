@@ -2,6 +2,7 @@
 
 namespace App\Services\Price;
 
+use App\Models\Bonus\Bonus;
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountBrand;
 use App\Models\Discount\DiscountCondition;
@@ -60,7 +61,9 @@ class CatalogPriceCalculator extends CheckoutPriceCalculator
             ->fetchData()
             ->filter()
             ->sort()
-            ->apply();
+            ->apply()
+            ->getActiveBonuses()
+            ->applyBonuses();
 
         return $this->getFormatOffers();
     }
@@ -71,13 +74,17 @@ class CatalogPriceCalculator extends CheckoutPriceCalculator
     public function getFormatOffers()
     {
         return $this->filter['offers']->map(function ($offer, $offerId) {
+            $bonuses = $this->offersByBonuses[$offerId] ?? collect();
             return [
                 'offer_id' => $offerId,
                 'price' => $offer['price'],
                 'cost' => $offer['cost'] ?? $offer['price'],
                 'discounts' => $this->offersByDiscounts->has($offerId)
                     ? $this->offersByDiscounts[$offerId]->values()->toArray()
-                    : null
+                    : null,
+                'bonus' => $bonuses->reduce(function ($carry, $bonus) use ($offer) {
+                    return $carry + $bonus['bonus'] * ($offer['qty'] ?? 1);
+                }) ?? 0,
             ];
         })->values()->toArray();
     }
@@ -275,6 +282,19 @@ class CatalogPriceCalculator extends CheckoutPriceCalculator
         $this->discounts = Discount::select(['id', 'type', 'value', 'value_type', 'promo_code_only', 'merchant_id'])
             ->showInCatalog()
             ->orderBy('type')
+            ->get();
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    protected function getActiveBonuses()
+    {
+        $this->bonuses = Bonus::query()
+            ->where('type', '!=', Bonus::TYPE_CART_TOTAL)
+            ->active()
             ->get();
 
         return $this;
