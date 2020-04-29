@@ -7,6 +7,7 @@ use Greensight\CommonMsa\Models\AbstractModel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Pim\Services\SearchService\SearchService;
 
 /**
  * Class Bonus
@@ -166,5 +167,30 @@ class Bonus extends AbstractModel
             })->where(function ($query) use ($date) {
                 $query->where('end_date', '>=', $date)->orWhereNull('end_date');
             });
+    }
+
+
+    public static function boot()
+    {
+        parent::boot();
+
+        self::saved(function (self $bonus) {
+            $bonus->updateProducts();
+        });
+
+        self::deleting(function (self $bonus) {
+            $bonus->updateProducts();
+        });
+    }
+
+    public function updateProducts()
+    {
+        static $actionPerformed = false;
+        if (!$actionPerformed) {
+            /** @var SearchService $searchService */
+            $searchService = resolve(SearchService::class);
+            $searchService->markAllProductsForIndex();
+            $actionPerformed = true;
+        }
     }
 }

@@ -25,4 +25,17 @@ class BonusCategory extends AbstractModel
     {
         return $this->belongsTo(Bonus::class);
     }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        self::saved(function (self $bonusCategory) {
+            $bonusCategory->bonus->updateProducts();
+        });
+
+        self::deleted(function (self $bonusCategory) {
+            $bonusCategory->bonus->updateProducts();
+        });
+    }
 }
