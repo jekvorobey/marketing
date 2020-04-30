@@ -2,6 +2,7 @@
 
 use App\Models\Discount\Discount;
 use App\Models\PromoCode\PromoCode;
+use App\Models\Bonus\Bonus;
 use Greensight\CommonMsa\Dto\UserDto;
 use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\Customer\Services\CustomerService\CustomerService;
@@ -35,6 +36,9 @@ class PromoCodesTableSeeder extends Seeder
 
     /** @var array */
     protected $discountIds;
+
+    /** @var array */
+    protected $bonusIds;
 
     /** @var array */
     protected $names;
@@ -87,7 +91,7 @@ class PromoCodesTableSeeder extends Seeder
                     $promo->gift_id = $this->faker->numberBetween(1, 10); // todo: ID подарка
                     break;
                 case PromoCode::TYPE_BONUS:
-                    $promo->bonus_id = $this->faker->numberBetween(1, 10); // todo: ID бонуса
+                    $promo->bonus_id = $this->faker->randomElement($this->bonusIds);
                     break;
                 case PromoCode::TYPE_DELIVERY:
                     break;
@@ -139,7 +143,17 @@ class PromoCodesTableSeeder extends Seeder
 
         $this->userRoles = [UserDto::SHOWCASE__PROFESSIONAL, UserDto::SHOWCASE__REFERRAL_PARTNER];
 
-        $this->discountIds = Discount::select('id')->get()->pluck('id')->toArray();
+        $this->discountIds = Discount::select('id')
+            ->where('promo_code_only', true)
+            ->get()
+            ->pluck('id')
+            ->toArray();
+
+        $this->bonusIds = Bonus::select('id')
+            ->where('promo_code_only', true)
+            ->get()
+            ->pluck('id')
+            ->toArray();
 
         $this->names = [
             'Распродажа – ###',

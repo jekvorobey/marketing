@@ -8,6 +8,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * Class BonusOffer
  * @package App\Models\Bonus
+ *
+ * @property int bonus_id
+ * @property int offer_id
+ * @property int except
  */
 class BonusOffer extends AbstractModel
 {
