@@ -147,6 +147,24 @@ class PromoCodeController extends Controller
     }
 
     /**
+     * Проверяется уникальность промокода по коду
+     * @return JsonResponse
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function check()
+    {
+        $data = $this->validate(request(), [
+            'code' => 'required|string|max:32'
+        ]);
+        $item = PromoCode::query()->where('code', $data['code'])->first();
+        $item ? $status = 'error' : $status = 'ok';
+
+        return response()->json([
+            'status' => $status
+        ], 200);
+    }
+
+    /**
      * @param Request $request
      * @param Builder $query
      * @return Builder

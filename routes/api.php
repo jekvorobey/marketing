@@ -36,6 +36,7 @@ Route::namespace('V1')->prefix('v1')->group(function () {
         Route::get('', 'PromoCodeController@read');
         Route::post('', 'PromoCodeController@create');
         Route::get('generate', 'PromoCodeController@generate');
+        Route::get('check', 'PromoCodeController@check');
 
         Route::prefix('{id}')->group(function () {
             Route::get('', 'PromoCodeController@read');
