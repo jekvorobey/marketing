@@ -74,8 +74,6 @@ class PromoCode extends AbstractModel
     const CONDITION_TYPE_SEGMENT_IDS = 'segments';
     /** Для определенной(ых) роли(ей) */
     const CONDITION_TYPE_ROLE_IDS = 'roles';
-    /** Суммируется с другими промокодами */
-    const CONDITION_TYPE_SYNERGY = 'synergy';
 
     /**
      * Заполняемые поля модели
@@ -206,26 +204,6 @@ class PromoCode extends AbstractModel
     }
 
     /**
-     * @param array $promoCodeIds
-     * @return PromoCode
-     */
-    public function setSynergyIds(array $promoCodeIds)
-    {
-        $conditions = $this->conditions ?? [];
-        $conditions[self::CONDITION_TYPE_SYNERGY] = $promoCodeIds;
-        $this->conditions = $conditions;
-        return $this;
-    }
-
-    /**
-     * @return array
-     */
-    public function getCompatiblePromoCodes()
-    {
-        return $this->conditions[self::CONDITION_TYPE_SYNERGY] ?? [];
-    }
-
-    /**
      * @return array
      */
     public function getCustomerIds()
@@ -292,66 +270,6 @@ class PromoCode extends AbstractModel
                 if ($discount && !$discount->promo_code_only) {
                     $discount->promo_code_only = true;
                     $discount->save();
-                }
-            }
-
-            /**
-             * Суммируется с другими промокодами
-             */
-            $promoCodeIds = $item->conditions[self::CONDITION_TYPE_SYNERGY] ?? [];
-            if (empty($promoCodeIds)) {
-                return;
-            }
-
-            $synergyProp = 'conditions->' . self::CONDITION_TYPE_SYNERGY;
-            $promoCodes = PromoCode::query()
-                ->whereIn('id', $promoCodeIds)
-                ->where(function (Builder $query) use ($synergyProp, $item) {
-                    $query->whereNull($synergyProp)->orWhereJsonDoesntContain($synergyProp, $item->id);
-                })->get();
-
-            /** @var PromoCode $promoCode */
-            foreach ($promoCodes as $promoCode) {
-                $conditions = $promoCode->conditions ?? [];
-                $synergy = collect($conditions[self::CONDITION_TYPE_SYNERGY] ?? [])
-                    ->push($item->id)
-                    ->values()
-                    ->unique()
-                    ->toArray();
-
-                $conditions[self::CONDITION_TYPE_SYNERGY] = $synergy;
-                $promoCode->conditions = $conditions;
-                $promoCode->save();
-            }
-        });
-
-        self::deleted(function (self $item) {
-            $promoCodeIds = $item->conditions[self::CONDITION_TYPE_SYNERGY] ?? [];
-            if (empty($promoCodeIds)) {
-                return;
-            }
-
-            $synergyProp = 'conditions->' . self::CONDITION_TYPE_SYNERGY;
-            $promoCodes = PromoCode::query()
-                ->whereIn('id', $promoCodeIds)
-                ->whereJsonContains($synergyProp, $item->id)
-                ->get();
-
-            /** @var PromoCode $promoCode */
-            foreach ($promoCodes as $promoCode) {
-                $conditions = $promoCode->conditions;
-                $synergy = $conditions[self::CONDITION_TYPE_SYNERGY] ?? [];
-                if (($key = array_search($item->id, $synergy)) !== false) {
-                    unset($synergy[$key]);
-                    $synergy = array_values($synergy);
-                    if (empty($synergy)) {
-                        unset($conditions[self::CONDITION_TYPE_SYNERGY]);
-                    } else {
-                        $conditions[self::CONDITION_TYPE_SYNERGY] = $synergy;
-                    }
-
-                    $promoCode->conditions = !empty($conditions) ? $conditions : null;
-                    $promoCode->save();
                 }
             }
         });

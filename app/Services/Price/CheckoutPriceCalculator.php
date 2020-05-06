@@ -1327,12 +1327,7 @@ class CheckoutPriceCalculator
             return true;
         }
 
-        $promoCodeIds = $promoCode->getCompatiblePromoCodes();
-        if (empty($promoCodeIds)) {
-            return false;
-        }
-
-        return $this->appliedPromoCodes->pluck('id')->diff($promoCodeIds)->isEmpty();
+        return false; // по умолчанию не совместим
     }
 
     /**
