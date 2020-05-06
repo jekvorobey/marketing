@@ -863,7 +863,7 @@ class CheckoutPriceCalculator
                 /** @var Collection $brandIds */
                 $brandIds = ($discount->type == Discount::DISCOUNT_TYPE_BRAND)
                     ? $this->relations['brands'][$discount->id]->pluck('brand_id')
-                    : $this->filter['brands']->pluck('id');
+                    : $this->filter['brands'];
 
                 # За исключением офферов
                 $exceptOfferIds = $this->getExceptOffersForDiscount($discount->id);
@@ -877,7 +877,7 @@ class CheckoutPriceCalculator
                 /** @var Collection $categoryIds */
                 $categoryIds = ($discount->type == Discount::DISCOUNT_TYPE_CATEGORY)
                     ? $this->relations['categories'][$discount->id]->pluck('category_id')
-                    : $this->filter['categories']->pluck('id');
+                    : $this->filter['categories'];
                 # За исключением брендов
                 $exceptBrandIds = $this->getExceptBrandsForDiscount($discount->id);
                 # За исключением офферов
