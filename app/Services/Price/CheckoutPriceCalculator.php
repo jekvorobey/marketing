@@ -669,9 +669,14 @@ class CheckoutPriceCalculator
             return true;
         }
 
+        $customerId = $this->getCustomerId();
+        if (!$customerId) {
+            return false;
+        }
+
         /** @var OrderService $orderService */
         $orderService = resolve(OrderService::class);
-        return $promoCode->counter > $orderService->orderPromoCodeCount($promoCode->id);
+        return $promoCode->counter > $orderService->orderPromoCodeCountByCustomer($promoCode->id, $customerId);
     }
 
     /**
