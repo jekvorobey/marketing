@@ -96,8 +96,6 @@ class PromoCodeController extends Controller
             'conditions.roles.*' => 'numeric|nullable',
             'conditions.customers' => 'array|nullable',
             'conditions.customers.*' => 'numeric|nullable',
-            'conditions.synergy' => 'array|nullable',
-            'conditions.synergy.*' => 'numeric|nullable'
         ];
 
         if (!$promoCode->exists) {

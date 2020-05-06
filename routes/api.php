@@ -47,6 +47,11 @@ Route::namespace('V1')->prefix('v1')->group(function () {
 
     Route::prefix('bonuses')->group(function () {
         Route::get('', 'BonusController@read');
+
+        Route::prefix('{id}')->group(function () {
+            Route::put('', 'BonusController@update');
+            Route::delete('', 'BonusController@delete');
+        });
     });
 
     Route::prefix('offers')->group(function () {
