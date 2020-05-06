@@ -81,6 +81,10 @@ class DiscountHelper
             case Discount::DISCOUNT_TYPE_BUNDLE:
                 return true; // todo
                 break;
+            case Discount::DISCOUNT_TYPE_ANY_OFFER:
+            case Discount::DISCOUNT_TYPE_ANY_BUNDLE:
+            case Discount::DISCOUNT_TYPE_ANY_BRAND:
+            case Discount::DISCOUNT_TYPE_ANY_CATEGORY:
             case Discount::DISCOUNT_TYPE_DELIVERY:
             case Discount::DISCOUNT_TYPE_CART_TOTAL:
                 return $offers->isEmpty() && $brands->isEmpty() && $categories->isEmpty();

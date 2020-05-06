@@ -846,17 +846,25 @@ class CheckoutPriceCalculator
         $change = false;
         switch ($discount->type) {
             case Discount::DISCOUNT_TYPE_OFFER:
+            case Discount::DISCOUNT_TYPE_ANY_OFFER:
                 # Скидка на офферы
-                $offerIds = $this->relations['offers'][$discount->id]->pluck('offer_id');
+                $offerIds = ($discount->type == Discount::DISCOUNT_TYPE_OFFER)
+                    ? $this->relations['offers'][$discount->id]->pluck('offer_id')
+                    : $this->filter['offers']->pluck('id');
                 $change = $this->applyDiscountToOffer($discount, $offerIds);
                 break;
             case Discount::DISCOUNT_TYPE_BUNDLE:
+            case Discount::DISCOUNT_TYPE_ANY_BUNDLE:
                 // todo
                 break;
             case Discount::DISCOUNT_TYPE_BRAND:
+            case Discount::DISCOUNT_TYPE_ANY_BRAND:
                 # Скидка на бренды
                 /** @var Collection $brandIds */
-                $brandIds = $this->relations['brands'][$discount->id]->pluck('brand_id');
+                $brandIds = ($discount->type == Discount::DISCOUNT_TYPE_BRAND)
+                    ? $this->relations['brands'][$discount->id]->pluck('brand_id')
+                    : $this->filter['brands']->pluck('id');
+
                 # За исключением офферов
                 $exceptOfferIds = $this->getExceptOffersForDiscount($discount->id);
                 # Отбираем нужные офферы
@@ -864,9 +872,12 @@ class CheckoutPriceCalculator
                 $change = $this->applyDiscountToOffer($discount, $offerIds);
                 break;
             case Discount::DISCOUNT_TYPE_CATEGORY:
+            case Discount::DISCOUNT_TYPE_ANY_CATEGORY:
                 # Скидка на категории
                 /** @var Collection $categoryIds */
-                $categoryIds = $this->relations['categories'][$discount->id]->pluck('category_id');
+                $categoryIds = ($discount->type == Discount::DISCOUNT_TYPE_CATEGORY)
+                    ? $this->relations['categories'][$discount->id]->pluck('category_id')
+                    : $this->filter['categories']->pluck('id');
                 # За исключением брендов
                 $exceptBrandIds = $this->getExceptBrandsForDiscount($discount->id);
                 # За исключением офферов
@@ -1591,6 +1602,10 @@ class CheckoutPriceCalculator
             case Discount::DISCOUNT_TYPE_DELIVERY:
                 return isset($this->filter['delivery']['price']);
             case Discount::DISCOUNT_TYPE_CART_TOTAL:
+            case Discount::DISCOUNT_TYPE_ANY_OFFER:
+            case Discount::DISCOUNT_TYPE_ANY_BUNDLE:
+            case Discount::DISCOUNT_TYPE_ANY_BRAND:
+            case Discount::DISCOUNT_TYPE_ANY_CATEGORY:
                 return $this->filter['offers']->isNotEmpty();
             default:
                 return false;

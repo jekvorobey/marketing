@@ -70,6 +70,14 @@ class Discount extends AbstractModel
     const DISCOUNT_TYPE_DELIVERY = 5;
     /** Скидка на сумму корзины */
     const DISCOUNT_TYPE_CART_TOTAL = 6;
+    /** Скидка на все офферы */
+    const DISCOUNT_TYPE_ANY_OFFER = 7;
+    /** Скидка на все бандлы */
+    const DISCOUNT_TYPE_ANY_BUNDLE = 8;
+    /** Скидка на все бренды */
+    const DISCOUNT_TYPE_ANY_BRAND = 9;
+    /** Скидка на все категории */
+    const DISCOUNT_TYPE_ANY_CATEGORY = 10;
 
     /**
      * Тип скидки для вывода в корзину/чекаут
@@ -137,9 +145,13 @@ class Discount extends AbstractModel
     {
         return [
             self::DISCOUNT_TYPE_OFFER,
+            self::DISCOUNT_TYPE_ANY_OFFER,
             self::DISCOUNT_TYPE_BUNDLE,
+            self::DISCOUNT_TYPE_ANY_BUNDLE,
             self::DISCOUNT_TYPE_BRAND,
+            self::DISCOUNT_TYPE_ANY_BRAND,
             self::DISCOUNT_TYPE_CATEGORY,
+            self::DISCOUNT_TYPE_ANY_CATEGORY,
             self::DISCOUNT_TYPE_DELIVERY,
             self::DISCOUNT_TYPE_CART_TOTAL,
         ];
@@ -207,9 +219,13 @@ class Discount extends AbstractModel
 
         switch ($discountType) {
             case self::DISCOUNT_TYPE_OFFER:
+            case self::DISCOUNT_TYPE_ANY_OFFER:
             case self::DISCOUNT_TYPE_BUNDLE:
+            case self::DISCOUNT_TYPE_ANY_BUNDLE:
             case self::DISCOUNT_TYPE_BRAND:
+            case self::DISCOUNT_TYPE_ANY_BRAND:
             case self::DISCOUNT_TYPE_CATEGORY:
+            case self::DISCOUNT_TYPE_ANY_CATEGORY:
                 return self::EXT_TYPE_OFFER;
             case self::DISCOUNT_TYPE_DELIVERY:
                 return self::EXT_TYPE_DELIVERY;
@@ -336,8 +352,11 @@ class Discount extends AbstractModel
             ->where('promo_code_only', false)
             ->whereIn('type', [
                 self::DISCOUNT_TYPE_OFFER,
+                self::DISCOUNT_TYPE_ANY_OFFER,
                 self::DISCOUNT_TYPE_BRAND,
+                self::DISCOUNT_TYPE_ANY_BRAND,
                 self::DISCOUNT_TYPE_CATEGORY,
+                self::DISCOUNT_TYPE_ANY_CATEGORY,
             ]);
     }
 
@@ -413,9 +432,13 @@ class Discount extends AbstractModel
         return $this->value >= 1 &&
             in_array($this->type, [
                 self::DISCOUNT_TYPE_OFFER,
+                self::DISCOUNT_TYPE_ANY_OFFER,
                 self::DISCOUNT_TYPE_BUNDLE,
+                self::DISCOUNT_TYPE_ANY_BUNDLE,
                 self::DISCOUNT_TYPE_BRAND,
+                self::DISCOUNT_TYPE_ANY_BRAND,
                 self::DISCOUNT_TYPE_CATEGORY,
+                self::DISCOUNT_TYPE_ANY_CATEGORY,
                 self::DISCOUNT_TYPE_DELIVERY,
                 self::DISCOUNT_TYPE_CART_TOTAL,
             ]) && in_array($this->value_type, [
