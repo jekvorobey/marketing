@@ -29,9 +29,7 @@ class OptionController extends Controller
         /** @var Option $option */
         $option = Option::query()->where('key', $key)->first();
         if (!$option) {
-            return response()->json([
-                'value' => null,
-            ]);
+            return response()->json(null, 404);
         }
         return response()->json([
             'value' => $option->value ? $option->value['value'] : null,
