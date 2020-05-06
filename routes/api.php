@@ -45,6 +45,10 @@ Route::namespace('V1')->prefix('v1')->group(function () {
         });
     });
 
+    Route::prefix('bonuses')->group(function () {
+        Route::get('', 'BonusController@read');
+    });
+
     Route::prefix('offers')->group(function () {
         Route::prefix('prices')->group(function () {
             Route::post('', 'PriceController@read');
