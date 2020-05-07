@@ -55,14 +55,14 @@ class BonusController extends Controller
 
         $rules = [
             'name' => "string|{$required_rule}",
-            'code' => "string|{$required_rule}",
             'status' => "numeric|{$required_rule}",
             'type' => "numeric|{$required_rule}",
             'value' => "numeric|{$required_rule}",
             'value_type' => "numeric|{$required_rule}",
+            'valid_period' => "numeric|nullable",
             'start_date' => 'date|nullable',
             'end_date' => 'date|nullable',
-            'promo_code_only' => 'boolean|{$required_rule}',
+            'promo_code_only' => "boolean|{$required_rule}",
         ];
 
         try {
@@ -84,6 +84,18 @@ class BonusController extends Controller
             DB::rollBack();
             throw new HttpException(500, $e->getMessage());
         }
+    }
+
+    public function create()
+    {
+        try {
+            $bonus = new Bonus();
+            $this->save($bonus);
+        } catch (HttpException $e) {
+            return response()->json(['error' => $e->getMessage()], $e->getStatusCode());
+        }
+
+        return response()->json(['id' => $bonus->id], 201);
     }
 
     public function update($id)

@@ -47,6 +47,7 @@ Route::namespace('V1')->prefix('v1')->group(function () {
 
     Route::prefix('bonuses')->group(function () {
         Route::get('', 'BonusController@read');
+        Route::post('', 'BonusController@create');
 
         Route::prefix('{id}')->group(function () {
             Route::put('', 'BonusController@update');
