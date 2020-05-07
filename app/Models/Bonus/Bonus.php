@@ -2,6 +2,7 @@
 
 namespace App\Models\Bonus;
 
+use App\Models\PromoCode\PromoCode;
 use Carbon\Carbon;
 use Greensight\CommonMsa\Models\AbstractModel;
 use Illuminate\Database\Eloquent\Builder;
@@ -138,6 +139,14 @@ class Bonus extends AbstractModel
     public function categories()
     {
         return $this->hasMany(BonusCategory::class, 'bonus_id');
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function promoCodes()
+    {
+        return $this->hasMany(PromoCode::class, 'bonus_id');
     }
 
     /**

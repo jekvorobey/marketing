@@ -4,8 +4,7 @@ namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Bonus\Bonus;
-use App\Models\PromoCode\PromoCode;
-use App\Services\PromoCode\PromoCodeHelper;
+use App\Services\Bonus\BonusHelper;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +13,8 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class BonusController extends Controller
 {
+    const FAILED_DEPENDENCY_CODE = 424;
+
     /**
      * @param $id
      *
@@ -73,7 +74,7 @@ class BonusController extends Controller
         try {
             DB::beginTransaction();
             $bonus->fill($data);
-            // todo: validate
+            BonusHelper::validate($bonus->attributesToArray());
             $bonus->save();
             DB::commit();
         } catch (HttpException $e) {
@@ -108,6 +109,10 @@ class BonusController extends Controller
         $bonus = Bonus::find($id);
         if (!$bonus) {
             return response('', 204);
+        }
+
+        if ($bonus->promoCodes->isNotEmpty()) {
+            return response('', self::FAILED_DEPENDENCY_CODE);
         }
 
         $bonus->delete();
