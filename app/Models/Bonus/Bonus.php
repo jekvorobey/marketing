@@ -69,6 +69,10 @@ class Bonus extends AbstractModel
     /** Тип значения – Абсолютное значение (в бонусах) */
     const VALUE_TYPE_ABSOLUTE = 2;
 
+    const BONUS_OFFER_RELATION = 'offers';
+    const BONUS_BRAND_RELATION = 'brands';
+    const BONUS_CATEGORY_RELATION = 'categories';
+
     /**
      * Заполняемые поля модели
      */
@@ -126,6 +130,30 @@ class Bonus extends AbstractModel
             self::STATUS_ACTIVE,
             self::STATUS_PAUSED,
             self::STATUS_EXPIRED,
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    public static function availableRelations()
+    {
+        return [
+            Bonus::BONUS_OFFER_RELATION,
+            Bonus::BONUS_BRAND_RELATION,
+            Bonus::BONUS_CATEGORY_RELATION,
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    public function getMappingRelations()
+    {
+        return [
+            Bonus::BONUS_OFFER_RELATION => ['class' => BonusOffer::class, 'items' => $this->offers],
+            Bonus::BONUS_BRAND_RELATION => ['class' => BonusBrand::class, 'items' => $this->brands],
+            Bonus::BONUS_CATEGORY_RELATION => ['class' => BonusCategory::class, 'items' => $this->categories],
         ];
     }
 

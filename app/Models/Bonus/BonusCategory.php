@@ -4,6 +4,7 @@ namespace App\Models\Bonus;
 
 use Greensight\CommonMsa\Models\AbstractModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Hash;
 
 /**
  * Class BonusCategory
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class BonusCategory extends AbstractModel
 {
+    use Hash;
+
     /**
      * Заполняемые поля модели
      */

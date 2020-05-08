@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Models\Discount;
+namespace App\Models;
 
 use Illuminate\Support\Collection;
 
-trait DiscountHash
+trait Hash
 {
     abstract public function getFillable();
 

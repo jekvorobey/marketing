@@ -63,10 +63,20 @@ class BonusController extends Controller
             'start_date' => 'date|nullable',
             'end_date' => 'date|nullable',
             'promo_code_only' => "boolean|{$required_rule}",
+            'offers' => 'array|nullable',
+            'offers.offer_id' => 'integer',
+            'offers.except' => 'boolean',
+            'brands' => 'array|nullable',
+            'brands.brand_id' => 'integer',
+            'brands.except' => 'boolean',
+            'categories' => 'array|nullable',
+            'categories.category_id' => 'integer',
+            'categories.except' => 'boolean',
         ];
 
         try {
             $data = $this->validate(request(), $rules);
+
         } catch (\Exception $e) {
             throw new HttpException(400, $e->getMessage());
         }
@@ -74,8 +84,9 @@ class BonusController extends Controller
         try {
             DB::beginTransaction();
             $bonus->fill($data);
-            BonusHelper::validate($bonus->attributesToArray());
+            BonusHelper::validate($data);
             $bonus->save();
+            BonusHelper::updateRelations($bonus, $data);
             DB::commit();
         } catch (HttpException $e) {
             DB::rollBack();

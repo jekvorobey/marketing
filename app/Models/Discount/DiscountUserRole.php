@@ -4,7 +4,7 @@ namespace App\Models\Discount;
 
 use Greensight\CommonMsa\Models\AbstractModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Pim\Services\SearchService\SearchService;
+use App\Models\Hash;
 
 /**
  * Класс-модель для сущности "Скидка роли пользователя"
@@ -19,7 +19,7 @@ use Pim\Services\SearchService\SearchService;
  */
 class DiscountUserRole extends AbstractModel
 {
-    use DiscountHash;
+    use Hash;
 
     /**
      * Заполняемые поля модели

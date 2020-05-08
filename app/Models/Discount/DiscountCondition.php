@@ -4,6 +4,7 @@ namespace App\Models\Discount;
 
 use Greensight\CommonMsa\Models\AbstractModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Hash;
 
 /**
  * Класс-модель для сущности "Условие возникновения скидки"
@@ -18,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class DiscountCondition extends AbstractModel
 {
-    use DiscountHash;
+    use Hash;
 
     /**
      * Тип условия возникновения права на скидку
