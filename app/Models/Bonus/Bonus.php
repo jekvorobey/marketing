@@ -55,6 +55,14 @@ class Bonus extends AbstractModel
     const TYPE_SERVICE = 4;
     /** Бонус на сумму корзины */
     const TYPE_CART_TOTAL = 5;
+    /** Бонус на все офферы */
+    const TYPE_ANY_OFFER = 6;
+    /** Бонус на все бренды */
+    const TYPE_ANY_BRAND = 7;
+    /** Бонус на все категории */
+    const TYPE_ANY_CATEGORY = 8;
+    /** Бонус на все услуги */
+    const TYPE_ANY_SERVICE = 9;
 
     /** Тип значения – Проценты */
     const VALUE_TYPE_PERCENT = 1;
@@ -100,6 +108,10 @@ class Bonus extends AbstractModel
             self::TYPE_CATEGORY,
             self::TYPE_SERVICE,
             self::TYPE_CART_TOTAL,
+            self::TYPE_ANY_OFFER,
+            self::TYPE_ANY_BRAND,
+            self::TYPE_ANY_CATEGORY,
+            self::TYPE_ANY_SERVICE,
         ];
     }
 

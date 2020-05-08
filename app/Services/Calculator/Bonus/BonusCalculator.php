@@ -68,14 +68,21 @@ class BonusCalculator extends AbstractCalculator
             $bonusValue = 0;
             switch ($bonus->type) {
                 case Bonus::TYPE_OFFER:
+                case Bonus::TYPE_ANY_OFFER:
                     # Бонусы на офферы
-                    $offerIds   = $bonus->offers->pluck('offer_id');
+                    $offerIds = ($bonus->type === Bonus::TYPE_OFFER)
+                        ? $bonus->offers->pluck('offer_id')
+                        : $this->input->offers->pluck('id');
+
                     $bonusValue = $this->applyBonusToOffer($bonus, $offerIds);
                     break;
                 case Bonus::TYPE_BRAND:
+                case Bonus::TYPE_ANY_BRAND:
                     # Бонусы на бренды
                     /** @var Collection $brandIds */
-                    $brandIds = $bonus->brands->pluck('brand_id');
+                    $brandIds = ($bonus->type === Bonus::TYPE_BRAND)
+                        ? $bonus->brands->pluck('brand_id')
+                        : $this->input->brands;
                     # За исключением офферов
                     $exceptOfferIds = $bonus->offers->pluck('offer_id');
                     # Отбираем нужные офферы
@@ -83,9 +90,12 @@ class BonusCalculator extends AbstractCalculator
                     $bonusValue = $this->applyBonusToOffer($bonus, $offerIds);
                     break;
                 case Bonus::TYPE_CATEGORY:
+                case Bonus::TYPE_ANY_CATEGORY:
                     # Скидка на категории
                     /** @var Collection $categoryIds */
-                    $categoryIds = $bonus->categories->pluck('category_id');
+                    $categoryIds = ($bonus->type === Bonus::TYPE_BRAND)
+                        ? $bonus->categories->pluck('category_id')
+                        : $this->input->categories;
                     # За исключением брендов
                     $exceptBrandIds = $bonus->brands->pluck('brand_id');
                     # За исключением офферов
@@ -95,6 +105,7 @@ class BonusCalculator extends AbstractCalculator
                     $bonusValue = $this->applyBonusToOffer($bonus, $offerIds);
                     break;
                 case Bonus::TYPE_SERVICE:
+                case Bonus::TYPE_ANY_SERVICE:
                     // todo
                     break;
                 case Bonus::TYPE_CART_TOTAL:
