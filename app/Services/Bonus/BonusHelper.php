@@ -26,7 +26,7 @@ class BonusHelper
             throw new HttpException(400, 'PromoCode value error');
         }
 
-        if (!in_array($data['value_type'], [Bonus::VALUE_TYPE_PERCENT, Bonus::VALUE_TYPE_RUB])) {
+        if (!in_array($data['value_type'], [Bonus::VALUE_TYPE_PERCENT, Bonus::VALUE_TYPE_ABSOLUTE])) {
             throw new HttpException(400, 'PromoCode value_type error');
         }
 

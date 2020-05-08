@@ -179,7 +179,7 @@ class BonusCalculator extends AbstractCalculator
         switch ($bonus->value_type) {
             case Bonus::VALUE_TYPE_PERCENT:
                 return round($price * $bonus->value / 100);
-            case Bonus::VALUE_TYPE_RUB:
+            case Bonus::VALUE_TYPE_ABSOLUTE:
                 return $bonus->value;
         }
 

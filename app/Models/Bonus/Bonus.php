@@ -66,8 +66,8 @@ class Bonus extends AbstractModel
 
     /** Тип значения – Проценты */
     const VALUE_TYPE_PERCENT = 1;
-    /** Тип значения – Рубли */
-    const VALUE_TYPE_RUB = 2;
+    /** Тип значения – Абсолютное значение (в бонусах) */
+    const VALUE_TYPE_ABSOLUTE = 2;
 
     /**
      * Заполняемые поля модели

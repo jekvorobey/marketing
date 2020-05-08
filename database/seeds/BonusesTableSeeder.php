@@ -48,10 +48,10 @@ class BonusesTableSeeder extends Seeder
 
             $bonus->value_type = $this->faker->randomElement([
                 Bonus::VALUE_TYPE_PERCENT,
-                Bonus::VALUE_TYPE_RUB,
+                Bonus::VALUE_TYPE_ABSOLUTE,
             ]);
 
-            $bonus->value = ($bonus->value_type === Bonus::VALUE_TYPE_RUB)
+            $bonus->value = ($bonus->value_type === Bonus::VALUE_TYPE_ABSOLUTE)
                 ? $bonus->value = $this->faker->numberBetween(10, 1000)
                 : $bonus->value = $this->faker->numberBetween(1, 20);
 
