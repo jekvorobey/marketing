@@ -695,7 +695,7 @@ class DiscountCalculator extends AbstractCalculator
         return !$this->relations['roles']->has($discount->id) ||
             (
                 isset($this->input->customer['roles'])
-                && $this->relations['roles'][$discount->id]->intersect($this->input['customer']['roles'])->isNotEmpty()
+                && $this->relations['roles'][$discount->id]->intersect($this->input->customer['roles'])->isNotEmpty()
             );
     }
 
