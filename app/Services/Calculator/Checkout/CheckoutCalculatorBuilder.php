@@ -1,14 +1,15 @@
 <?php
 
-namespace App\Services\Price;
+namespace App\Services\Calculator\Checkout;
 
 use Illuminate\Support\Collection;
+use Pim\Core\PimException;
 
 /**
- * Class PriceCalculatorBuilder
+ * Class CheckoutCalculatorBuilder
  * @package App\Core\Discount
  */
-class CheckoutPriceCalculatorBuilder
+class CheckoutCalculatorBuilder
 {
     private $params;
 
@@ -25,7 +26,7 @@ class CheckoutPriceCalculatorBuilder
     /**
      * @param Collection|array $customers
      *
-     * @return CheckoutPriceCalculatorBuilder
+     * @return CheckoutCalculatorBuilder
      */
     public function customer($customers)
     {
@@ -36,7 +37,7 @@ class CheckoutPriceCalculatorBuilder
     /**
      * @param Collection|array $offers
      *
-     * @return CheckoutPriceCalculatorBuilder
+     * @return CheckoutCalculatorBuilder
      */
     public function offers($offers)
     {
@@ -47,7 +48,7 @@ class CheckoutPriceCalculatorBuilder
     /**
      * @param string|null $promoCode
      *
-     * @return CheckoutPriceCalculatorBuilder
+     * @return CheckoutCalculatorBuilder
      */
     public function promoCode(?string $promoCode)
     {
@@ -58,7 +59,7 @@ class CheckoutPriceCalculatorBuilder
     /**
      * @param Collection|array $deliveries
      *
-     * @return CheckoutPriceCalculatorBuilder
+     * @return CheckoutCalculatorBuilder
      */
     public function deliveries($deliveries)
     {
@@ -69,7 +70,7 @@ class CheckoutPriceCalculatorBuilder
     /**
      * @param Collection|array $payment
      *
-     * @return CheckoutPriceCalculatorBuilder
+     * @return CheckoutCalculatorBuilder
      */
     public function payment($payment)
     {
@@ -79,17 +80,10 @@ class CheckoutPriceCalculatorBuilder
 
     /**
      * @return array
+     * @throws PimException
      */
     public function calculate()
     {
-        return (new CheckoutPriceCalculator($this->params))->calculate();
-    }
-
-    /**
-     * @return Collection
-     */
-    public function getParams()
-    {
-        return $this->params;
+        return (new CheckoutCalculator($this->params))->calculate();
     }
 }

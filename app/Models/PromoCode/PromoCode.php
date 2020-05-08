@@ -2,6 +2,7 @@
 
 namespace App\Models\PromoCode;
 
+use App\Models\Bonus\Bonus;
 use App\Models\Discount\Discount;
 use Carbon\Carbon;
 use Faker\Factory;
@@ -30,6 +31,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @mixin Eloquent
  *
  * @property-read Discount|null $discount
+ * @property-read Bonus|null $bonus
  */
 class PromoCode extends AbstractModel
 {
@@ -165,6 +167,14 @@ class PromoCode extends AbstractModel
     public function discount(): BelongsTo
     {
         return $this->belongsTo(Discount::class);
+    }
+
+    /**
+     * @return BelongsTo
+     */
+    public function bonus(): BelongsTo
+    {
+        return $this->belongsTo(Bonus::class);
     }
 
     /**

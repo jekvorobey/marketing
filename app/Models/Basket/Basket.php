@@ -2,7 +2,7 @@
 
 namespace App\Models\Basket;
 
-use App\Services\Price\CheckoutPriceCalculatorBuilder;
+use App\Services\Calculator\Checkout\CheckoutCalculatorBuilder;
 use Illuminate\Support\Collection;
 use Exception;
 
@@ -110,7 +110,7 @@ class Basket implements \JsonSerializable
             return ['id' => $item->offerId, 'qty' => $item->qty];
         });
 
-        $calculation = (new CheckoutPriceCalculatorBuilder())
+        $calculation = (new CheckoutCalculatorBuilder())
             ->customer(['id' => $this->user])
             ->payment(['method' => $this->payMethod])
             ->deliveries($this->deliveries)
