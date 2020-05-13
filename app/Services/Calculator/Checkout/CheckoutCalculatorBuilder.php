@@ -21,6 +21,7 @@ class CheckoutCalculatorBuilder
         $this->params->put('promoCode', null);
         $this->params->put('deliveries', collect());
         $this->params->put('payment', collect());
+        $this->params->put('bonus', 0);
     }
 
     /**
@@ -75,6 +76,15 @@ class CheckoutCalculatorBuilder
     public function payment($payment)
     {
         $this->params['payment'] = collect($payment);
+        return $this;
+    }
+
+    /**
+     * @param int|null $bonus
+     */
+    public function bonus(?int $bonus)
+    {
+        $this->params['bonus'] = $bonus ?? 0;
         return $this;
     }
 

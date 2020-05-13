@@ -95,6 +95,7 @@ class BasketItem implements \JsonSerializable
             'discounts' => $this->discounts,
             'totalCost' => $this->totalCost,
             'cost' => $this->cost,
+            'spentBonus' => $this->spentBonus ?? 0,
             'bonus' => $this->bonus ?? 0,
             'bonuses' => $this->bonuses ?? [],
         ];

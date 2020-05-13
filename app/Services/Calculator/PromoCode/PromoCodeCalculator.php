@@ -63,6 +63,7 @@ class PromoCodeCalculator extends AbstractCalculator
 
                 $isApply = !empty($outputDiscount);
                 $change = $isApply ? $outputDiscount['change'] : 0;
+                $discountCalculator->forceRollback();
                 break;
             case PromoCode::TYPE_DELIVERY:
                 // Мерчант не может изменять стоимость доставки

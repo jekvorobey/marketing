@@ -62,6 +62,10 @@ class InputCalculator
      */
     public $payment;
     /**
+     * @var int
+     */
+    public $bonus;
+    /**
      * @var Collection
      */
     public $deliveries;
@@ -119,6 +123,7 @@ class InputCalculator
         $this->payment = [
             'method' => isset($params['payment']['method']) ? intval($params['payment']['method']) : null
         ];
+        $this->bonus = isset($params['bonus']) ? (int)$params['bonus'] : 0;
 
         /** Все возможные типы доставки */
         $this->deliveries = collect();

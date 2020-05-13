@@ -311,6 +311,7 @@ class DiscountController extends Controller
         $deliveries = collect($request->post('deliveries', []));
         $payment = collect($request->post('payment', []));
         $promoCode = $request->post('promoCode', null);
+        $bonus = $request->post('bonus', null);
 
         $result = (new CheckoutCalculatorBuilder())
             ->customer($customer)
@@ -318,6 +319,7 @@ class DiscountController extends Controller
             ->promoCode($promoCode)
             ->deliveries($deliveries)
             ->payment($payment)
+            ->bonus($bonus)
             ->calculate();
 
         return response()->json($result);

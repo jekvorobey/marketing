@@ -122,7 +122,14 @@ class DiscountCalculator extends AbstractCalculator
         $this->output->appliedDiscounts = $this->getExternalDiscountFormat();
     }
 
-
+    /**
+     * Полностью откатывает все примененные скидки
+     * @return $this
+     */
+    public function forceRollback()
+    {
+        return $this->rollback();
+    }
 
     /**
      * Применяет скидки
@@ -501,6 +508,7 @@ class DiscountCalculator extends AbstractCalculator
     {
         $this->appliedDiscounts  = collect();
         $this->offersByDiscounts = collect();
+        $this->output->appliedDiscounts = collect();
 
         $offers = collect();
         foreach ($this->input->offers as $offer) {

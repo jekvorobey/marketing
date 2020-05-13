@@ -70,10 +70,6 @@ class Basket implements \JsonSerializable
             'deliveries' => $basket->deliveries,
             'pay_method' => $basket->payMethod,
             'marketing' => $marketing,
-            'bonus' => $basket->bonus,
-            'promoCode' => $basket->promoCode,
-            'certificates' => $basket->certificates,
-
             'items' => $items
         ] = $data);
 
@@ -115,6 +111,7 @@ class Basket implements \JsonSerializable
             ->deliveries($this->deliveries)
             ->offers($offers)
             ->promoCode($this->promoCode)
+            ->bonus($this->bonus)
             ->calculate();
 
         $this->appliedPromoCodes = $calculation['promoCodes'];
@@ -181,6 +178,7 @@ class Basket implements \JsonSerializable
             'price' => $this->price,
             'discounts' => $this->appliedDiscounts,
             'bonuses' => $this->appliedBonuses,
+            'spentBonus' => $this->spentBonus,
             'promoCodes' => $this->appliedPromoCodes,
             'items' => $this->items,
             'deliveries' => $this->deliveries,
