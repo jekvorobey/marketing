@@ -47,6 +47,12 @@ class BasketItem implements \JsonSerializable
     public $bonus;
 
     /**
+     * Сумма потраченных бонусов
+     * @var int
+     */
+    public $spentBonus;
+
+    /**
      * Количество единиц товара в элементе корзины.
      * @var int
      */

@@ -45,8 +45,7 @@ class Basket implements \JsonSerializable
     public $certificates;
 
     /** @var int */
-    private $appliedBonus;
-    private $discountByBonus = 0;
+    private $spentBonus = 0;
 
     /** @var array */
     private $appliedCertificates;
@@ -125,6 +124,7 @@ class Basket implements \JsonSerializable
 
         $totalCost = 0;
         $totalItemDiscount = 0;
+        $totalSpentBonus = 0;
         foreach ($this->items as $item) {
             if (!$calculation['offers']->has($item->offerId)) {
                 throw new Exception("basket item offer {$item->offerId} without price");
@@ -141,33 +141,20 @@ class Basket implements \JsonSerializable
             $item->price = $offer['price'] * $offer['qty'];
             $item->bonus = $offer['bonus'];
             $item->bonuses = $offer['bonuses']->toArray();
+            $item->spentBonus = $offer['spentBonus'] ?? 0;
+
             $totalCost += $item->totalCost;
             $totalItemDiscount += $item->discount;
+            $totalSpentBonus += $item->spentBonus;
         }
 
-        $this->applyBonus();
         $this->applyCertificates();
 
         $basketDiscount = 0;
         $this->cost = $totalCost;
         $this->discount = $totalItemDiscount + $basketDiscount;
         $this->price = $totalCost - $this->discount;
-    }
-
-    private function availableBonus(): int
-    {
-        return 500; // todo
-    }
-
-    private function applyBonus(): void
-    {
-        $available = $this->availableBonus();
-        if ($this->bonus <= $available) {
-            $this->appliedBonus = $this->bonus;
-        } else {
-            $this->appliedBonus = $available;
-        }
-        $this->discountByBonus = $this->appliedBonus;
+        $this->spentBonus = $totalSpentBonus;
     }
 
     private function applyCertificates(): void

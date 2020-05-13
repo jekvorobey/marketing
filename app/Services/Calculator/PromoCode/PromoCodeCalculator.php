@@ -8,6 +8,7 @@ use App\Services\Calculator\AbstractCalculator;
 use App\Services\Calculator\Bonus\BonusCalculator;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
+use App\Services\Calculator\Discount\DiscountCalculator;
 use Greensight\Oms\Services\OrderService\OrderService;
 
 /**
