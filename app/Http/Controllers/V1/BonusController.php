@@ -84,9 +84,15 @@ class BonusController extends Controller
         try {
             DB::beginTransaction();
             $bonus->fill($data);
-            BonusHelper::validate($data);
+            BonusHelper::validate($bonus->attributesToArray());
             $bonus->save();
-            BonusHelper::updateRelations($bonus, $data);
+
+            if (isset($data['offers']) || isset($data['brands']) || isset($data['categories'])) {
+                BonusHelper::updateRelations($bonus, $data);
+            }
+            if (!BonusHelper::validateRelations($bonus)) {
+                throw new HttpException(400, 'Bonus relation error');
+            }
             DB::commit();
         } catch (HttpException $e) {
             DB::rollBack();

@@ -3,7 +3,6 @@
 namespace App\Services\Bonus;
 
 use App\Models\Bonus\Bonus;
-use App\Models\Bonus\BonusOffer;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -19,23 +18,23 @@ class BonusHelper
     public static function validate(array $data)
     {
         if (!in_array($data['type'], Bonus::availableTypes())) {
-            throw new HttpException(400, 'PromoCode type error');
+            throw new HttpException(400, 'Bonus type error');
         }
 
         if (!in_array($data['status'], Bonus::availableStatuses())) {
-            throw new HttpException(400, 'PromoCode status error');
+            throw new HttpException(400, 'Bonus status error');
         }
 
         if ($data['value'] < 0) {
-            throw new HttpException(400, 'PromoCode value error');
+            throw new HttpException(400, 'Bonus value error');
         }
 
         if (!in_array($data['value_type'], [Bonus::VALUE_TYPE_PERCENT, Bonus::VALUE_TYPE_ABSOLUTE])) {
-            throw new HttpException(400, 'PromoCode value_type error');
+            throw new HttpException(400, 'Bonus value_type error');
         }
 
         if ($data['valid_period'] < 0) {
-            throw new HttpException(400, 'PromoCode valid_period error');
+            throw new HttpException(400, 'Bonus valid_period error');
         }
 
         if (isset($data['start_date']) && isset($data['end_date'])
@@ -43,23 +42,21 @@ class BonusHelper
             throw new HttpException(400, 'Bonus period error');
         }
 
-        if (!self::validateRelations($data)) {
-            throw new HttpException(400, 'Bonus relation error');
-        }
-
         return true;
     }
 
     /**
-     * @param array $data
+     * @param Bonus $bonus
      *
      * @return bool
      */
-    public static function validateRelations(array $data)
+    public static function validateRelations(Bonus $bonus)
     {
-        $data['offers'] = !empty($data['offers']) ? collect($data['offers']) : collect();
-        $data['brands'] = !empty($data['brands']) ? collect($data['brands']) : collect();
-        $data['categories'] = !empty($data['categories']) ? collect($data['categories']) : collect();
+        $bonus->refresh();
+        $data['type'] = $bonus->type;
+        $data['offers'] = $bonus->offers;
+        $data['brands'] = $bonus->brands;
+        $data['categories'] = $bonus->categories;
 
         switch ($data['type']) {
             case Bonus::TYPE_OFFER:
