@@ -45,7 +45,7 @@ class Basket implements \JsonSerializable
     public $certificates;
 
     /** @var int */
-    private $spentBonus = 0;
+    private $bonusSpent = 0;
     /** @var int */
     private $bonusDiscount = 0;
 
@@ -123,7 +123,7 @@ class Basket implements \JsonSerializable
 
         $totalCost = 0;
         $totalItemDiscount = 0;
-        $totalSpentBonus = 0;
+        $totalBonusSpent = 0;
         $totalBonusDiscount = 0;
         foreach ($this->items as $item) {
             if (!$calculation['offers']->has($item->offerId)) {
@@ -141,12 +141,12 @@ class Basket implements \JsonSerializable
             $item->price = $offer['price'] * $offer['qty'];
             $item->bonus = $offer['bonus'];
             $item->bonuses = $offer['bonuses']->toArray();
-            $item->spentBonus = $offer['spentBonus'] ?? 0;
+            $item->bonusSpent = $offer['bonusSpent'] ?? 0;
             $item->bonusDiscount = $offer['bonusDiscount'] ?? 0;
 
             $totalCost += $item->totalCost;
             $totalItemDiscount += $item->discount;
-            $totalSpentBonus += $item->spentBonus * $offer['qty'];
+            $totalBonusSpent += $item->bonusSpent * $offer['qty'];
             $totalBonusDiscount += $item->bonusDiscount * $offer['qty'];
         }
 
@@ -156,7 +156,7 @@ class Basket implements \JsonSerializable
         $this->cost = $totalCost;
         $this->discount = $totalItemDiscount + $basketDiscount;
         $this->price = $totalCost - $this->discount;
-        $this->spentBonus = $totalSpentBonus;
+        $this->bonusSpent = $totalBonusSpent;
         $this->bonusDiscount = $totalBonusDiscount;
     }
 
@@ -184,7 +184,7 @@ class Basket implements \JsonSerializable
             'price' => $this->price,
             'discounts' => $this->appliedDiscounts,
             'bonuses' => $this->appliedBonuses,
-            'spentBonus' => $this->spentBonus,
+            'bonusSpent' => $this->bonusSpent,
             'bonusDiscount' => $this->bonusDiscount,
             'promoCodes' => $this->appliedPromoCodes,
             'items' => $this->items,

@@ -50,7 +50,7 @@ class BasketItem implements \JsonSerializable
      * Сумма потраченных бонусов
      * @var int
      */
-    public $spentBonus;
+    public $bonusSpent;
 
     /**
      * Сумма оплаченная бонусами
@@ -101,7 +101,7 @@ class BasketItem implements \JsonSerializable
             'discounts' => $this->discounts,
             'totalCost' => $this->totalCost,
             'cost' => $this->cost,
-            'spentBonus' => $this->spentBonus ?? 0,
+            'bonusSpent' => $this->bonusSpent ?? 0,
             'bonusDiscount' => $this->bonusDiscount ?? 0,
             'bonus' => $this->bonus ?? 0,
             'bonuses' => $this->bonuses ?? [],

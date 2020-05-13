@@ -83,7 +83,7 @@ class CheckoutCalculator extends AbstractCalculator
                 'cost'          => (int)($offer['cost'] ?? $offer['price']),
                 'discount'      => $offer['discount'] ?? 0,
                 'discounts'     => $offer['discounts'] ?? [],
-                'spentBonus'    => $offer['spentBonus'] ?? 0,
+                'bonusSpent'    => $offer['bonusSpent'] ?? 0,
                 'bonusDiscount' => $offer['bonusDiscount'] ?? 0,
                 'bonus'         => $offer['bonus'] ?? 0,
                 'bonuses'       => $offer['bonuses'] ?? collect(),
