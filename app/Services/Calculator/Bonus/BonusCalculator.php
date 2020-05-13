@@ -3,6 +3,7 @@
 namespace App\Services\Calculator\Bonus;
 
 use App\Models\Bonus\Bonus;
+use App\Models\Option\Option;
 use Illuminate\Support\Collection;
 use App\Services\Calculator\AbstractCalculator;
 use App\Services\Calculator\InputCalculator;
@@ -39,6 +40,10 @@ class BonusCalculator extends AbstractCalculator
 
     public function calculate()
     {
+        if (!$this->checkPermissions()) {
+            return;
+        }
+
         $this->bonuses         = collect();
         $this->appliedBonuses  = collect();
         $this->offersByBonuses = collect();
@@ -56,6 +61,20 @@ class BonusCalculator extends AbstractCalculator
         });
 
         $this->output->appliedBonuses = $this->appliedBonuses;
+    }
+
+    /**
+     * @return bool
+     */
+    protected function checkPermissions()
+    {
+        $option = Option::query()
+            ->where('key', Option::KEY_ROLES_AVAILABLE_FOR_BONUSES)
+            ->pluck('value', 'key');
+
+        $availableRoles = $option[Option::KEY_ROLES_AVAILABLE_FOR_BONUSES]['value'] ?? [];
+        $currentRoles = $this->input->customer['roles'] ?? [];
+        return count(array_intersect($availableRoles, $currentRoles)) > 0;
     }
 
     /**

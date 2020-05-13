@@ -4,6 +4,7 @@ namespace App\Services\Calculator\Checkout;
 
 use App\Services\Calculator\AbstractCalculator;
 use App\Services\Calculator\Bonus\BonusCalculator;
+use App\Services\Calculator\Bonus\BonusSpentCalculator;
 use App\Services\Calculator\Discount\DiscountCalculator;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
@@ -50,6 +51,7 @@ class CheckoutCalculator extends AbstractCalculator
         $calculators = [
             PromoCodeCalculator::class,
             DiscountCalculator::class,
+            BonusSpentCalculator::class,
             BonusCalculator::class,
         ];
 
@@ -75,14 +77,15 @@ class CheckoutCalculator extends AbstractCalculator
     {
         return $this->input->offers->map(function ($offer, $offerId) {
             return [
-                'offer_id'  => $offerId,
-                'price'     => (int)$offer['price'],
-                'qty'       => (float)$offer['qty'],
-                'cost'      => (int)($offer['cost'] ?? $offer['price']),
-                'discount'  => $offer['discount'] ?? 0,
-                'discounts' => $offer['discounts'] ?? [],
-                'bonus'     => $offer['bonus'] ?? 0,
-                'bonuses'   => $offer['bonuses'] ?? [],
+                'offer_id'   => $offerId,
+                'price'      => (int)$offer['price'],
+                'qty'        => (float)$offer['qty'],
+                'cost'       => (int)($offer['cost'] ?? $offer['price']),
+                'discount'   => $offer['discount'] ?? 0,
+                'discounts'  => $offer['discounts'] ?? [],
+                'spentBonus' => $offer['spentBonus'] ?? 0,
+                'bonus'      => $offer['bonus'] ?? 0,
+                'bonuses'    => $offer['bonuses'] ?? collect(),
             ];
         });
     }

@@ -131,7 +131,7 @@ class PriceController extends Controller
 
                 $items = (new CatalogCalculator([
                     'offer_ids' => $offerIds,
-                    'role_ids' => $role,
+                    'role_ids' => [$role],
                     'segment_id' => $segment,
                 ]))->calculate();
 

@@ -17,6 +17,12 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Option extends Model
 {
+    const KEY_BONUS_PER_RUBLES = 'KEY_BONUS_PER_RUBLES';
+    const KEY_ROLES_AVAILABLE_FOR_BONUSES = 'KEY_ROLES_AVAILABLE_FOR_BONUSES';
+    const KEY_ORDER_ACTIVATION_BONUS_DELAY = 'KEY_ORDER_ACTIVATION_BONUS_DELAY';
+    const KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT = 'KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT';
+    const KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER = 'KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER';
+
     protected $table = 'options';
 
     protected $casts = [

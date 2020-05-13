@@ -116,10 +116,26 @@ class InputCalculator
         $this->categories = collect();
         $this->promoCode = isset($params['promoCode']) ? (string) $params['promoCode'] : null;
         $this->customer = [
-            'id' => isset($params['customer']['id']) ? (int) $params['customer']['id'] : null,
-            'roles' => $params['customer']['roles'] ?? [],
-            'segment' => isset($params['customer']['segment']) ? (int) $params['customer']['segment'] : null,
+            'id' => null,
+            'roles' => [],
+            'segment' => null,
         ];
+
+        if (isset($params['customer'])) {
+            $this->customer = [
+                'id' => isset($params['customer']['id']) ? (int) $params['customer']['id'] : null,
+                'roles' => $params['customer']['roles'] ?? [],
+                'segment' => isset($params['customer']['segment']) ? (int) $params['customer']['segment'] : null,
+            ];
+        } else {
+            if (isset($params['role_ids']) && is_array($params['role_ids'])) {
+                $this->customer['roles'] = array_map(function ($roleId) { return (int)$roleId; }, $params['role_ids']);
+            }
+            if (isset($params['segment_id'])) {
+                $this->customer['segment'] = (int) $params['segment_id'];
+            }
+        }
+
         $this->payment = [
             'method' => isset($params['payment']['method']) ? intval($params['payment']['method']) : null
         ];

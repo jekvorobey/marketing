@@ -32,7 +32,7 @@ class CatalogCalculator extends AbstractCalculator
      *
      * @param array|null $params
      *  [
-     *  'offer_id' => array|int|null, – ID офферов
+     *  'offer_ids' => int[] – ID офферов
      *  'role_ids' => int[]|null, – Роли пользователя
      *  'segment_id' => int|null, – Сегмент пользователя
      *  ]
