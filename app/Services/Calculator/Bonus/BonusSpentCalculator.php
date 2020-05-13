@@ -118,10 +118,6 @@ class BonusSpentCalculator extends AbstractCalculator
      */
     protected function maxSpendForOffer($offer)
     {
-        if ($offer['id'] == 407) {
-            return 100;
-        }
-
         return self::percent($offer['price'], $this->options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT]);
     }
 
