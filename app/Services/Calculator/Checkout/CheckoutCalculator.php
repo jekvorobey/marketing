@@ -77,15 +77,16 @@ class CheckoutCalculator extends AbstractCalculator
     {
         return $this->input->offers->map(function ($offer, $offerId) {
             return [
-                'offer_id'   => $offerId,
-                'price'      => (int)$offer['price'],
-                'qty'        => (float)$offer['qty'],
-                'cost'       => (int)($offer['cost'] ?? $offer['price']),
-                'discount'   => $offer['discount'] ?? 0,
-                'discounts'  => $offer['discounts'] ?? [],
-                'spentBonus' => $offer['spentBonus'] ?? 0,
-                'bonus'      => $offer['bonus'] ?? 0,
-                'bonuses'    => $offer['bonuses'] ?? collect(),
+                'offer_id'      => $offerId,
+                'price'         => (int)$offer['price'],
+                'qty'           => (float)$offer['qty'],
+                'cost'          => (int)($offer['cost'] ?? $offer['price']),
+                'discount'      => $offer['discount'] ?? 0,
+                'discounts'     => $offer['discounts'] ?? [],
+                'spentBonus'    => $offer['spentBonus'] ?? 0,
+                'bonusDiscount' => $offer['bonusDiscount'] ?? 0,
+                'bonus'         => $offer['bonus'] ?? 0,
+                'bonuses'       => $offer['bonuses'] ?? collect(),
             ];
         });
     }

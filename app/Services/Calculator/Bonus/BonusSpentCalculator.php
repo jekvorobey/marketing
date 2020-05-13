@@ -162,8 +162,8 @@ class BonusSpentCalculator extends AbstractCalculator
                 $priceOrder    -= $offerPrice * $offer['qty'];
             }
 
-            $spentBonus          = self::priceToBonus($discount);
-            $offer['spentBonus'] = $spentBonus;
+            $offer['spentBonus'] = self::priceToBonus($discount);
+            $offer['bonusDiscount'] = $discount;
         }
     }
 }
