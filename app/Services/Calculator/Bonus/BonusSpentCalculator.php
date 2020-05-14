@@ -15,6 +15,10 @@ use Illuminate\Support\Collection;
  */
 class BonusSpentCalculator extends AbstractCalculator
 {
+    const FLOOR = 1;
+    const CEIL = 2;
+    const ROUND = 3;
+
     const DEFAULT_BONUS_PER_RUBLES = 1;
     const DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT = 100;
     const DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_ORDER = 100;
@@ -62,9 +66,9 @@ class BonusSpentCalculator extends AbstractCalculator
      *
      * @return int
      */
-    public static function percent($v, $percent)
+    public static function percent($v, $percent, $method = self::FLOOR)
     {
-        return self::round($v * $percent / 100);
+        return self::round($v * $percent / 100, $method);
     }
 
     /**
@@ -72,9 +76,16 @@ class BonusSpentCalculator extends AbstractCalculator
      *
      * @return int
      */
-    public static function round($v)
+    public static function round($v, $method = self::FLOOR)
     {
-        return (int) floor($v);
+        switch ($method) {
+            case self::FLOOR:
+                return (int)floor($v);
+            case self::CEIL:
+                return (int)ceil($v);
+            default:
+                return (int)round($v);
+        }
     }
 
     public function calculate()
@@ -95,7 +106,7 @@ class BonusSpentCalculator extends AbstractCalculator
     protected function bonusToPrice($bonus)
     {
         $k = $this->options[Option::KEY_BONUS_PER_RUBLES];
-        return self::round($bonus * $k);
+        return self::round($bonus * $k, self::FLOOR);
     }
 
     /**
@@ -106,7 +117,7 @@ class BonusSpentCalculator extends AbstractCalculator
     protected function priceToBonus($price)
     {
         $k = $this->options[Option::KEY_BONUS_PER_RUBLES];
-        return self::round($price / $k);
+        return self::round($price / $k, self::FLOOR);
     }
 
     /**
@@ -146,8 +157,12 @@ class BonusSpentCalculator extends AbstractCalculator
             $maxSpendForOffer = $this->maxSpendForOffer($offer);
 
             $offerPrice       = $offer['price'];
-            $spendForOffer    = self::percent($spendForOrder, $offerPrice / $priceOrder * 100);
+            $spendForOffer    = self::percent($spendForOrder, $offerPrice / $priceOrder * 100, self::ROUND);
             $changePriceValue = min($maxSpendForOffer, $spendForOffer);
+            if ($spendForOrder < $changePriceValue * $offer['qty']) {
+                $spendForOffer    = self::percent($spendForOrder, $offerPrice / $priceOrder * 100, self::FLOOR);
+                $changePriceValue = min($maxSpendForOffer, $spendForOffer);
+            }
 
             $discount = $this->changePrice(
                 $offer,
@@ -157,10 +172,8 @@ class BonusSpentCalculator extends AbstractCalculator
                 self::LOWEST_POSSIBLE_PRICE
             );
 
-            if ($discount < $spendForOffer) {
-                $spendForOrder -= $discount * $offer['qty'];
-                $priceOrder    -= $offerPrice * $offer['qty'];
-            }
+            $spendForOrder -= $discount * $offer['qty'];
+            $priceOrder    -= $offerPrice * $offer['qty'];
 
             $offer['bonusSpent'] = self::priceToBonus($discount);
             $offer['bonusDiscount'] = $discount;
