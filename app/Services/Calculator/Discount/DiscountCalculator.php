@@ -166,7 +166,8 @@ class DiscountCalculator extends AbstractCalculator
                     : $this->input->offers->pluck('id');
                 $change   = $this->applyDiscountToOffer($discount, $offerIds);
                 break;
-            case Discount::DISCOUNT_TYPE_BUNDLE:
+            case Discount::DISCOUNT_TYPE_BUNDLE_OFFER:
+            case Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS:
             case Discount::DISCOUNT_TYPE_ANY_BUNDLE:
                 // todo
                 break;
@@ -615,7 +616,8 @@ class DiscountCalculator extends AbstractCalculator
         switch ($discount->type) {
             case Discount::DISCOUNT_TYPE_OFFER:
                 return $this->checkOffers($discount);
-            case Discount::DISCOUNT_TYPE_BUNDLE:
+            case Discount::DISCOUNT_TYPE_BUNDLE_OFFER:
+            case Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS:
                 return $this->checkBundles($discount);
             case Discount::DISCOUNT_TYPE_BRAND:
                 return $this->checkBrands($discount);
@@ -660,7 +662,9 @@ class DiscountCalculator extends AbstractCalculator
      */
     protected function checkBundles(Discount $discount): bool
     {
-        return $discount->type === Discount::DISCOUNT_TYPE_BUNDLE && !empty($this->input->bundles);
+        return ($discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER ||
+                $discount->type === Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS) &&
+            !empty($this->input->bundles);
     }
 
     /**

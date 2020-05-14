@@ -28,6 +28,7 @@ use Pim\Services\SearchService\SearchService;
  * @mixin Eloquent
  *
  * @property-read Collection|DiscountOffer[] $offers
+ * @property-read Collection|BundleItem[] $bundleItems
  * @property-read Collection|DiscountBrand[] $brands
  * @property-read Collection|DiscountCategory[] $categories
  * @property-read Collection|DiscountUserRole[] $roles
@@ -60,8 +61,10 @@ class Discount extends AbstractModel
      */
     /** Скидка на оффер */
     const DISCOUNT_TYPE_OFFER = 1;
-    /** Скидка на бандл */
-    const DISCOUNT_TYPE_BUNDLE = 2;
+    /** Скидка на бандл из товаров */
+    const DISCOUNT_TYPE_BUNDLE_OFFER = 21;
+    /** Скидка на бандл из мастер-классов */
+    const DISCOUNT_TYPE_BUNDLE_MASTERCLASS = 22;
     /** Скидка на бренд */
     const DISCOUNT_TYPE_BRAND = 3;
     /** Скидка на категорию */
@@ -108,6 +111,7 @@ class Discount extends AbstractModel
     const DISCOUNT_SEGMENT_RELATION = 4;
     const DISCOUNT_USER_ROLE_RELATION = 5;
     const DISCOUNT_CONDITION_RELATION = 6;
+    const DISCOUNT_BUNDLE_RELATION = 7;
 
     /**
      * Заполняемые поля модели
@@ -146,7 +150,8 @@ class Discount extends AbstractModel
         return [
             self::DISCOUNT_TYPE_OFFER,
             self::DISCOUNT_TYPE_ANY_OFFER,
-            self::DISCOUNT_TYPE_BUNDLE,
+            self::DISCOUNT_TYPE_BUNDLE_OFFER,
+            self::DISCOUNT_TYPE_BUNDLE_MASTERCLASS,
             self::DISCOUNT_TYPE_ANY_BUNDLE,
             self::DISCOUNT_TYPE_BRAND,
             self::DISCOUNT_TYPE_ANY_BRAND,
@@ -186,6 +191,7 @@ class Discount extends AbstractModel
             Discount::DISCOUNT_SEGMENT_RELATION,
             Discount::DISCOUNT_USER_ROLE_RELATION,
             Discount::DISCOUNT_CONDITION_RELATION,
+            Discount::DISCOUNT_BUNDLE_RELATION,
         ];
     }
 
@@ -220,7 +226,8 @@ class Discount extends AbstractModel
         switch ($discountType) {
             case self::DISCOUNT_TYPE_OFFER:
             case self::DISCOUNT_TYPE_ANY_OFFER:
-            case self::DISCOUNT_TYPE_BUNDLE:
+            case self::DISCOUNT_TYPE_BUNDLE_OFFER:
+            case self::DISCOUNT_TYPE_BUNDLE_MASTERCLASS:
             case self::DISCOUNT_TYPE_ANY_BUNDLE:
             case self::DISCOUNT_TYPE_BRAND:
             case self::DISCOUNT_TYPE_ANY_BRAND:
@@ -248,6 +255,7 @@ class Discount extends AbstractModel
             Discount::DISCOUNT_SEGMENT_RELATION => ['class' => DiscountSegment::class, 'items' => $this->segments],
             Discount::DISCOUNT_USER_ROLE_RELATION => ['class' => DiscountUserRole::class, 'items' => $this->roles],
             Discount::DISCOUNT_CONDITION_RELATION => ['class' => DiscountCondition::class, 'items' => $this->conditions],
+            Discount::DISCOUNT_BUNDLE_RELATION => ['class' => BundleItem::class, 'items' => $this->bundleItems],
         ];
     }
 
@@ -257,6 +265,14 @@ class Discount extends AbstractModel
     public function offers()
     {
         return $this->hasMany(DiscountOffer::class, 'discount_id');
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function bundleItems()
+    {
+        return $this->hasMany(BundleItem::class, 'discount_id');
     }
 
     /**
@@ -433,7 +449,8 @@ class Discount extends AbstractModel
             in_array($this->type, [
                 self::DISCOUNT_TYPE_OFFER,
                 self::DISCOUNT_TYPE_ANY_OFFER,
-                self::DISCOUNT_TYPE_BUNDLE,
+                self::DISCOUNT_TYPE_BUNDLE_OFFER,
+                self::DISCOUNT_TYPE_BUNDLE_MASTERCLASS,
                 self::DISCOUNT_TYPE_ANY_BUNDLE,
                 self::DISCOUNT_TYPE_BRAND,
                 self::DISCOUNT_TYPE_ANY_BRAND,

@@ -62,6 +62,7 @@ class DiscountController extends Controller
         $discount = Discount::query()
             ->with([
                 'offers',
+                'bundleItems',
                 'brands',
                 'categories',
                 'segments',
@@ -389,6 +390,9 @@ class DiscountController extends Controller
             switch ($relation) {
                 case Discount::DISCOUNT_OFFER_RELATION:
                     $query->with('offers');
+                    break;
+                case Discount::DISCOUNT_BUNDLE_RELATION:
+                    $query->with('bundleItems');
                     break;
                 case Discount::DISCOUNT_BRAND_RELATION:
                     $query->with('brands');

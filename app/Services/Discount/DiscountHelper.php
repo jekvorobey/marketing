@@ -78,7 +78,8 @@ class DiscountHelper
                 return $offers->filter(function (DiscountOffer $offer) { return !$offer->except; })->isEmpty()
                     && $brands->filter(function (DiscountBrand $brand) { return !$brand->except; })->isEmpty()
                     && $categories->isNotEmpty();
-            case Discount::DISCOUNT_TYPE_BUNDLE:
+            case Discount::DISCOUNT_TYPE_BUNDLE_OFFER:
+            case Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS:
                 return true; // todo
                 break;
             case Discount::DISCOUNT_TYPE_ANY_OFFER:

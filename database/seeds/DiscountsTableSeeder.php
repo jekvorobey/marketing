@@ -186,7 +186,8 @@ class DiscountsTableSeeder extends Seeder
                     $this->createDiscountOffer($discount->id, $offerId);
                 }
                 break;
-            case Discount::DISCOUNT_TYPE_BUNDLE:
+            case Discount::DISCOUNT_TYPE_BUNDLE_OFFER:
+            case Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS:
                 // todo
                 break;
             case Discount::DISCOUNT_TYPE_BRAND:
@@ -374,7 +375,8 @@ class DiscountsTableSeeder extends Seeder
         }
 
         /** Взаимодействия с другими маркетинговыми инструментами */
-        if ($discount->type === Discount::DISCOUNT_TYPE_BUNDLE) {
+        if ($discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER ||
+            $discount->type === Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS) {
             # todo отсутсвует реализация бандлов
             $count = $this->faker->numberBetween(1, 10);
             $this->createDiscountCondition(
