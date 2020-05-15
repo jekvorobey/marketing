@@ -23,6 +23,8 @@ class Option extends Model
     const KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT = 'KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT';
     const KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER = 'KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER';
 
+    const DEFAULT_BONUS_PER_RUBLES = 1;
+
     protected $table = 'options';
 
     protected $casts = [

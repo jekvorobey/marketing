@@ -2,6 +2,7 @@
 
 namespace App\Models\Basket;
 
+use App\Models\Option\Option;
 use App\Services\Calculator\Checkout\CheckoutCalculatorBuilder;
 use Illuminate\Support\Collection;
 use Exception;
@@ -48,6 +49,8 @@ class Basket implements \JsonSerializable
     private $bonusSpent = 0;
     /** @var int */
     private $bonusDiscount = 0;
+    /** @var int */
+    private $bonusPerRub;
 
     /** @var array */
     private $appliedCertificates;
@@ -96,6 +99,9 @@ class Basket implements \JsonSerializable
     public function __construct(int $userId)
     {
         $this->user = $userId;
+
+        $option = Option::query()->where('key', Option::KEY_BONUS_PER_RUBLES)->first();
+        $this->bonusPerRub = $option ? $option->value['value'] : Option::DEFAULT_BONUS_PER_RUBLES;
     }
 
     /**
@@ -186,6 +192,7 @@ class Basket implements \JsonSerializable
             'bonuses' => $this->appliedBonuses,
             'bonusSpent' => $this->bonusSpent,
             'bonusDiscount' => $this->bonusDiscount,
+            'bonusPerRub' => $this->bonusPerRub,
             'promoCodes' => $this->appliedPromoCodes,
             'items' => $this->items,
             'deliveries' => $this->deliveries,
