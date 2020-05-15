@@ -141,7 +141,7 @@ class Basket implements \JsonSerializable
             $item->price = $offer['price'] * $offer['qty'];
             $item->bonus = $offer['bonus'];
             $item->bonuses = $offer['bonuses']->toArray();
-            $item->bonusSpent = ($offer['bonusSpent'] ?? 0)  * $offer['qty'];
+            $item->bonusSpent = ($offer['bonusSpent'] ?? 0) * $offer['qty'];
             $item->bonusDiscount = ($offer['bonusDiscount'] ?? 0) * $offer['qty'];
 
             $totalCost += $item->totalCost;
