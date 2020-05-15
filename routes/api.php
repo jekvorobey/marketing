@@ -53,6 +53,13 @@ Route::namespace('V1')->prefix('v1')->group(function () {
             Route::put('', 'BonusController@update');
             Route::delete('', 'BonusController@delete');
         });
+
+        Route::prefix('options/product/{id}')->group(function () {
+            Route::get('', 'ProductBonusOptionController@get');
+            Route::get('{key}', 'ProductBonusOptionController@value');
+            Route::put('{key}', 'ProductBonusOptionController@put');
+            Route::delete('{key}', 'ProductBonusOptionController@delete');
+        });
     });
 
     Route::prefix('offers')->group(function () {
