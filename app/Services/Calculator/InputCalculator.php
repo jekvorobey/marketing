@@ -331,6 +331,7 @@ class InputCalculator
                 'qty'         => $offer['qty'] ?? 1,
                 'brand_id'    => $product['brand_id'],
                 'category_id' => $product['category_id'],
+                'product_id'  => $product['id'],
                 'merchant_id' => $offer['merchant_id'] ?? null,
             ]));
         }

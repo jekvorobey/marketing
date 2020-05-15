@@ -2,6 +2,7 @@
 
 namespace App\Services\Calculator\Bonus;
 
+use App\Models\Bonus\ProductBonusOption\ProductBonusOption;
 use App\Models\Discount\Discount;
 use App\Models\Option\Option;
 use App\Services\Calculator\AbstractCalculator;
@@ -29,6 +30,11 @@ class BonusSpentCalculator extends AbstractCalculator
     protected $options = [];
 
     /**
+     * @var array
+     */
+    protected $productBonusOptions = [];
+
+    /**
      * BonusSpentCalculator constructor.
      *
      * @param InputCalculator  $inputCalculator
@@ -53,11 +59,12 @@ class BonusSpentCalculator extends AbstractCalculator
             Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER => $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER]['value'] ?? self::DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_ORDER,
         ];
 
-        if ($this->options[Option::KEY_BONUS_PER_RUBLES] <= 0
-            || $this->options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT] <= 0
-            || $this->options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER] <= 0) {
-            return;
-        }
+
+        $offerProductIds = $this->input->offers->pluck('product_id', 'id');
+        $this->productBonusOptions = ProductBonusOption::query()
+            ->whereIn('product_id', $offerProductIds->values())
+            ->get()
+            ->pluck('value', 'product_id');
     }
 
     /**
@@ -90,6 +97,12 @@ class BonusSpentCalculator extends AbstractCalculator
 
     public function calculate()
     {
+        if ($this->options[Option::KEY_BONUS_PER_RUBLES] <= 0
+            || $this->options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT] <= 0
+            || $this->options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER] <= 0) {
+            return;
+        }
+
         if ($this->input->bonus <= 0) {
             return;
         }
@@ -124,11 +137,15 @@ class BonusSpentCalculator extends AbstractCalculator
      * @param $offer
      *
      * @return int
-     *
-     * @todo максимальный процент от оффера
      */
     protected function maxSpendForOffer($offer)
     {
+        $productId = $offer['product_id'];
+        if (isset($this->productBonusOptions[$productId][ProductBonusOption::MAX_PERCENTAGE_PAYMENT])) {
+            $percent = $this->productBonusOptions[$productId][ProductBonusOption::MAX_PERCENTAGE_PAYMENT];
+            return self::percent($offer['price'], $percent);
+        }
+
         return self::percent($offer['price'], $this->options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT]);
     }
 
