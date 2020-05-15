@@ -141,13 +141,13 @@ class Basket implements \JsonSerializable
             $item->price = $offer['price'] * $offer['qty'];
             $item->bonus = $offer['bonus'];
             $item->bonuses = $offer['bonuses']->toArray();
-            $item->bonusSpent = $offer['bonusSpent'] ?? 0;
-            $item->bonusDiscount = $offer['bonusDiscount'] ?? 0;
+            $item->bonusSpent = ($offer['bonusSpent'] ?? 0)  * $offer['qty'];
+            $item->bonusDiscount = ($offer['bonusDiscount'] ?? 0) * $offer['qty'];
 
             $totalCost += $item->totalCost;
             $totalItemDiscount += $item->discount;
-            $totalBonusSpent += $item->bonusSpent * $offer['qty'];
-            $totalBonusDiscount += $item->bonusDiscount * $offer['qty'];
+            $totalBonusSpent += $item->bonusSpent;
+            $totalBonusDiscount += $item->bonusDiscount;
         }
 
         $this->applyCertificates();
