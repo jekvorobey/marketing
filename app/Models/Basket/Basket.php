@@ -72,23 +72,28 @@ class Basket implements \JsonSerializable
 
         @([
             'referal_code' => $basket->referalCode,
-            'deliveries' => $basket->deliveries,
-            'pay_method' => $basket->payMethod,
-            'marketing' => $marketing,
-            'items' => $items
+            'deliveries'   => $basket->deliveries,
+            'pay_method'   => $basket->payMethod,
+            'marketing'    => $marketing,
+            'items'        => $items
         ] = $data);
 
-         $basket->promoCode = $marketing['promoCode'] ?? '';
-         $basket->bonus = $marketing['bonus'] ?? 0;
-         $basket->certificates = $marketing['certificates'] ?? [];
+        $basket->promoCode    = $marketing['promoCode'] ?? '';
+        $basket->bonus        = $marketing['bonus'] ?? 0;
+        $basket->certificates = $marketing['certificates'] ?? [];
+
+        if (!$items) {
+            $basket->items = [];
+            return $basket;
+        }
 
         foreach ($items as $itemData) {
             [
-                'id' => $id,
-                'qty' => $qty,
-                'offer_id' => $offerId,
+                'id'          => $id,
+                'qty'         => $qty,
+                'offer_id'    => $offerId,
                 'category_id' => $categoryId,
-                'brand_id' => $brandId
+                'brand_id'    => $brandId
             ] = $itemData;
             $basket->items[] = new BasketItem($id, $qty, $offerId, $categoryId, $brandId);
         }
