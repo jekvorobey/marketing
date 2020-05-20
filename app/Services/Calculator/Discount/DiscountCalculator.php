@@ -209,14 +209,15 @@ class DiscountCalculator extends AbstractCalculator
 
                 $deliveryId = $this->input->deliveries['current']['id'] ?? null;
                 if ($this->input->deliveries['items']->has($deliveryId)) {
+                    $currentDeliveries = $this->input->deliveries['current'];
                     $change = $this->changePrice(
-                        $this->input->deliveries['current'],
+                        $currentDeliveries,
                         $discount->value,
                         $discount->value_type,
                         true,
                         self::FREE_DELIVERY_PRICE
                     );
-
+                    $this->input->deliveries['current'] = $currentDeliveries;
                     $this->input->deliveries['items'][$deliveryId] = $this->input->deliveries['current'];
                 }
 
