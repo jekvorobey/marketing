@@ -137,7 +137,8 @@ class PriceController extends Controller
 
                 foreach ($items as $item) {
                     $discounts = $item['discounts'] ?? null;
-                    if (!$discounts && ($segment || $role)) {
+                    $bonus = $item['bonus'] ?? null;
+                    if (!$discounts && !$bonus && ($segment || $role)) {
                         continue;
                     }
                     $offerId = $item['offer_id'];

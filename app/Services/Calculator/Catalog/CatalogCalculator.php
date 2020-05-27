@@ -22,6 +22,8 @@ use App\Services\Calculator\OutputCalculator;
  */
 class CatalogCalculator extends AbstractCalculator
 {
+    const MAX_CHUNK = 500;
+
     /**
      * @var Collection
      */
@@ -97,29 +99,34 @@ class CatalogCalculator extends AbstractCalculator
     {
         /** @var OfferService $offerService */
         $offerService = resolve(OfferService::class);
-        $offerQuery = $offerService->newQuery()->addFields(
-            OfferDto::entity(),
-            'id',
-            'product_id',
-            'merchant_id'
-        );
-        $offers = $offerService->offers($offerQuery);
-        /** @var OfferDto $offer */
-        foreach ($offers as $offer) {
-            if ($this->offerIds->isNotEmpty() && !$this->offerIds->has($offer->id)) {
-                continue;
-            }
+        $this->offerIds->chunk(self::MAX_CHUNK)->each(function ($offerIds) use ($offerService) {
+            $offerQuery = $offerService->newQuery();
+            $offerQuery->setFilter('id', $offerIds->keys()->toArray());
+            $offerQuery->addFields(
+                OfferDto::entity(),
+                'id',
+                'product_id',
+                'merchant_id'
+            );
 
-            $this->input->offers->put($offer->id, collect([
-                'id' => $offer->id,
-                'product_id' => $offer->product_id,
-                'qty' => 1,
-                'price' => null,
-                'brand_id' => null,
-                'category_id' => null,
-                'merchant_id' => $offer->merchant_id,
-            ]));
-        }
+            $offers = $offerService->offers($offerQuery);
+            /** @var OfferDto $offer */
+            foreach ($offers as $offer) {
+                if ($this->offerIds->isNotEmpty() && !$this->offerIds->has($offer->id)) {
+                    continue;
+                }
+
+                $this->input->offers->put($offer->id, collect([
+                    'id' => $offer->id,
+                    'product_id' => $offer->product_id,
+                    'qty' => 1,
+                    'price' => null,
+                    'brand_id' => null,
+                    'category_id' => null,
+                    'merchant_id' => $offer->merchant_id,
+                ]));
+            }
+        });
 
         return $this;
     }
@@ -129,17 +136,20 @@ class CatalogCalculator extends AbstractCalculator
      */
     protected function fetchPrice()
     {
-        $offers = collect();
-        $prices = Price::select(['offer_id', 'price'])->get()->pluck('price', 'offer_id');
-        foreach ($this->input->offers as $offer) {
-            $offerId = $offer['id'];
-            if ($prices->has($offerId)) {
-                $offer['price'] = $prices[$offerId];
-                $offers->put($offerId, $offer);
-            }
-        }
+        $this->offerIds->chunk(self::MAX_CHUNK)->each(function ($offerIds) {
+            $prices = Price::select(['offer_id', 'price'])
+                ->whereIn('offer_id', $offerIds->keys())
+                ->get()
+                ->pluck('price', 'offer_id');
 
-        $this->input->offers = $offers;
+            foreach ($this->input->offers as $offer) {
+                $offerId = $offer['id'];
+                if ($prices->has($offerId)) {
+                    $offer['price'] = $prices[$offerId];
+                }
+            }
+        });
+
         return $this;
     }
 
@@ -149,27 +159,29 @@ class CatalogCalculator extends AbstractCalculator
      */
     protected function fetchProduct()
     {
-        /** @var ProductService $offerService */
-        $productService = resolve(ProductService::class);
-        $productQuery = $productService->newQuery()->addFields(
-            ProductDto::entity(),
-            'id',
-            'category_id',
-            'brand_id'
-        );
+        $productIds = $this->input->offers->pluck('product_id');
+        $productIds->chunk(self::MAX_CHUNK)->each(function ($productIds) {
+            /** @var ProductService $offerService */
+            $productService = resolve(ProductService::class);
+            $productQuery = $productService->newQuery();
+            $productQuery->setFilter('id', $productIds->toArray());
+            $productQuery->addFields(
+                ProductDto::entity(),
+                'id',
+                'category_id',
+                'brand_id'
+            );
 
-        $offers = collect();
-        $products = $productService->products($productQuery)->keyBy('id');
-        foreach ($this->input->offers as $offer) {
-            $productId = $offer['product_id'];
-            if ($products->has($productId)) {
-                $offer['brand_id'] = $products[$productId]['brand_id'];
-                $offer['category_id'] = $products[$productId]['category_id'];
-                $offers->put($offer['id'], $offer);
+            $products = $productService->products($productQuery)->keyBy('id');
+            foreach ($this->input->offers as $offer) {
+                $productId = $offer['product_id'];
+                if ($products->has($productId)) {
+                    $offer['brand_id']    = $products[$productId]['brand_id'];
+                    $offer['category_id'] = $products[$productId]['category_id'];
+                }
             }
-        }
+        });
 
-        $this->input->offers = $offers;
         return $this;
     }
 }
