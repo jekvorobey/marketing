@@ -17,6 +17,7 @@ class BonusCatalogCalculator extends BonusCalculator
     {
         $this->bonuses = Bonus::query()
             ->where('promo_code_only', false)
+            ->where('type', '!=', Bonus::TYPE_CART_TOTAL)
             ->active()
             ->get();
 

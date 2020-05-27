@@ -13,6 +13,7 @@ use App\Models\Hash;
  * @property int bonus_id
  * @property int brand_id
  * @property int except
+ * @property-read Bonus $bonus
  */
 class BonusBrand extends AbstractModel
 {
