@@ -22,7 +22,7 @@ use App\Services\Calculator\OutputCalculator;
  */
 class CatalogCalculator extends AbstractCalculator
 {
-    const MAX_CHUNK = 500;
+    const MAX_CHUNK = 1000;
 
     /**
      * @var Collection
