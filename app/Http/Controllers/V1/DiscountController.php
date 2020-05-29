@@ -4,6 +4,7 @@ namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Discount\Discount;
+use App\Models\Discount\DiscountCondition;
 use App\Services\Discount\DiscountHelper;
 use App\Services\Calculator\Checkout\CheckoutCalculatorBuilder;
 use Carbon\Carbon;
@@ -15,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Pim\Dto\Offer\OfferDto;
 use Pim\Dto\Product\ProductDto;
 use Pim\Services\OfferService\OfferService;
@@ -599,5 +601,81 @@ class DiscountController extends Controller
 //            }
 //
 //        });
+    }
+
+    /**
+     * Вычисление скидки на бандлы
+     * @param Request $request
+     * @param RequestInitiator $client
+     * @return JsonResponse
+     */
+    public function bundleDiscountValues(Request $request, RequestInitiator $client)
+    {
+        $data = $request->validate([
+            'ids' => 'array|required',
+            'ids.*' => 'integer|required',
+        ]);
+
+        $userId = $client->userId();
+        // @todo Когда будут реализовываться сегменты пользователей
+        $segmentIds = [];
+        $roleIds = $client->roles();
+
+        $discounts = Discount::query()
+            ->select('id', 'value_type', 'value', 'start_date', 'end_date')
+            ->with([
+                'roles' => function (Relation $query) {
+                    $query->select('id', 'discount_id', 'role_id');
+                },
+                'segments' => function (Relation $query) {
+                    $query->select('id', 'discount_id', 'segment_id');
+                },
+                'conditions' => function (Relation $query) {
+                    $query->select('id', 'discount_id', 'type', 'condition');
+                },
+            ])
+            ->whereIn('id', $data['ids'])
+            ->get()
+            ->filter(function (Discount $discount) use ($userId, $segmentIds, $roleIds) {
+                $customerCondition = $discount->conditions->every(function (DiscountCondition $condition) use ($userId) {
+                    if (($condition->type === DiscountCondition::CUSTOMER) &&
+                        (!in_array($userId, $condition->condition[DiscountCondition::FIELD_CUSTOMER_IDS]))) {
+                        return false;
+                    }
+                    return true;
+                });
+
+                $segmentCondition = ($segmentIds && !($discount->segments->isEmpty())) ?
+                    !($discount->segments->pluck('segment_id')->intersect($segmentIds)->isEmpty()) :
+                    true;
+
+                $roleCondition = ($roleIds && !($discount->roles->isEmpty())) ?
+                    !($discount->roles->pluck('role_id')->intersect($roleIds)->isEmpty()) :
+                    true;
+
+                return $customerCondition && $segmentCondition && $roleCondition;
+            })
+                ->map(function (Discount $discount) {
+                    return [
+                        'id' => $discount->id,
+                        'value_type' => $discount->value_type,
+                        'value' => $discount->value,
+                        'conditions' => $discount->conditions
+                            ->map(function (DiscountCondition $condition) {
+                                return (($condition->type !== DiscountCondition::CUSTOMER) &&
+                                    ($condition->type !== DiscountCondition::DISCOUNT_SYNERGY)) ?
+                                    [
+                                        'type' => $condition->type,
+                                        'condition' => $condition->condition,
+                                    ] :
+                                    [];
+                        }),
+                    ];
+                })
+                ->all();
+
+        return response()->json([
+            'items' => $discounts,
+        ]);
     }
 }

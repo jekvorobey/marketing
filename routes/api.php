@@ -24,6 +24,7 @@ Route::namespace('V1')->prefix('v1')->group(function () {
         Route::get('users', 'DiscountController@getUsers');
         Route::post('calculate', 'DiscountController@calculate');
         Route::put('status', 'DiscountController@updateStatus');
+        Route::post('bundle-discount-values', 'DiscountController@bundleDiscountValues');
 
         Route::prefix('{id}')->group(function () {
             Route::get('', 'DiscountController@read');
