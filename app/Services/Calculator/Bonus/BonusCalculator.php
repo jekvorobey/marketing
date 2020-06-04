@@ -112,7 +112,7 @@ class BonusCalculator extends AbstractCalculator
                 case Bonus::TYPE_ANY_CATEGORY:
                     # Скидка на категории
                     /** @var Collection $categoryIds */
-                    $categoryIds = ($bonus->type === Bonus::TYPE_BRAND)
+                    $categoryIds = ($bonus->type === Bonus::TYPE_CATEGORY)
                         ? $bonus->categories->pluck('category_id')
                         : $this->input->categories;
                     # За исключением брендов
