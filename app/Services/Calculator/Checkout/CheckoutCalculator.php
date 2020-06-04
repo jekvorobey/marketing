@@ -87,6 +87,7 @@ class CheckoutCalculator extends AbstractCalculator
                 'bonusDiscount' => $offer['bonusDiscount'] ?? 0,
                 'bonus'         => $offer['bonus'] ?? 0,
                 'bonuses'       => $offer['bonuses'] ?? collect(),
+                'bundles'       => $offer['bundles'] ?? collect(),
             ];
         });
     }

@@ -42,6 +42,7 @@ abstract class AbstractCalculator
      * @param int  $valueType
      * @param bool $apply               нужно ли применять скидку
      * @param int  $lowestPossiblePrice Самая низкая возможная цена (по умолчанию = 1 рубль)
+     * @param Discount  $discountType
      *
      * @return int
      */
@@ -50,25 +51,52 @@ abstract class AbstractCalculator
         $value,
         $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB,
         $apply = true,
-        int $lowestPossiblePrice = self::LOWEST_POSSIBLE_PRICE
+        int $lowestPossiblePrice = self::LOWEST_POSSIBLE_PRICE,
+        Discount $discount = null
     ) {
         if (!isset($item['price']) || $value <= 0) {
             return 0;
         }
 
-        $currentDiscount = $item['discount'] ?? 0;
-        $currentCost     = $item['cost'] ?? $item['price'];
-        $discountValue   = min($item['price'], $this->calculateDiscountByType($currentCost, $value, $valueType));
+        if ($discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
+            if ($item['bundles']->has($discount->id)) {
+                $offerInBundle = &$item['bundles'][$discount->id];
+            } else {
+                return 0;
+            }
 
-        /** Цена не может быть меньше $lowestPossiblePrice */
-        if ($item['price'] - $discountValue < $lowestPossiblePrice) {
-            $discountValue = $item['price'] - $lowestPossiblePrice;
-        }
+            $offerInBundle['price'] = isset($offerInBundle['price']) ?
+                $offerInBundle['price'] :
+                $item['price'];
 
-        if ($apply) {
-            $item['discount'] = $currentDiscount + $discountValue;
-            $item['price']    = $currentCost - $item['discount'];
-            $item['cost']     = $currentCost;
+            $currentDiscount = $item['discount'] ?? 0;
+            $currentCost     = $item['cost'] ?? $item['price'];
+            $discountValue   = min($offerInBundle['price'], $this->calculateDiscountByType($currentCost, $value, $valueType));
+
+            /** Цена не может быть меньше $lowestPossiblePrice */
+            if ($offerInBundle['price'] - $discountValue < $lowestPossiblePrice) {
+                $discountValue = $offerInBundle['price'] - $lowestPossiblePrice;
+            }
+
+            if ($apply) {
+                $offerInBundle['discount'] = $currentDiscount + $discountValue;
+                $offerInBundle['price']    = $currentCost - $offerInBundle['discount'];
+            }
+        } else {
+            $currentDiscount = $item['discount'] ?? 0;
+            $currentCost     = $item['cost'] ?? $item['price'];
+            $discountValue   = min($item['price'], $this->calculateDiscountByType($currentCost, $value, $valueType));
+
+            /** Цена не может быть меньше $lowestPossiblePrice */
+            if ($item['price'] - $discountValue < $lowestPossiblePrice) {
+                $discountValue = $item['price'] - $lowestPossiblePrice;
+            }
+
+            if ($apply) {
+                $item['discount'] = $currentDiscount + $discountValue;
+                $item['price']    = $currentCost - $item['discount'];
+                $item['cost']     = $currentCost;
+            }
         }
 
         return $discountValue;

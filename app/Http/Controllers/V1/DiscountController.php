@@ -660,16 +660,6 @@ class DiscountController extends Controller
                         'id' => $discount->id,
                         'value_type' => $discount->value_type,
                         'value' => $discount->value,
-                        'conditions' => $discount->conditions
-                            ->map(function (DiscountCondition $condition) {
-                                return (($condition->type !== DiscountCondition::CUSTOMER) &&
-                                    ($condition->type !== DiscountCondition::DISCOUNT_SYNERGY)) ?
-                                    [
-                                        'type' => $condition->type,
-                                        'condition' => $condition->condition,
-                                    ] :
-                                    [];
-                        }),
                     ];
                 })
                 ->all();

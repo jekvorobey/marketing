@@ -2,6 +2,7 @@
 
 namespace App\Services\Calculator\Discount;
 
+use App\Models\Discount\BundleItem;
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountBrand;
 use App\Models\Discount\DiscountCategory;
@@ -108,13 +109,38 @@ class DiscountCalculator extends AbstractCalculator
         $this->filter()->sort()->apply();
 
         $this->input->offers->transform(function ($offer, $offerId) {
-            $offer['discount'] = $this->offersByDiscounts->has($offerId)
-                ? $this->offersByDiscounts[$offerId]->values()->sum('change')
+            /** @var Collection|null $discountsWithoutBundles */
+            $discountsWithoutBundles = $this->offersByDiscounts->has($offerId)
+                ? $this->offersByDiscounts[$offerId]->filter(function ($discount) {
+                    return !($this->input->bundles->contains($discount['id']));
+                })->values()
                 : null;
 
-            $offer['discounts'] = $this->offersByDiscounts->has($offerId)
-                ? $this->offersByDiscounts[$offerId]->values()->toArray()
+            $sum = $discountsWithoutBundles
+                ? $discountsWithoutBundles->sum('change')
                 : null;
+            $offer['discount'] = $sum;
+
+            $offer['discounts'] = $discountsWithoutBundles
+                ? $discountsWithoutBundles->toArray()
+                : null;
+
+            /** @var Collection|null $discountsWithBundles */
+            $discountsWithBundles = $this->offersByDiscounts->has($offerId)
+                ? $this->offersByDiscounts[$offerId]->filter(function ($discount) {
+                    return $this->input->bundles->contains($discount['id']);
+                })->keyBy('id')
+                : null;
+
+            if ($discountsWithBundles && !($discountsWithBundles->isEmpty())) {
+                $offer['bundles']->transform(function ($bundle, $bundleId) use ($sum, $discountsWithBundles, $discountsWithoutBundles) {
+                    if ($bundleId) {
+                        $bundle['discount'] = $sum + $discountsWithBundles[$bundleId]['change'];
+                        $bundle['discounts'] = $discountsWithoutBundles->push($discountsWithBundles[$bundleId]);
+                    }
+                    return $bundle;
+                });
+            }
 
             return $offer;
         });
@@ -164,12 +190,35 @@ class DiscountCalculator extends AbstractCalculator
                 $offerIds = ($discount->type == Discount::DISCOUNT_TYPE_OFFER)
                     ? $this->relations['offers'][$discount->id]->pluck('offer_id')
                     : $this->input->offers->pluck('id');
-                $change   = $this->applyDiscountToOffer($discount, $offerIds);
+
+            $change   = $this->applyDiscountToOffer($discount, $offerIds);
                 break;
             case Discount::DISCOUNT_TYPE_BUNDLE_OFFER:
             case Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS:
             case Discount::DISCOUNT_TYPE_ANY_BUNDLE:
-                // todo
+                # Скидка на бандлы
+                # Определяем id офферов по бандлам
+                /** @var Collection $bundleIds */
+                $offerIds = ($discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER ||
+                    $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS)
+                    ? $this->relations['bundleItems'][$discount->id]->pluck('item_id')
+                    : collect($this->relations['bundleItems'])->filter(function ($items, $discountId) {
+                        return $this->input->bundles->has($discountId);
+                    })
+                        ->collapse()
+                        ->map(function (BundleItem $item) {
+                            return [
+                                'item_id' => $item->item_id,
+                                'bundle_id' => $item->discount_id,
+                            ];
+                        });
+
+                if ($discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
+                    $change   = $this->applyDiscountToOffer($discount, $offerIds);
+                }
+
+                // todo Рассчет скидки для мастерклассов и для скидки на все бандлы
+
                 break;
             case Discount::DISCOUNT_TYPE_BRAND:
             case Discount::DISCOUNT_TYPE_ANY_BRAND:
@@ -275,6 +324,7 @@ class DiscountCalculator extends AbstractCalculator
 
         /** @var Collection $discountIdsForOffer */
         $discountIdsForOffer = $this->offersByDiscounts[$offerId]->pluck('id');
+
         /** @var DiscountCondition $condition */
         foreach ($this->relations['conditions'][$discount->id] as $condition) {
             if ($condition->type === DiscountCondition::DISCOUNT_SYNERGY) {
@@ -292,6 +342,11 @@ class DiscountCalculator extends AbstractCalculator
 
                 return true;
             }
+        }
+
+        if ($discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER ||
+            $discount->type == Discount::DISCOUNT_TYPE_ANY_BUNDLE) {
+            return true;
         }
 
         return false;
@@ -388,6 +443,14 @@ class DiscountCalculator extends AbstractCalculator
             return false;
         }
 
+        $value = $discount->value;
+        $valueType = $discount->value_type;
+        if ($discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
+            if ($valueType == Discount::DISCOUNT_VALUE_TYPE_RUB) {
+                $value = $value / $offerIds->count();
+            }
+        }
+
         $changed = 0;
         foreach ($offerIds as $offerId) {
             $offer               = &$this->input->offers[$offerId];
@@ -407,7 +470,8 @@ class DiscountCalculator extends AbstractCalculator
                 $lowestPossiblePrice = max($lowestPossiblePrice, $offer['cost'] - $maxDiscountValue);
             }
 
-            $change = $this->changePrice($offer, $discount->value, $discount->value_type, true, $lowestPossiblePrice);
+            $change = $this->changePrice($offer, $value, $valueType, true, $lowestPossiblePrice, $discount);
+
             if ($change <= 0) {
                 continue;
             }
@@ -422,7 +486,13 @@ class DiscountCalculator extends AbstractCalculator
                 'value'      => $discount->value,
                 'value_type' => $discount->value_type
             ]);
-            $changed += $change * $offer['qty'];
+            if ($discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
+                $qty = $offer['bundles'][$discount->id]['qty'];
+            } else {
+                $qty = $offer['qty'];
+            }
+
+            $changed += $change * $qty;
         }
 
         return $changed;
@@ -546,6 +616,13 @@ class DiscountCalculator extends AbstractCalculator
          * На данный момент скидки сортируются по типу скидки
          * Если две скидки имеют одинаковый тип, то сначала берется первая по списку
          */
+        // Все бандлы ставим в конец списка
+        $this->possibleDiscounts = $this->possibleDiscounts->sortBy(function (Discount $discount) {
+            return ($discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER ||
+                $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS) ? 1 : 0;
+        })
+            ->values();
+
         return $this;
     }
 
@@ -654,18 +731,17 @@ class DiscountCalculator extends AbstractCalculator
     }
 
     /**
-     * Проверяет доступность применения скидки на бандлы
+     * Проверяет доступность применения скидок-бандлов
      *
      * @param Discount $discount
      *
      * @return bool
-     * @todo
      */
     protected function checkBundles(Discount $discount): bool
     {
         return ($discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER ||
                 $discount->type === Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS) &&
-            !empty($this->input->bundles);
+                $this->relations['bundleItems']->has($discount->id);
     }
 
     /**
@@ -876,7 +952,8 @@ class DiscountCalculator extends AbstractCalculator
             ->fetchDiscountBrands()
             ->fetchDiscountCategories()
             ->fetchDiscountSegments()
-            ->fetchDiscountCustomerRoles();
+            ->fetchDiscountCustomerRoles()
+            ->fetchBundleItems();
 
         return $this;
     }
@@ -989,6 +1066,28 @@ class DiscountCalculator extends AbstractCalculator
             ->transform(function ($segments) {
                 return $segments->pluck('role_id');
             });
+
+        return $this;
+    }
+
+    /**
+     * Получаем все возможные скидки и роли из DiscountRole
+     * @return $this
+     */
+    protected function fetchBundleItems()
+    {
+        /** Если не передали офферы, то пропускаем скидки на бренды */
+        $validTypes = [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS];
+        if ($this->input->bundles->isEmpty() || $this->existsAnyTypeInDiscounts($validTypes)) {
+            $this->relations['bundleItems'] = collect();
+            return $this;
+        }
+
+        $this->relations['bundleItems'] = BundleItem::query()
+            ->select(['discount_id', 'item_id'])
+            ->whereIn('discount_id', $this->input->bundles)
+            ->get()
+            ->groupBy('discount_id');
 
         return $this;
     }

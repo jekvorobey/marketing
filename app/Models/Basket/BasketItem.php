@@ -6,7 +6,7 @@ class BasketItem implements \JsonSerializable
 {
     /** @var int */
     public $id;
-    
+
     /**
      * Стоимость единцы товара без скидок.
      * @var float
@@ -72,7 +72,12 @@ class BasketItem implements \JsonSerializable
     public $categoryId;
     /** @var int */
     public $brandId;
-    
+    /**
+     * ID бандла, в который входит товар.
+     * @var int
+     */
+    public $bundleId;
+
     /**
      * BasketItem constructor.
      * @param int $id
@@ -80,16 +85,18 @@ class BasketItem implements \JsonSerializable
      * @param int $offerId
      * @param int $categoryId
      * @param int $brandId
+     * @param int $bundleId
      */
-    public function __construct(int $id, int $qty, int $offerId, int $categoryId, int $brandId)
+    public function __construct(int $id, int $qty, int $offerId, int $categoryId, int $brandId, ?int $bundleId)
     {
         $this->id = $id;
         $this->offerId = $offerId;
         $this->categoryId = $categoryId;
         $this->brandId = $brandId;
         $this->qty = $qty;
+        $this->bundleId = $bundleId;
     }
-    
+
     public function jsonSerialize()
     {
         return [
@@ -105,6 +112,7 @@ class BasketItem implements \JsonSerializable
             'bonusDiscount' => $this->bonusDiscount ?? 0,
             'bonus' => $this->bonus ?? 0,
             'bonuses' => $this->bonuses ?? [],
+            'bundleId' => $this->bundleId ?? 0,
         ];
     }
 }

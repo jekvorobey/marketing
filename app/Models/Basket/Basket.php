@@ -93,9 +93,10 @@ class Basket implements \JsonSerializable
                 'qty'         => $qty,
                 'offer_id'    => $offerId,
                 'category_id' => $categoryId,
-                'brand_id'    => $brandId
+                'brand_id'    => $brandId,
+                'bundle_id'    => $bundleId,
             ] = $itemData;
-            $basket->items[] = new BasketItem($id, $qty, $offerId, $categoryId, $brandId);
+            $basket->items[] = new BasketItem($id, $qty, $offerId, $categoryId, $brandId, $bundleId);
         }
 
         return $basket;
@@ -115,7 +116,11 @@ class Basket implements \JsonSerializable
     public function addPricesAndBonuses()
     {
         $offers = collect($this->items)->transform(function(BasketItem $item) {
-            return ['id' => $item->offerId, 'qty' => $item->qty];
+            return [
+                'id' => $item->offerId,
+                'qty' => $item->qty,
+                'bundleId' => $item->bundleId,
+            ];
         });
 
         $calculation = (new CheckoutCalculatorBuilder())
@@ -141,19 +146,34 @@ class Basket implements \JsonSerializable
                 throw new Exception("basket item offer {$item->offerId} without price");
             }
 
-            $offer = $calculation['offers'][$item->offerId];
-            $offer['cost'] = $offer['cost'] ?? $offer['price'];
-            $offer['discount'] = $offer['discount'] ?? 0;
+            if (!$calculation['offers'][$item->offerId]['bundles']->has($item->bundleId)) {
+                throw new Exception("basket item offer {$item->offerId} from bundle {$item->bundleId} without price");
+            }
 
+            $offer = $calculation['offers'][$item->offerId];
+
+            if ($item->bundleId) {
+                $qty = $offer['bundles'][$item->bundleId]['qty'];
+                $discount = $offer['bundles'][$item->bundleId]['discount'] ?? 0;
+                $discounts = $offer['bundles'][$item->bundleId]['discounts'];
+                $price = $offer['bundles'][$item->bundleId]['price'];
+            } else {
+                $qty = $offer['bundles'][0]['qty'];
+                $discount = $offer['discount'] ?? 0;
+                $discounts = $offer['discounts'] ?? [];
+                $price = $offer['price'];
+            }
+
+            $offer['cost'] = $offer['cost'] ?? $price;
             $item->cost = $offer['cost'];
-            $item->totalCost = $offer['cost'] * $offer['qty'];
-            $item->discount = $offer['discount'] * $offer['qty'];
-            $item->discounts = $offer['discounts'] ?? [];
-            $item->price = $offer['price'] * $offer['qty'];
+            $item->totalCost = $offer['cost'] * $qty;
+            $item->discount = $discount * $qty;
+            $item->discounts = $discounts;
+            $item->price = $price * $qty;
             $item->bonus = $offer['bonus'];
             $item->bonuses = $offer['bonuses']->toArray();
-            $item->bonusSpent = ($offer['bonusSpent'] ?? 0) * $offer['qty'];
-            $item->bonusDiscount = ($offer['bonusDiscount'] ?? 0) * $offer['qty'];
+            $item->bonusSpent = ($offer['bonusSpent'] ?? 0) * $qty;
+            $item->bonusDiscount = ($offer['bonusDiscount'] ?? 0) * $qty;
 
             $totalCost += $item->totalCost;
             $totalItemDiscount += $item->discount;

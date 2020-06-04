@@ -47,6 +47,17 @@ class CheckoutCalculatorBuilder
     }
 
     /**
+     * @param Collection|array $bundles
+     *
+     * @return CheckoutCalculatorBuilder
+     */
+    public function bundles($bundles)
+    {
+        $this->params['bundles'] = collect($bundles);
+        return $this;
+    }
+
+    /**
      * @param string|null $promoCode
      *
      * @return CheckoutCalculatorBuilder

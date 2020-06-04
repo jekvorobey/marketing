@@ -187,6 +187,31 @@ class InputCalculator
      */
     protected function loadData()
     {
+        $this->bundles = $this->offers->pluck('bundleId')
+            ->unique()
+            ->filter(function ($bundleId) {
+                return $bundleId > 0;
+            });
+
+        $this->offers = $this->offers
+            ->groupBy('id')
+            ->map(function (Collection $offers, $offerId) {
+                $bundleQty = $offers->keyBy('bundleId')
+                    ->map(function ($offer) use (&$qty) {
+                        return collect([
+                            'qty' => $offer['qty'],
+                        ]);
+                });
+
+                $qty = $bundleQty->pluck('qty')->sum();
+
+                return [
+                    'id' => $offerId,
+                    'qty' => $qty,
+                    'bundles' => $bundleQty,
+                ];
+            });
+
         $offerIds = $this->offers->pluck('id');
         if ($offerIds->isNotEmpty()) {
             $this->hydrateOffer();
@@ -253,6 +278,7 @@ class InputCalculator
                 'brand_id'    => $offer['brand_id'] ?? null,
                 'category_id' => $offer['category_id'] ?? null,
                 'merchant_id' => $offerDto->merchant_id,
+                'bundles' => $offer['bundles'] ?? [],
             ]));
         }
         $this->offers = $offers;
@@ -291,6 +317,7 @@ class InputCalculator
                 'brand_id'    => $offer['brand_id'] ?? null,
                 'category_id' => $offer['category_id'] ?? null,
                 'merchant_id' => $offer['merchant_id'] ?? null,
+                'bundles' => $offer['bundles'] ?? [],
             ]));
         }
         $this->offers = $offers;
@@ -333,6 +360,7 @@ class InputCalculator
                 'category_id' => $product['category_id'],
                 'product_id'  => $product['id'],
                 'merchant_id' => $offer['merchant_id'] ?? null,
+                'bundles' => $offer['bundles'] ?? [],
             ]));
         }
         $this->offers = $offers;
