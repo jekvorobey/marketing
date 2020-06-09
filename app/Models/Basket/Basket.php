@@ -155,8 +155,8 @@ class Basket implements \JsonSerializable
             if ($item->bundleId) {
                 $qty = $offer['bundles'][$item->bundleId]['qty'];
                 $discount = $offer['bundles'][$item->bundleId]['discount'] ?? 0;
-                $discounts = $offer['bundles'][$item->bundleId]['discounts'];
-                $price = $offer['bundles'][$item->bundleId]['price'];
+                $discounts = $offer['bundles'][$item->bundleId]['discounts'] ?? [];
+                $price = $offer['bundles'][$item->bundleId]['price'] ?? 0;
             } else {
                 $qty = $offer['bundles'][0]['qty'];
                 $discount = $offer['discount'] ?? 0;

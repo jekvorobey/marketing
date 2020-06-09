@@ -134,7 +134,7 @@ class DiscountCalculator extends AbstractCalculator
 
             if ($discountsWithBundles && !($discountsWithBundles->isEmpty())) {
                 $offer['bundles']->transform(function ($bundle, $bundleId) use ($sum, $discountsWithBundles, $discountsWithoutBundles) {
-                    if ($bundleId) {
+                    if ($bundleId && $discountsWithBundles->has($bundleId)) {
                         $bundle['discount'] = $sum + $discountsWithBundles[$bundleId]['change'];
                         $bundle['discounts'] = $discountsWithoutBundles->push($discountsWithBundles[$bundleId]);
                     }
