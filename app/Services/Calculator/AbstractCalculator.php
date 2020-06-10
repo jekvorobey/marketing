@@ -58,7 +58,7 @@ abstract class AbstractCalculator
             return 0;
         }
 
-        if ($discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
+        if ($discount && $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
             if ($item['bundles']->has($discount->id)) {
                 $offerInBundle = &$item['bundles'][$discount->id];
             } else {
