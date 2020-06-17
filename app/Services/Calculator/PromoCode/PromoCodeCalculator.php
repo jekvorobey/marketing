@@ -6,9 +6,9 @@ use App\Models\Discount\Discount;
 use App\Models\PromoCode\PromoCode;
 use App\Services\Calculator\AbstractCalculator;
 use App\Services\Calculator\Bonus\BonusCalculator;
+use App\Services\Calculator\Discount\DiscountCalculator;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
-use App\Services\Calculator\Discount\DiscountCalculator;
 use Greensight\Oms\Services\OrderService\OrderService;
 
 /**
@@ -73,6 +73,9 @@ class PromoCodeCalculator extends AbstractCalculator
 
                 $change = 0;
                 foreach ($this->input->deliveries['items'] as $k => $delivery) {
+                    if (!$delivery['selected']) {
+                        continue;
+                    }
                     $changeForDelivery = $this->changePrice(
                         $delivery,
                         self::HIGHEST_POSSIBLE_PRICE_PERCENT,
