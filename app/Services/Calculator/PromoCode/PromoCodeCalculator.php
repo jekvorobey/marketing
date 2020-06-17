@@ -73,9 +73,6 @@ class PromoCodeCalculator extends AbstractCalculator
 
                 $change = 0;
                 foreach ($this->input->deliveries['items'] as $k => $delivery) {
-                    if (!$delivery['selected']) {
-                        continue;
-                    }
                     $changeForDelivery = $this->changePrice(
                         $delivery,
                         self::HIGHEST_POSSIBLE_PRICE_PERCENT,
@@ -86,7 +83,9 @@ class PromoCodeCalculator extends AbstractCalculator
 
                     if ($changeForDelivery > 0) {
                         $isApply                              = $changeForDelivery > 0;
-                        $change                               += $changeForDelivery;
+                        if ($delivery['selected']) {
+                            $change += $changeForDelivery;
+                        }
                         $this->input->freeDelivery            = true;
                         $this->input->deliveries['items'][$k] = $delivery;
                     }
