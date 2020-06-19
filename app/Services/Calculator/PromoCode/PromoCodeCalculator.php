@@ -6,9 +6,9 @@ use App\Models\Discount\Discount;
 use App\Models\PromoCode\PromoCode;
 use App\Services\Calculator\AbstractCalculator;
 use App\Services\Calculator\Bonus\BonusCalculator;
+use App\Services\Calculator\Discount\DiscountCalculator;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
-use App\Services\Calculator\Discount\DiscountCalculator;
 use Greensight\Oms\Services\OrderService\OrderService;
 
 /**
@@ -83,7 +83,9 @@ class PromoCodeCalculator extends AbstractCalculator
 
                     if ($changeForDelivery > 0) {
                         $isApply                              = $changeForDelivery > 0;
-                        $change                               += $changeForDelivery;
+                        if ($delivery['selected']) {
+                            $change += $changeForDelivery;
+                        }
                         $this->input->freeDelivery            = true;
                         $this->input->deliveries['items'][$k] = $delivery;
                     }
