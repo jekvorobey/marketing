@@ -11,7 +11,8 @@ class OutputCalculator
     public $appliedPromoCode;
     public $appliedDiscounts;
     public $appliedBonuses;
-
+    public $maxSpendableBonus;
+    
     /**
      * OutputCalculator constructor.
      */
@@ -20,5 +21,6 @@ class OutputCalculator
         $this->appliedDiscounts = collect();
         $this->appliedBonuses = collect();
         $this->appliedPromoCode = null;
+        $this->maxSpendableBonus = 0;
     }
 }

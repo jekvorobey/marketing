@@ -2,19 +2,29 @@
 
 namespace App\Services\Calculator;
 
+use App\Models\Bonus\ProductBonusOption\ProductBonusOption;
 use App\Models\Discount\Discount;
+use App\Models\Option\Option;
 use Illuminate\Support\Collection;
 
 abstract class AbstractCalculator
 {
+    public const FLOOR = 1;
+    public const CEIL = 2;
+    public const ROUND = 3;
+    
     /** @var int Цена для бесплатной доставки */
-    const FREE_DELIVERY_PRICE = 0;
-
+    public const FREE_DELIVERY_PRICE = 0;
     /** @var int Самая низкая возможная цена (1 рубль) */
-    const LOWEST_POSSIBLE_PRICE = 1;
-
+    public const LOWEST_POSSIBLE_PRICE = 1;
     /** @var int Максимально возомжная скидка в процентах */
-    const HIGHEST_POSSIBLE_PRICE_PERCENT = 100;
+    public const HIGHEST_POSSIBLE_PRICE_PERCENT = 100;
+    /** @var int отношение бонуса к рублю */
+    public const DEFAULT_BONUS_PER_RUBLES = 1;
+    /** @var int сколько процентов стоимости товара можно оплатить бонусами */
+    public const DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT = 100;
+    /** @var int сколько процентов стоимости заказа можно оплатить бонусами */
+    public const DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_ORDER = 100;
 
     /**
      * Входные условия, влияющие на получения скидки
@@ -27,11 +37,45 @@ abstract class AbstractCalculator
      * @var OutputCalculator
      */
     protected $output;
+    
+    private $options;
 
     public function __construct(InputCalculator $inputCalculator, OutputCalculator $outputCalculator)
     {
         $this->input  = $inputCalculator;
         $this->output = $outputCalculator;
+    }
+    
+    /**
+     * Расчитать прцоент от значения и округлить указанным методом.
+     * @param int|float $value - значение от которого берётся процент
+     * @param int|float $percent - процент (0-100)
+     * @param int $method - способ округления (например self::FLOOR)
+     *
+     * @return int
+     */
+    public static function percent($value, $percent, $method = self::FLOOR)
+    {
+        return self::round($value * $percent / 100, $method);
+    }
+    
+    /**
+     * Округлить значение указанным способом.
+     * @param $value
+     * @param int $method
+     *
+     * @return int
+     */
+    public static function round($value, $method = self::FLOOR)
+    {
+        switch ($method) {
+            case self::FLOOR:
+                return (int)floor($value);
+            case self::CEIL:
+                return (int)ceil($value);
+            default:
+                return (int)round($value);
+        }
     }
 
     /**
@@ -171,4 +215,36 @@ abstract class AbstractCalculator
                 && (!$merchantId || $offer['merchant_id'] == $merchantId);
         })->pluck('id');
     }
+    
+    /**
+     * Получить опцию по ключу (с кэшем в рамках процесса)
+     * @param mixed $key
+     * @return mixed
+     */
+    protected function getOption($key)
+    {
+        $this->loadOptions();
+        return $this->options[$key] ?? null;
+    }
+    
+    /**
+     * Загрузить опции из БД (не грузит повторно)
+     */
+    private function loadOptions()
+    {
+        if ($this->options) {
+            return;
+        }
+        /** @var Option[] $rawOptions */
+        $rawOptions = Option::query()->get();
+        $options = [];
+        foreach ($rawOptions as $option) {
+            $options[$option->key] = $option->value['value'];
+        }
+        $options[Option::KEY_BONUS_PER_RUBLES] = $options[Option::KEY_BONUS_PER_RUBLES] ?? self::DEFAULT_BONUS_PER_RUBLES;
+        $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT] = $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT] ?? self::DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT;
+        $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER] = $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER] ?? self::DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_ORDER;
+        $this->options = $options;
+    }
+
 }

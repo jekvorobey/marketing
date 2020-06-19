@@ -62,10 +62,11 @@ class Basket implements \JsonSerializable
     private $appliedBonuses;
     /** @var array */
     private $appliedPromoCodes = [];
-
+    private $maxSpendableBonus;
+    
     /** @var BasketItem[] */
     public $items;
-
+    
     public static function fromRequestData(array $data): self
     {
         $basket = new self($data['user']);
@@ -136,6 +137,7 @@ class Basket implements \JsonSerializable
         $this->appliedDiscounts  = $calculation['discounts'];
         $this->appliedBonuses    = $calculation['bonuses'];
         $this->deliveries        = $calculation['deliveries'];
+        $this->maxSpendableBonus        = $calculation['maxSpendableBonus'];
 
         $totalCost = 0;
         $totalItemDiscount = 0;
@@ -216,6 +218,7 @@ class Basket implements \JsonSerializable
             'discounts' => $this->appliedDiscounts,
             'bonuses' => $this->appliedBonuses,
             'bonusSpent' => $this->bonusSpent,
+            'maxSpendableBonus' => $this->maxSpendableBonus,
             'bonusDiscount' => $this->bonusDiscount,
             'bonusPerRub' => $this->bonusPerRub,
             'promoCodes' => $this->appliedPromoCodes,

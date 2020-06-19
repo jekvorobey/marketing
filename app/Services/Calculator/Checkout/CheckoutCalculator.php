@@ -4,6 +4,7 @@ namespace App\Services\Calculator\Checkout;
 
 use App\Services\Calculator\AbstractCalculator;
 use App\Services\Calculator\Bonus\BonusCalculator;
+use App\Services\Calculator\Bonus\BonusMayBeSpentCalculator;
 use App\Services\Calculator\Bonus\BonusSpentCalculator;
 use App\Services\Calculator\Discount\DiscountCalculator;
 use App\Services\Calculator\InputCalculator;
@@ -53,6 +54,7 @@ class CheckoutCalculator extends AbstractCalculator
             DiscountCalculator::class,
             BonusSpentCalculator::class,
             BonusCalculator::class,
+            BonusMayBeSpentCalculator::class,
         ];
 
         foreach ($calculators as $calculatorName) {
@@ -65,6 +67,7 @@ class CheckoutCalculator extends AbstractCalculator
             'promoCodes' => $this->output->appliedPromoCode ? [$this->output->appliedPromoCode] : [],
             'discounts'  => $this->output->appliedDiscounts->values(),
             'bonuses'    => $this->output->appliedBonuses->values(),
+            'maxSpendableBonus' => $this->output->maxSpendableBonus ?? 0,
             'offers'     => $this->getFormatOffers(),
             'deliveries' => $this->input->deliveries['items']->values(),
         ];

@@ -68,11 +68,7 @@ class BonusCalculator extends AbstractCalculator
      */
     protected function checkPermissions()
     {
-        $option = Option::query()
-            ->where('key', Option::KEY_ROLES_AVAILABLE_FOR_BONUSES)
-            ->pluck('value', 'key');
-
-        $availableRoles = $option[Option::KEY_ROLES_AVAILABLE_FOR_BONUSES]['value'] ?? [];
+        $availableRoles = $this->getOption(Option::KEY_ROLES_AVAILABLE_FOR_BONUSES) ?? [];
         $currentRoles = $this->input->customer['roles'] ?? [];
         return count(array_intersect($availableRoles, $currentRoles)) > 0;
     }
