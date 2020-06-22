@@ -52,9 +52,9 @@ class CheckoutCalculator extends AbstractCalculator
         $calculators = [
             PromoCodeCalculator::class,
             DiscountCalculator::class,
+            BonusMayBeSpentCalculator::class,
             BonusSpentCalculator::class,
             BonusCalculator::class,
-            BonusMayBeSpentCalculator::class,
         ];
 
         foreach ($calculators as $calculatorName) {

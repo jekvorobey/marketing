@@ -5,6 +5,7 @@ namespace App\Services\Calculator\Bonus;
 use App\Models\Bonus\ProductBonusOption\ProductBonusOption;
 use App\Models\Option\Option;
 use App\Services\Calculator\AbstractCalculator;
+use Illuminate\Support\Collection;
 
 abstract class AbstractBonusCalculator extends AbstractCalculator
 {
@@ -61,6 +62,54 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
             $percent = $this->getOption(Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT);
         }
         return self::percent($offer['price'], $percent);
+    }
+    
+    protected function needCalculateBonus(): bool
+    {
+        return $this->bonusSettingsIsSet() && $this->input->bonus > 0;
+    }
+    
+    protected function bonusSettingsIsSet()
+    {
+        return $this->getOption(Option::KEY_BONUS_PER_RUBLES) > 0
+        && $this->getOption(Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT) > 0
+        && $this->getOption(Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER) > 0;
+    }
+    
+    /**
+     * @return Collection
+     */
+    protected function sortOffers()
+    {
+        return $this->input->offers->sortBy(function ($offer) {
+            return $this->maxBonusPriceForOffer($offer);
+        })->keys();
+    }
+    
+    protected function setBonusToEachOffer($bonusPrice, $callback)
+    {
+        $orderPrice = $this->input->getPriceOrders();
+        $maxSpendForOrder = AbstractCalculator::percent($orderPrice, $this->getOption(Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER));
+        $spendForOrder = $bonusPrice === null ? $maxSpendForOrder : min($bonusPrice, $maxSpendForOrder);
+        
+        $offerIds = $this->sortOffers();
+        
+        foreach ($offerIds as $offerId) {
+            $offer = $this->input->offers[$offerId];
+            $maxSpendForOffer = $this->maxBonusPriceForOffer($offer);
+            $offerPrice       = $offer['price'];
+            $spendForOffer    = AbstractCalculator::percent($spendForOrder, $offerPrice / $orderPrice * 100, AbstractCalculator::ROUND);
+            $changePriceValue = min($maxSpendForOffer, $spendForOffer);
+            if ($spendForOrder < $changePriceValue * $offer['qty']) {
+                $spendForOffer    = AbstractCalculator::percent($spendForOrder, $offerPrice / $orderPrice * 100, AbstractCalculator::FLOOR);
+                $changePriceValue = min($maxSpendForOffer, $spendForOffer);
+            }
+            
+            $discount = $callback($offer, $changePriceValue);
+            
+            $spendForOrder -= $discount * $offer['qty'];
+            $orderPrice    -= $offerPrice * $offer['qty'];
+        }
     }
     
     /**

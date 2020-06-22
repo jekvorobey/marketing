@@ -2,20 +2,28 @@
 
 namespace App\Services\Calculator\Bonus;
 
-use App\Models\Option\Option;
+use App\Models\Discount\Discount;
 
 class BonusMayBeSpentCalculator extends AbstractBonusCalculator
 {
     public function calculate()
     {
-        $maxOrderBonusPercent = $this->getOption(Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER);
-        $maxOrderBonusPrice = self::percent($this->input->getPriceOrders(), $maxOrderBonusPercent);
-        $totalBonusPrice = 0;
-        foreach ($this->input->offers as $offer) {
-            $bonusOfferPrice = $this->maxBonusPriceForOffer($offer);
-            $totalBonusPrice += $bonusOfferPrice * $offer['qty'];
+        if (!$this->bonusSettingsIsSet()) {
+            return;
         }
-        $resultOrderBonusPrice = min($maxOrderBonusPrice, $totalBonusPrice);
-        $this->output->maxSpendableBonus = $this->priceToBonus($resultOrderBonusPrice);
+        $totalBonusPrice = 0;
+        $this->setBonusToEachOffer(null, function (&$offer, $changePriceValue) use (&$totalBonusPrice) {
+            $discount = $this->changePrice(
+                $offer,
+                $changePriceValue,
+                Discount::DISCOUNT_VALUE_TYPE_RUB,
+                false,
+                self::LOWEST_POSSIBLE_PRICE
+            );
+            $totalBonusPrice += $discount * $offer['qty'];
+            return $changePriceValue;
+        });
+        
+        $this->output->maxSpendableBonus = $this->priceToBonus($totalBonusPrice);
     }
 }
