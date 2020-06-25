@@ -80,7 +80,7 @@ Route::namespace('V1')->prefix('v1')->group(function () {
     });
 
     Route::prefix('price-reactor')->group(function () {
-        Route::get('basket', 'PriceReactorController@calculateBasketPrice');
+        Route::post('basket', 'PriceReactorController@calculateBasketPrice');
     });
 
     Route::get('aggregate/{customer_id}/personal-global-percent', 'AggregateController@getPersonalGlobalPercent')->where('customer_id', '[0-9]+');

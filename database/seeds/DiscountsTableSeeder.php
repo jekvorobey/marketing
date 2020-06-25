@@ -3,6 +3,7 @@
 use Illuminate\Database\Seeder;
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountOffer;
+use App\Models\Discount\BundleItem;
 use App\Models\Discount\DiscountBrand;
 use App\Models\Discount\DiscountCategory;
 use App\Models\Discount\DiscountCondition;
@@ -187,6 +188,12 @@ class DiscountsTableSeeder extends Seeder
                 }
                 break;
             case Discount::DISCOUNT_TYPE_BUNDLE_OFFER:
+                $count = $this->faker->numberBetween(2, 5);
+                $offerIds = $this->faker->randomElements($this->offerIds, $count);
+                foreach ($offerIds as $offerId) {
+                    $this->createBundleItem($discount->id, $offerId);
+                }
+                break;
             case Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS:
                 // todo
                 break;
@@ -452,6 +459,19 @@ class DiscountsTableSeeder extends Seeder
         $discountOffer->offer_id = $offerId;
         $discountOffer->except = $except;
         return $discountOffer->save();
+    }
+
+    /**
+     * @param int $discountId
+     * @param int $itemId - id оффера или мастеркласса
+     * @return bool
+     */
+    protected function createBundleItem(int $discountId, int $itemId)
+    {
+        $bundleItem = new BundleItem();
+        $bundleItem->discount_id = $discountId;
+        $bundleItem->item_id = $itemId;
+        return $bundleItem->save();
     }
 
     /**
