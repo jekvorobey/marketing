@@ -403,11 +403,11 @@ class DiscountCalculator extends AbstractCalculator
                 } else {
                     continue;
                 }
-    
+
                 if (!$this->offersByDiscounts->has($offerId)) {
                     $this->offersByDiscounts->put($offerId, collect());
                 }
-    
+
                 $this->offersByDiscounts[$offerId]->push([
                     'id'         => $discount->id,
                     'change'     => $change,
@@ -856,7 +856,7 @@ class DiscountCalculator extends AbstractCalculator
                 case DiscountCondition::PAY_METHOD:
                     $r = $this->checkPayMethod($condition->getPaymentMethods());
                     break;
-                /** Скидка при заказе в один из регионов */
+                /** Скидка при заказе из региона */
                 case DiscountCondition::REGION:
                     $r = $this->checkRegion($condition->getRegions());
                     break;
@@ -887,7 +887,7 @@ class DiscountCalculator extends AbstractCalculator
     }
 
     /**
-     * Регион доставки
+     * Регион пользователя
      *
      * @param $regions
      *
@@ -895,8 +895,7 @@ class DiscountCalculator extends AbstractCalculator
      */
     public function checkRegion($regions)
     {
-        return isset($this->input->deliveries['current']['region']) && in_array($this->input->deliveries['current']['region'],
-                $regions);
+        return in_array($this->input->userRegion['id'], $regions);
     }
 
     /**

@@ -91,6 +91,17 @@ class CheckoutCalculatorBuilder
     }
 
     /**
+     * @param string $id
+     *
+     * @return CheckoutCalculatorBuilder
+     */
+    public function regionFiasId($id)
+    {
+        $this->params['regionFiasId'] = $id;
+        return $this;
+    }
+
+    /**
      * @param int|null $bonus
      */
     public function bonus(?int $bonus)

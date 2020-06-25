@@ -32,6 +32,8 @@ class Basket implements \JsonSerializable
 
     /** @var int */
     public $user;
+    /** @var int */
+    public $userRegionFiasId;
     /** @var string */
     public $referalCode;
     /** @var Collection|array */
@@ -63,13 +65,13 @@ class Basket implements \JsonSerializable
     /** @var array */
     private $appliedPromoCodes = [];
     private $maxSpendableBonus;
-    
+
     /** @var BasketItem[] */
     public $items;
-    
+
     public static function fromRequestData(array $data): self
     {
-        $basket = new self($data['user']);
+        $basket = new self($data['user'], $data['userRegionFiasId']);
 
         @([
             'referal_code' => $basket->referalCode,
@@ -103,9 +105,10 @@ class Basket implements \JsonSerializable
         return $basket;
     }
 
-    public function __construct(int $userId)
+    public function __construct(int $userId, $userRegionFiasId=null)
     {
-        $this->user = $userId;
+        $this->user             = $userId;
+        $this->userRegionFiasId = $userRegionFiasId;
 
         $option = Option::query()->where('key', Option::KEY_BONUS_PER_RUBLES)->first();
         $this->bonusPerRub = $option ? $option->value['value'] : Option::DEFAULT_BONUS_PER_RUBLES;
@@ -127,6 +130,7 @@ class Basket implements \JsonSerializable
         $calculation = (new CheckoutCalculatorBuilder())
             ->customer(['id' => $this->user])
             ->payment(['method' => $this->payMethod])
+            ->regionFiasId($this->userRegionFiasId)
             ->deliveries($this->deliveries)
             ->offers($offers)
             ->promoCode($this->promoCode)

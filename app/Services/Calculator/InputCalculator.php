@@ -9,6 +9,7 @@ use Greensight\CommonMsa\Rest\RestQuery;
 use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\Customer\Dto\CustomerDto;
 use Greensight\Customer\Services\CustomerService\CustomerService;
+use Greensight\Logistics\Services\ListsService\ListsService;
 use Greensight\Oms\Services\OrderService\OrderService;
 use Illuminate\Support\Collection;
 use Pim\Core\PimException;
@@ -71,6 +72,9 @@ class InputCalculator
     public $deliveries;
     /** @var bool */
     public $freeDelivery;
+
+    /** @var array */
+    public $userRegion;
     /**
      * @var Collection|CategoryDto[]
      */
@@ -115,6 +119,7 @@ class InputCalculator
         $this->brands = collect();
         $this->categories = collect();
         $this->promoCode = isset($params['promoCode']) ? (string) $params['promoCode'] : null;
+        $this->userRegion = $this->getUserRegion($params['regionFiasId'] ?? null);
         $this->customer = [
             'id' => null,
             'roles' => [],
@@ -155,6 +160,7 @@ class InputCalculator
             return;
         }
 
+        //dd($params);
         if (is_iterable($params['deliveries'])) {
             $id = 0;
             $this->deliveries->put('items', collect());
@@ -178,6 +184,15 @@ class InputCalculator
         $this->deliveries['notSelected'] = $this->deliveries['items']->filter(function ($delivery) {
             return !$delivery['selected'];
         });
+    }
+
+    protected function getUserRegion($userRegionFiasId)
+    {
+        if (!$userRegionFiasId) {
+            return null;
+        }
+
+        return app(ListsService::class)->regions()->keyBy->guid->get($userRegionFiasId);
     }
 
     /**
