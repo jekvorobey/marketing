@@ -160,7 +160,6 @@ class InputCalculator
             return;
         }
 
-        //dd($params);
         if (is_iterable($params['deliveries'])) {
             $id = 0;
             $this->deliveries->put('items', collect());
@@ -362,18 +361,15 @@ class InputCalculator
         $productsByOffers = $productService->productsByOffers($productQuery, $offerIds);
         foreach ($this->offers as $offer) {
             $offerId = $offer['id'];
-            if (!isset($productsByOffers[$offerId]['product'])) {
-                continue;
-            }
 
-            $product = $productsByOffers[$offerId]['product'];
+            $product = data_get($productsByOffers, $offerId . 'product');
             $offers->put($offerId, collect([
                 'id'          => $offerId,
                 'price'       => $offer['price'] ?? null,
                 'qty'         => $offer['qty'] ?? 1,
-                'brand_id'    => $product['brand_id'],
-                'category_id' => $product['category_id'],
-                'product_id'  => $product['id'],
+                'brand_id'    => $product['brand_id'] ?? null,
+                'category_id' => $product['category_id'] ?? null,
+                'product_id'  => $product['id'] ?? null,
                 'merchant_id' => $offer['merchant_id'] ?? null,
                 'bundles' => $offer['bundles'] ?? [],
             ]));
