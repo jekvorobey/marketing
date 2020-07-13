@@ -74,6 +74,7 @@ Route::namespace('V1')->prefix('v1')->group(function () {
             Route::prefix('price')->group(function () {
                 Route::get('', 'PriceController@price');
                 Route::put('', 'PriceController@setPrice');
+                Route::delete('', 'PriceController@deletePriceByOffer');
             });
         });
         Route::post('catalogCombinations', 'PriceController@catalogCombinations');

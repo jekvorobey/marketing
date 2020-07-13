@@ -229,15 +229,40 @@ class PriceController extends Controller
                 /** @var Collection|Price[] $prices */
                 $prices = Price::query()->whereIn('offer_id', $offerIds)->get()->keyBy('offer_id');
                 foreach ($offerIds as $offerId) {
-                    $price = $prices->has($offerId) ? $prices[$offerId] : new Price();
-                    $price->offer_id = $offerId;
-                    $price->price = $newPrices[$price->offer_id];
-                    $price->save();
+                    $price = $prices->has($offerId) ? $prices[$offerId] : null;
+                    if (!is_null($price) && !$newPrices[$offerId]) {
+                        $price->delete();
+                    } else {
+                        if (is_null($price)) $price = new Price();
+                        $price->offer_id = $offerId;
+                        $price->price = $newPrices[$price->offer_id];
+                        $price->save();
+                    }
                 }
             });
         }
         catch (\Exception $e) {
             throw new HttpException(500, $e->getMessage());
+        }
+
+        return response('', 204);
+    }
+
+    /**
+     * Удалить цену при удалении самого оффера, не цепляя хуки индексации товара
+     * @param int $offerId
+     * @return mixed
+     */
+    public function deletePriceByOffer(int $offerId)
+    {
+        try {
+            $ok = Price::query()->where('offer_id', $offerId)->delete();
+        } catch (\Exception $e) {
+            $ok = false;
+        }
+
+        if (!$ok) {
+            throw new HttpException(500);
         }
 
         return response('', 204);
