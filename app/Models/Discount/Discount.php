@@ -9,6 +9,10 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Eloquent;
 use DB;
+use Greensight\CommonMsa\Rest\RestQuery;
+use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationService;
+use MerchantManagement\Services\MerchantService\MerchantService;
+use MerchantManagement\Services\OperatorService\OperatorService;
 use Pim\Services\SearchService\SearchService;
 
 /**
@@ -483,6 +487,32 @@ class Discount extends AbstractModel
 
         self::saved(function (self $discount) {
             $discount->updateProducts();
+
+            $operatorService = app(OperatorService::class);
+            $serviceNotificationService = app(ServiceNotificationService::class);
+
+            $operators = $operatorService->operators((new RestQuery)->setFilter('merchant_id', '=', $discount->merchant_id));
+
+            $type = (function () use ($discount) {
+                switch ($discount->status) {
+                    case static::STATUS_CREATED:
+                        return 'marketingskidka_sozdana';
+                    case static::STATUS_SENT:
+                        return 'marketingskidka_otpravlena_na_soglasovanie';
+                    case static::STATUS_ON_CHECKING:
+                        return 'marketingskidka_na_soglasovanii';
+                    case static::STATUS_ACTIVE:
+                        return 'marketingskidka_aktivna';
+                    case static::STATUS_REJECTED:
+                        return 'marketingskidka_otklonena';
+                    case static::STATUS_PAUSED:
+                        return 'marketingskidka_priostanovlena';
+                }
+            })();
+
+            foreach($operators as $operator) {
+                $serviceNotificationService->send($operator->user_id, $type);
+            }
         });
 
         self::deleting(function (self $discount) {
