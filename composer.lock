@@ -600,12 +600,12 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.com:greensight/ibt-merchant-management-lib.git",
-                "reference": "a3fecae74167f1777001eeb155d5232cbd558257"
+                "reference": "883dd90a0a42e5670e78abd6dffee0f6771db3e5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://gitlab.com/api/v4/projects/greensight%2Fibt-merchant-management-lib/repository/archive.zip?sha=a3fecae74167f1777001eeb155d5232cbd558257",
-                "reference": "a3fecae74167f1777001eeb155d5232cbd558257",
+                "url": "https://gitlab.com/api/v4/projects/greensight%2Fibt-merchant-management-lib/repository/archive.zip?sha=883dd90a0a42e5670e78abd6dffee0f6771db3e5",
+                "reference": "883dd90a0a42e5670e78abd6dffee0f6771db3e5",
                 "shasum": ""
             },
             "require": {
@@ -629,7 +629,7 @@
                 }
             ],
             "description": "iBT Merchant Management service client",
-            "time": "2020-07-15T07:26:44+00:00"
+            "time": "2020-07-23T10:26:37+00:00"
         },
         {
             "name": "greensight/ibt-oms-lib",
@@ -637,12 +637,12 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.com:greensight/ibt-oms-lib.git",
-                "reference": "a9c2d7c19c9e977ee7d2e1e5fbb7915c4cb7b23e"
+                "reference": "548e02487f052b3b4bc559466d8915b6efaefbb5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://gitlab.com/api/v4/projects/greensight%2Fibt-oms-lib/repository/archive.zip?sha=a9c2d7c19c9e977ee7d2e1e5fbb7915c4cb7b23e",
-                "reference": "a9c2d7c19c9e977ee7d2e1e5fbb7915c4cb7b23e",
+                "url": "https://gitlab.com/api/v4/projects/greensight%2Fibt-oms-lib/repository/archive.zip?sha=548e02487f052b3b4bc559466d8915b6efaefbb5",
+                "reference": "548e02487f052b3b4bc559466d8915b6efaefbb5",
                 "shasum": ""
             },
             "require": {
@@ -678,7 +678,7 @@
                 }
             ],
             "description": "iBT oms client",
-            "time": "2020-07-17T10:48:11+00:00"
+            "time": "2020-07-23T08:00:37+00:00"
         },
         {
             "name": "greensight/ibt-pim-lib",
@@ -686,12 +686,12 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.com:greensight/ibt-pim-lib.git",
-                "reference": "2788128080421218bdd641ca10b7fee20be1f534"
+                "reference": "19c06b9c4d61f52b01f958de9ed4d06ea0c14fa0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://gitlab.com/api/v4/projects/greensight%2Fibt-pim-lib/repository/archive.zip?sha=2788128080421218bdd641ca10b7fee20be1f534",
-                "reference": "2788128080421218bdd641ca10b7fee20be1f534",
+                "url": "https://gitlab.com/api/v4/projects/greensight%2Fibt-pim-lib/repository/archive.zip?sha=19c06b9c4d61f52b01f958de9ed4d06ea0c14fa0",
+                "reference": "19c06b9c4d61f52b01f958de9ed4d06ea0c14fa0",
                 "shasum": ""
             },
             "require": {
@@ -715,7 +715,7 @@
                 }
             ],
             "description": "iBT PIM service client",
-            "time": "2020-07-21T09:11:12+00:00"
+            "time": "2020-07-23T13:20:08+00:00"
         },
         {
             "name": "guzzlehttp/guzzle",
@@ -1418,16 +1418,16 @@
         },
         {
             "name": "monolog/monolog",
-            "version": "1.25.4",
+            "version": "1.25.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Seldaek/monolog.git",
-                "reference": "3022efff205e2448b560c833c6fbbf91c3139168"
+                "reference": "1817faadd1846cd08be9a49e905dc68823bc38c0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Seldaek/monolog/zipball/3022efff205e2448b560c833c6fbbf91c3139168",
-                "reference": "3022efff205e2448b560c833c6fbbf91c3139168",
+                "url": "https://api.github.com/repos/Seldaek/monolog/zipball/1817faadd1846cd08be9a49e905dc68823bc38c0",
+                "reference": "1817faadd1846cd08be9a49e905dc68823bc38c0",
                 "shasum": ""
             },
             "require": {
@@ -1491,7 +1491,7 @@
                 "logging",
                 "psr-3"
             ],
-            "time": "2020-05-22T07:31:27+00:00"
+            "time": "2020-07-23T08:35:51+00:00"
         },
         {
             "name": "nesbot/carbon",
