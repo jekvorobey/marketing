@@ -493,25 +493,37 @@ class Discount extends AbstractModel
 
             $operators = $operatorService->operators((new RestQuery)->setFilter('merchant_id', '=', $discount->merchant_id));
 
-            $type = (function () use ($discount) {
+            [$type, $data] = (function () use ($discount) {
                 switch ($discount->status) {
                     case static::STATUS_CREATED:
-                        return 'marketingskidka_sozdana';
+                        return ['marketingskidka_sozdana', []];
                     case static::STATUS_SENT:
-                        return 'marketingskidka_otpravlena_na_soglasovanie';
+                        return ['marketingskidka_otpravlena_na_soglasovanie', []];
                     case static::STATUS_ON_CHECKING:
-                        return 'marketingskidka_na_soglasovanii';
+                        return ['marketingskidka_na_soglasovanii', []];
                     case static::STATUS_ACTIVE:
-                        return 'marketingskidka_aktivna';
+                        return ['marketingskidka_aktivna', [
+                            'NAME_DISCOUNT' => $discount->name
+                        ]];
                     case static::STATUS_REJECTED:
-                        return 'marketingskidka_otklonena';
+                        return ['marketingskidka_otklonena', [
+                            'NAME_DISCOUNT' => $discount->name
+                        ]];
                     case static::STATUS_PAUSED:
-                        return 'marketingskidka_priostanovlena';
+                        return ['marketingskidka_priostanovlena', [
+                            'NAME_DISCOUNT' => $discount->name
+                        ]];
+                    case static::STATUS_EXPIRED:
+                        return ['marketingskidka_zavershena', [
+                            'NAME_DISCOUNT' => $discount->name
+                        ]];
+                    default:
+                        return ['', []];
                 }
             })();
 
             foreach($operators as $operator) {
-                $serviceNotificationService->send($operator->user_id, $type);
+                $serviceNotificationService->send($operator->user_id, $type, $data);
             }
         });
 
