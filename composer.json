@@ -31,6 +31,10 @@
         {
             "type": "vcs",
             "url": "https://gitlab.com/greensight/ibt-merchant-management-lib"
+        },
+        {
+            "type": "vcs",
+            "url": "https://gitlab.com/greensight/ibt-message-lib"
         }
     ],
     "require": {
@@ -42,6 +46,7 @@
         "greensight/ibt-logistics-lib": "dev-master",
         "greensight/ibt-common-lib": "dev-master",
         "greensight/ibt-merchant-management-lib": "dev-master",
+        "greensight/ibt-message-lib": "dev-master",
         "greensight/ibt-pim-lib": "dev-master",
         "laravel/framework": "5.8.*",
         "laravel/tinker": "^1.0"
