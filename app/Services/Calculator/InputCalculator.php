@@ -361,15 +361,15 @@ class InputCalculator
         $productsByOffers = $productService->productsByOffers($productQuery, $offerIds);
         foreach ($this->offers as $offer) {
             $offerId = $offer['id'];
-
-            $product = data_get($productsByOffers, $offerId . 'product');
+            /** @var ProductDto $product */
+            $product = $productsByOffers->get($offerId)->product;
             $offers->put($offerId, collect([
                 'id'          => $offerId,
                 'price'       => $offer['price'] ?? null,
                 'qty'         => $offer['qty'] ?? 1,
-                'brand_id'    => $product['brand_id'] ?? null,
-                'category_id' => $product['category_id'] ?? null,
-                'product_id'  => $product['id'] ?? null,
+                'brand_id'    => $product->brand_id ?? null,
+                'category_id' => $product->category_id ?? null,
+                'product_id'  => $product->id ?? null,
                 'merchant_id' => $offer['merchant_id'] ?? null,
                 'bundles' => $offer['bundles'] ?? [],
             ]));
@@ -512,7 +512,7 @@ class InputCalculator
         $max = 0;
         foreach ($brands as $brandId) {
             $sum = $this->offers->filter(function ($offer) use ($brandId) {
-                return $offer['brand_id'] === $brandId;
+                return (int)$offer['brand_id'] === (int)$brandId;
             })->map(function ($offer) {
                 return $offer['price'] * $offer['qty'];
             })->sum();
