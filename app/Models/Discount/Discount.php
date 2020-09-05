@@ -525,6 +525,12 @@ class Discount extends AbstractModel
             foreach($operators as $operator) {
                 $serviceNotificationService->send($operator->user_id, $type, $data);
             }
+
+            if($discount->status == static::STATUS_CREATED) {
+                $serviceNotificationService->sendToAdmin('aozskidkaskidka_sozdana');
+            } else {
+                $serviceNotificationService->sendToAdmin('aozskidkaskidka_izmenena');
+            }
         });
 
         self::deleting(function (self $discount) {
@@ -538,6 +544,8 @@ class Discount extends AbstractModel
             }
 
             $discount->updateProducts();
+
+            app(ServiceNotificationService::class)->sendToAdmin('aozskidkaskidka_udalena');
         });
     }
 
