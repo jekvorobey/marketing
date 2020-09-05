@@ -7,6 +7,7 @@ use App\Models\Discount\Discount;
 use Carbon\Carbon;
 use Faker\Factory;
 use Greensight\CommonMsa\Models\AbstractModel;
+use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -281,6 +282,17 @@ class PromoCode extends AbstractModel
                     $discount->promo_code_only = true;
                     $discount->save();
                 }
+            }
+
+            $serviceNotificationService = app(ServiceNotificationService::class);
+
+            switch ($item->status) {
+                case self::STATUS_CREATED:
+                    return $serviceNotificationService->sendToAdmin('aozpromokodpromokod_sformirovan');
+                case self::STATUS_EXPIRED:
+                    return $serviceNotificationService->sendToAdmin('aozpromokodpromokod_otklyuchen');
+                default:
+                    return $serviceNotificationService->sendToAdmin('aozpromokodpromokod_izmenen');
             }
         });
     }
