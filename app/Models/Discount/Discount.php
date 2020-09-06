@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Eloquent;
 use DB;
+use Greensight\CommonMsa\Dto\UserDto;
 use Greensight\CommonMsa\Rest\RestQuery;
 use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationService;
 use MerchantManagement\Services\MerchantService\MerchantService;
@@ -531,6 +532,12 @@ class Discount extends AbstractModel
             } else {
                 $serviceNotificationService->sendToAdmin('aozskidkaskidka_izmenena');
             }
+
+            if($discount->roles->where('role_id', UserDto::SHOWCASE__REFERRAL_PARTNER)->exists()) {
+                $serviceNotificationService->send($discount->user_id, 'sotrudnichestvouroven_personalnoy_skidki_izmenen', [
+                    'LVL_DISCOUNT' => $discount->value
+                ]);
+            }
         });
 
         self::deleting(function (self $discount) {
@@ -545,7 +552,8 @@ class Discount extends AbstractModel
 
             $discount->updateProducts();
 
-            app(ServiceNotificationService::class)->sendToAdmin('aozskidkaskidka_udalena');
+            $serviceNotificationService = app(ServiceNotificationService::class);
+            $serviceNotificationService->sendToAdmin('aozskidkaskidka_udalena');
         });
     }
 
