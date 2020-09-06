@@ -288,7 +288,13 @@ class PromoCode extends AbstractModel
 
             switch ($item->status) {
                 case self::STATUS_CREATED:
+                    $serviceNotificationService->send($item->creator_id, 'marketingovye_instrumentyzapros_na_vypusk_novogo_promo_koda_otpravlen');
                     return $serviceNotificationService->sendToAdmin('aozpromokodpromokod_sformirovan');
+                case self::STATUS_ACTIVE:
+                    return $serviceNotificationService->send($item->creator_id, 'marketingovye_instrumentyvypushchen_novyy_promo_kod', [
+                        'NAME_PROMOKEY' => $item->name,
+                        'LINK_NAME_PROMOKEY' => ''
+                    ]);
                 case self::STATUS_EXPIRED:
                     return $serviceNotificationService->sendToAdmin('aozpromokodpromokod_otklyuchen');
                 default:
