@@ -2,6 +2,8 @@
 
 return [
 
+    'showcase_host' => env('SHOWCASE_HOST'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Name

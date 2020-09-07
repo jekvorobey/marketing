@@ -293,7 +293,7 @@ class PromoCode extends AbstractModel
                 case self::STATUS_ACTIVE:
                     return $serviceNotificationService->send($item->creator_id, 'marketingovye_instrumentyvypushchen_novyy_promo_kod', [
                         'NAME_PROMOKEY' => $item->name,
-                        'LINK_NAME_PROMOKEY' => ''
+                        'LINK_NAME_PROMOKEY' => sprintf('%s/profile/account', config('app.showcase_host'))
                     ]);
                 case self::STATUS_EXPIRED:
                     return $serviceNotificationService->sendToAdmin('aozpromokodpromokod_otklyuchen');
