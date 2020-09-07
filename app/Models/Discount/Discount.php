@@ -533,7 +533,7 @@ class Discount extends AbstractModel
                 $serviceNotificationService->sendToAdmin('aozskidkaskidka_izmenena');
             }
 
-            if($discount->roles->where('role_id', UserDto::SHOWCASE__REFERRAL_PARTNER)->exists()) {
+            if($discount->roles->where('role_id', UserDto::SHOWCASE__REFERRAL_PARTNER)->isNotEmpty()) {
                 $serviceNotificationService->send($discount->user_id, 'sotrudnichestvouroven_personalnoy_skidki_izmenen', [
                     'LVL_DISCOUNT' => $discount->value
                 ]);
