@@ -7,6 +7,7 @@ use App\Models\Discount\Discount;
 use Carbon\Carbon;
 use Faker\Factory;
 use Greensight\CommonMsa\Models\AbstractModel;
+use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -286,6 +287,13 @@ class PromoCode extends AbstractModel
 
             $serviceNotificationService = app(ServiceNotificationService::class);
 
+            /** @var UserService */
+            $userService = app(UserService::class);
+            $user = $userService->users(
+                $userService->newQuery()
+                    ->setFilter('id', $item->creator_id)
+            )->first();
+
             switch ($item->status) {
                 case self::STATUS_CREATED:
                     $serviceNotificationService->send($item->creator_id, 'marketingovye_instrumentyzapros_na_vypusk_novogo_promo_koda_otpravlen');
@@ -293,7 +301,8 @@ class PromoCode extends AbstractModel
                 case self::STATUS_ACTIVE:
                     return $serviceNotificationService->send($item->creator_id, 'marketingovye_instrumentyvypushchen_novyy_promo_kod', [
                         'NAME_PROMOKEY' => $item->name,
-                        'LINK_NAME_PROMOKEY' => sprintf('%s/profile/account', config('app.showcase_host'))
+                        'LINK_NAME_PROMOKEY' => sprintf('%s/profile/account', config('app.showcase_host')),
+                        'CUSTOMER_NAME' => $user->first_name
                     ]);
                 case self::STATUS_EXPIRED:
                     return $serviceNotificationService->sendToAdmin('aozpromokodpromokod_otklyuchen');
