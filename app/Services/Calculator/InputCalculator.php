@@ -43,6 +43,8 @@ class InputCalculator
      * @var Collection
      */
     public $categories;
+    /** @var Collection */
+    public $ticketTypeIds;
     /**
      * @var string|null
      */
@@ -119,6 +121,7 @@ class InputCalculator
         $this->bundles = collect(); // todo
         $this->brands = collect();
         $this->categories = collect();
+        $this->ticketTypeIds = collect();
         $this->promoCode = isset($params['promoCode']) ? (string) $params['promoCode'] : null;
         $this->userRegion = $this->getUserRegion($params['regionFiasId'] ?? null);
         $this->customer = [
@@ -244,8 +247,14 @@ class InputCalculator
 
         $this->categories = $this->offers->pluck('category_id')
             ->unique()
-            ->filter(function ($brandId) {
-                return $brandId > 0;
+            ->filter(function ($categoryId) {
+                return $categoryId > 0;
+            });
+
+        $this->ticketTypeIds = $this->offers->pluck('ticket_type_id')
+            ->unique()
+            ->filter(function ($ticketType) {
+                return $ticketType > 0;
             });
 
         if (isset($this->customer['id'])) {
@@ -271,7 +280,9 @@ class InputCalculator
         $offerService = resolve(OfferService::class);
 
         $offersDto = $offerService->offers(
-            (new RestQuery())->setFilter('id', $offerIds)->addFields(OfferDto::entity(), 'id', 'merchant_id')
+            (new RestQuery())
+                ->setFilter('id', $offerIds)
+                ->addFields(OfferDto::entity(), 'id', 'merchant_id', 'ticket_type_id')
         )->keyBy('id');
         $offers    = collect();
         foreach ($this->offers as $offer) {
@@ -294,6 +305,7 @@ class InputCalculator
                 'category_id' => $offer['category_id'] ?? null,
                 'merchant_id' => $offerDto->merchant_id,
                 'bundles' => $offer['bundles'] ?? [],
+                'ticket_type_id' => $offerDto->ticket_type_id ?? null,
             ]));
         }
         $this->offers = $offers;
@@ -333,6 +345,7 @@ class InputCalculator
                 'category_id' => $offer['category_id'] ?? null,
                 'merchant_id' => $offer['merchant_id'] ?? null,
                 'bundles' => $offer['bundles'] ?? [],
+                'ticket_type_id' => $offer['ticket_type_id'] ?? null
             ]));
         }
         $this->offers = $offers;
@@ -373,6 +386,7 @@ class InputCalculator
                 'product_id'  => isset($product->product) ? $product->product->id : null,
                 'merchant_id' => $offer['merchant_id'] ?? null,
                 'bundles' => $offer['bundles'] ?? [],
+                'ticket_type_id' => $offer['ticket_type_id'] ?? null
             ]));
         }
         $this->offers = $offers;

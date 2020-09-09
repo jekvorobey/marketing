@@ -411,6 +411,8 @@ class DiscountController extends Controller
                 case Discount::DISCOUNT_CONDITION_RELATION:
                     $query->with('conditions');
                     break;
+                case Discount::DISCOUNT_PUBLIC_EVENT_RELATION:
+                    $query->with('publicEvents');
             }
         }
 
