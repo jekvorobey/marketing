@@ -11,6 +11,7 @@ use Eloquent;
 use DB;
 use Greensight\CommonMsa\Dto\UserDto;
 use Greensight\CommonMsa\Rest\RestQuery;
+use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationService;
 use MerchantManagement\Services\MerchantService\MerchantService;
 use MerchantManagement\Services\OperatorService\OperatorService;
@@ -534,8 +535,16 @@ class Discount extends AbstractModel
             }
 
             if($discount->roles->where('role_id', UserDto::SHOWCASE__REFERRAL_PARTNER)->isNotEmpty()) {
+                /** @var UserService */
+                $userService = app(UserService::class);
+                $user = $userService->users(
+                    $userService->newQuery()
+                        ->setFilter('id', $discount->user_id)
+                )->first();
+
                 $serviceNotificationService->send($discount->user_id, 'sotrudnichestvouroven_personalnoy_skidki_izmenen', [
-                    'LVL_DISCOUNT' => $discount->value
+                    'LVL_DISCOUNT' => $discount->value,
+                    'CUSTOMER_NAME' => $user->first_name
                 ]);
             }
         });
