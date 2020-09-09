@@ -52,6 +52,7 @@ class DiscountHelper
 
     /**
      * @param Discount $discount
+     * @param array $relations
      * @return bool
      */
     public static function validateRelations(Discount $discount, array $relations)
@@ -62,33 +63,46 @@ class DiscountHelper
         $brands = $relations[Discount::DISCOUNT_BRAND_RELATION] ?? $discount->brands;
         /** @var Collection $categories */
         $categories = $relations[Discount::DISCOUNT_CATEGORY_RELATION] ?? $discount->categories;
+        /** @var Collection $publicEvents */
+        $publicEvents = $relations[Discount::DISCOUNT_PUBLIC_EVENT_RELATION] ?? $discount->publicEvents;
 
         switch ($discount->type) {
             case Discount::DISCOUNT_TYPE_OFFER:
                 return $offers->isNotEmpty()
                     && $brands->isEmpty()
                     && $categories->isEmpty()
+                    && $publicEvents->isEmpty()
                     && $offers->filter(function (DiscountOffer $offer) { return $offer->except; })->isEmpty();
             case Discount::DISCOUNT_TYPE_BRAND:
                 return $offers->filter(function (DiscountOffer $offer) { return !$offer->except; })->isEmpty()
                     && $brands->isNotEmpty()
                     && $categories->isEmpty()
+                    && $publicEvents->isEmpty()
                     && $brands->filter(function (DiscountBrand $brand) { return $brand->except; })->isEmpty();
             case Discount::DISCOUNT_TYPE_CATEGORY:
                 return $offers->filter(function (DiscountOffer $offer) { return !$offer->except; })->isEmpty()
                     && $brands->filter(function (DiscountBrand $brand) { return !$brand->except; })->isEmpty()
+                    && $publicEvents->isEmpty()
                     && $categories->isNotEmpty();
+            case Discount::DISCOUNT_TYPE_MASTERCLASS:
+                return $offers->isEmpty()
+                    && $brands->isEmpty()
+                    && $categories->isEmpty()
+                    && $publicEvents->isNotEmpty();
             case Discount::DISCOUNT_TYPE_BUNDLE_OFFER:
             case Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS:
                 return true; // todo
-                break;
             case Discount::DISCOUNT_TYPE_ANY_OFFER:
             case Discount::DISCOUNT_TYPE_ANY_BUNDLE:
             case Discount::DISCOUNT_TYPE_ANY_BRAND:
             case Discount::DISCOUNT_TYPE_ANY_CATEGORY:
+            case Discount::DISCOUNT_TYPE_ANY_MASTERCLASS:
             case Discount::DISCOUNT_TYPE_DELIVERY:
             case Discount::DISCOUNT_TYPE_CART_TOTAL:
-                return $offers->isEmpty() && $brands->isEmpty() && $categories->isEmpty();
+                return $offers->isEmpty()
+                    && $brands->isEmpty()
+                    && $categories->isEmpty()
+                    && $publicEvents->isEmpty();
             default:
                 return false;
         }

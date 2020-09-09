@@ -8,6 +8,7 @@ use App\Models\Discount\DiscountBrand;
 use App\Models\Discount\DiscountCategory;
 use App\Models\Discount\DiscountCondition;
 use App\Models\Discount\DiscountOffer;
+use App\Models\Discount\DiscountPublicEvent;
 use App\Models\Discount\DiscountSegment;
 use App\Models\Discount\DiscountUserRole;
 use App\Services\Calculator\AbstractCalculator;
@@ -185,13 +186,18 @@ class DiscountCalculator extends AbstractCalculator
         $change = false;
         switch ($discount->type) {
             case Discount::DISCOUNT_TYPE_OFFER:
-            case Discount::DISCOUNT_TYPE_ANY_OFFER:
-                # Скидка на офферы
-                $offerIds = ($discount->type == Discount::DISCOUNT_TYPE_OFFER)
-                    ? $this->relations['offers'][$discount->id]->pluck('offer_id')
-                    : $this->input->offers->pluck('id');
+                # Скидка на определенные офферы
+                $offerIds = $this->relations['offers'][$discount->id]->pluck('offer_id');
 
-            $change   = $this->applyDiscountToOffer($discount, $offerIds);
+                $change = $this->applyDiscountToOffer($discount, $offerIds);
+                break;
+            case Discount::DISCOUNT_TYPE_ANY_OFFER:
+                # Скидка на все товары
+                $offerIds = $this->input->offers
+                    ->where('product_id', '!=', null)
+                    ->pluck('id');
+
+                $change = $this->applyDiscountToOffer($discount, $offerIds);
                 break;
             case Discount::DISCOUNT_TYPE_BUNDLE_OFFER:
             case Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS:
@@ -251,7 +257,7 @@ class DiscountCalculator extends AbstractCalculator
                 $change   = $this->applyDiscountToOffer($discount, $offerIds);
                 break;
             case Discount::DISCOUNT_TYPE_DELIVERY:
-                // Если используется бесплатная дотсавка (например, по промокоду), то не использовать скидку
+                // Если используется бесплатная доставка (например, по промокоду), то не использовать скидку
                 if ($this->input->freeDelivery) {
                     break;
                 }
@@ -273,6 +279,25 @@ class DiscountCalculator extends AbstractCalculator
                 break;
             case Discount::DISCOUNT_TYPE_CART_TOTAL:
                 $change = $this->applyDiscountToBasket($discount);
+                break;
+            # Скидка на мастер-классы
+            case Discount::DISCOUNT_TYPE_MASTERCLASS:
+                $ticketTypeIds = $this->relations['ticketTypeIds'][$discount->id]
+                    ->pluck('ticket_type_id')
+                    ->toArray();
+
+                $offerIds = $this->input->offers
+                    ->whereIn('ticket_type_id', $ticketTypeIds)
+                    ->pluck('id');
+
+                $change = $this->applyDiscountToOffer($discount, $offerIds);
+                break;
+            case Discount::DISCOUNT_TYPE_ANY_MASTERCLASS:
+                $offerIds = $this->input->offers
+                    ->whereStrict('product_id', null)
+                    ->pluck('id');
+
+                $change = $this->applyDiscountToOffer($discount, $offerIds);
                 break;
         }
 
@@ -714,11 +739,15 @@ class DiscountCalculator extends AbstractCalculator
                 return $this->checkCategories($discount);
             case Discount::DISCOUNT_TYPE_DELIVERY:
                 return isset($this->input->deliveries['current']['price']);
+            case Discount::DISCOUNT_TYPE_MASTERCLASS:
+                return $this->input->ticketTypeIds->isNotEmpty()
+                    && $this->checkPublicEvents($discount);
             case Discount::DISCOUNT_TYPE_CART_TOTAL:
             case Discount::DISCOUNT_TYPE_ANY_OFFER:
             case Discount::DISCOUNT_TYPE_ANY_BUNDLE:
             case Discount::DISCOUNT_TYPE_ANY_BRAND:
             case Discount::DISCOUNT_TYPE_ANY_CATEGORY:
+            case Discount::DISCOUNT_TYPE_ANY_MASTERCLASS:
                 return $this->input->offers->isNotEmpty();
             default:
                 return false;
@@ -783,6 +812,18 @@ class DiscountCalculator extends AbstractCalculator
         return $discount->type === Discount::DISCOUNT_TYPE_CATEGORY
             && $this->relations['categories']->has($discount->id)
             && $this->relations['categories'][$discount->id]->isNotEmpty();
+    }
+
+    /**
+     * Проверяет доступность применения скидки на мастер-классы
+     * @param Discount $discount
+     * @return bool
+     */
+    protected function checkPublicEvents(Discount $discount): bool
+    {
+        return $discount->type === Discount::DISCOUNT_TYPE_MASTERCLASS
+            && $this->relations['ticketTypeIds']->has($discount->id)
+            && $this->relations['ticketTypeIds'][$discount->id]->isNotEmpty();
     }
 
     /**
@@ -961,6 +1002,7 @@ class DiscountCalculator extends AbstractCalculator
         $this->fetchDiscountOffers()
             ->fetchDiscountBrands()
             ->fetchDiscountCategories()
+            ->fetchDiscountPublicEvents()
             ->fetchDiscountSegments()
             ->fetchDiscountCustomerRoles()
             ->fetchBundleItems();
@@ -1047,6 +1089,30 @@ class DiscountCalculator extends AbstractCalculator
     }
 
     /**
+     * Получаем скидки для мастер-классов
+     * @uses \App\Models\Discount\DiscountPublicEvent
+     * @return $this
+     */
+    protected function fetchDiscountPublicEvents()
+    {
+        /** Если не передали ID типов билетов, то пропускаем скидки на мастер-классы */
+        $validTypes = [Discount::DISCOUNT_TYPE_MASTERCLASS];
+        if ($this->input->ticketTypeIds->isEmpty() || $this->existsAnyTypeInDiscounts($validTypes)) {
+            $this->relations['ticketTypeIds'] = collect();
+
+            return $this;
+        }
+
+        $this->relations['ticketTypeIds'] = DiscountPublicEvent::select(['discount_id', 'ticket_type_id'])
+            ->whereIn('discount_id', $this->discounts->pluck('id'))
+            ->whereIn('ticket_type_id', $this->input->ticketTypeIds)
+            ->get()
+            ->groupBy('discount_id');
+
+        return $this;
+    }
+
+    /**
      * Получаем все возможные скидки и сегменты из DiscountSegment
      * @return $this
      */
@@ -1081,7 +1147,7 @@ class DiscountCalculator extends AbstractCalculator
     }
 
     /**
-     * Получаем все возможные скидки и роли из DiscountRole
+     * Получаем все возможные скидки из BundleItems
      * @return $this
      */
     protected function fetchBundleItems()
