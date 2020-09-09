@@ -13,7 +13,6 @@ use Greensight\CommonMsa\Dto\UserDto;
 use Greensight\CommonMsa\Rest\RestQuery;
 use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationService;
-use MerchantManagement\Services\MerchantService\MerchantService;
 use MerchantManagement\Services\OperatorService\OperatorService;
 use Pim\Services\SearchService\SearchService;
 
@@ -40,7 +39,7 @@ use Pim\Services\SearchService\SearchService;
  * @property-read Collection|DiscountUserRole[] $roles
  * @property-read Collection|DiscountUserRole[] $segments
  * @property-read Collection|DiscountCondition[] $conditions
- *
+ * @property-read Collection|DiscountPublicEvent[] $publicEvents
  */
 class Discount extends AbstractModel
 {
@@ -87,6 +86,10 @@ class Discount extends AbstractModel
     const DISCOUNT_TYPE_ANY_BRAND = 9;
     /** Скидка на все категории */
     const DISCOUNT_TYPE_ANY_CATEGORY = 10;
+    /** Скидка на мастер-класс по ID типа билета */
+    const DISCOUNT_TYPE_MASTERCLASS = 11;
+    /** Скидка на все мастер-классы */
+    const DISCOUNT_TYPE_ANY_MASTERCLASS = 12;
 
     /**
      * Тип скидки для вывода в корзину/чекаут
@@ -118,6 +121,7 @@ class Discount extends AbstractModel
     const DISCOUNT_USER_ROLE_RELATION = 5;
     const DISCOUNT_CONDITION_RELATION = 6;
     const DISCOUNT_BUNDLE_RELATION = 7;
+    const DISCOUNT_PUBLIC_EVENT_RELATION = 8;
 
     /**
      * Заполняемые поля модели
@@ -165,6 +169,8 @@ class Discount extends AbstractModel
             self::DISCOUNT_TYPE_ANY_CATEGORY,
             self::DISCOUNT_TYPE_DELIVERY,
             self::DISCOUNT_TYPE_CART_TOTAL,
+            self::DISCOUNT_TYPE_MASTERCLASS,
+            self::DISCOUNT_TYPE_ANY_MASTERCLASS
         ];
     }
 
@@ -198,6 +204,7 @@ class Discount extends AbstractModel
             Discount::DISCOUNT_USER_ROLE_RELATION,
             Discount::DISCOUNT_CONDITION_RELATION,
             Discount::DISCOUNT_BUNDLE_RELATION,
+            Discount::DISCOUNT_PUBLIC_EVENT_RELATION,
         ];
     }
 
@@ -239,6 +246,8 @@ class Discount extends AbstractModel
             case self::DISCOUNT_TYPE_ANY_BRAND:
             case self::DISCOUNT_TYPE_CATEGORY:
             case self::DISCOUNT_TYPE_ANY_CATEGORY:
+            case self::DISCOUNT_TYPE_MASTERCLASS:
+            case self::DISCOUNT_TYPE_ANY_MASTERCLASS:
                 return self::EXT_TYPE_OFFER;
             case self::DISCOUNT_TYPE_DELIVERY:
                 return self::EXT_TYPE_DELIVERY;
@@ -262,6 +271,7 @@ class Discount extends AbstractModel
             Discount::DISCOUNT_USER_ROLE_RELATION => ['class' => DiscountUserRole::class, 'items' => $this->roles],
             Discount::DISCOUNT_CONDITION_RELATION => ['class' => DiscountCondition::class, 'items' => $this->conditions],
             Discount::DISCOUNT_BUNDLE_RELATION => ['class' => BundleItem::class, 'items' => $this->bundleItems],
+            Discount::DISCOUNT_PUBLIC_EVENT_RELATION => ['class' => DiscountPublicEvent::class, 'items' => $this->publicEvents],
         ];
     }
 
@@ -322,6 +332,14 @@ class Discount extends AbstractModel
     }
 
     /**
+     * @return HasMany
+     */
+    public function publicEvents()
+    {
+        return $this->hasMany(DiscountPublicEvent::class, 'discount_id');
+    }
+
+    /**
      * @return bool
      */
     public function isExpired()
@@ -379,6 +397,8 @@ class Discount extends AbstractModel
                 self::DISCOUNT_TYPE_ANY_BRAND,
                 self::DISCOUNT_TYPE_CATEGORY,
                 self::DISCOUNT_TYPE_ANY_CATEGORY,
+                self::DISCOUNT_TYPE_MASTERCLASS,
+                self::DISCOUNT_TYPE_ANY_MASTERCLASS
             ]);
     }
 
@@ -445,7 +465,7 @@ class Discount extends AbstractModel
     }
 
     /**
-     * Проверяет корректные ли данные хранятся в сущнсоти Discount
+     * Проверяет корректные ли данные хранятся в сущности Discount
      * (не проверяет корректность связанных сущностей)
      * @return bool
      */
@@ -464,6 +484,8 @@ class Discount extends AbstractModel
                 self::DISCOUNT_TYPE_ANY_CATEGORY,
                 self::DISCOUNT_TYPE_DELIVERY,
                 self::DISCOUNT_TYPE_CART_TOTAL,
+                self::DISCOUNT_TYPE_MASTERCLASS,
+                self::DISCOUNT_TYPE_ANY_MASTERCLASS
             ]) && in_array($this->value_type, [
                 self::DISCOUNT_VALUE_TYPE_PERCENT,
                 self::DISCOUNT_VALUE_TYPE_RUB
