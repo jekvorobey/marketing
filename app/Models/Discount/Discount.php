@@ -515,6 +515,9 @@ class Discount extends AbstractModel
             $operatorService = app(OperatorService::class);
             $serviceNotificationService = app(ServiceNotificationService::class);
 
+            /** @var UserService */
+            $userService = app(UserService::class);
+
             $operators = $operatorService->operators((new RestQuery)->setFilter('merchant_id', '=', $discount->merchant_id));
 
             [$type, $data] = (function () use ($discount) {
@@ -556,19 +559,31 @@ class Discount extends AbstractModel
                 $serviceNotificationService->sendToAdmin('aozskidkaskidka_izmenena');
             }
 
-            if($discount->roles->where('role_id', UserDto::SHOWCASE__REFERRAL_PARTNER)->isNotEmpty()) {
-                /** @var UserService */
-                $userService = app(UserService::class);
-                $user = $userService->users(
-                    $userService->newQuery()
-                        ->setFilter('id', $discount->user_id)
-                )->first();
-
-                $serviceNotificationService->send($discount->user_id, 'sotrudnichestvouroven_personalnoy_skidki_izmenen', [
-                    'LVL_DISCOUNT' => $discount->value,
-                    'CUSTOMER_NAME' => $user->first_name
-                ]);
-            }
+            $discount
+                ->conditions()
+                ->whereJsonLength('condition->customerIds', '>', 1)
+                ->get()
+                ->map(function (DiscountCondition $discountCondition) {
+                    return $discountCondition->condition['customerIds'];
+                })
+                ->flatten()
+                ->unique()
+                ->map(function ($user) use ($userService) {
+                    return $userService->users(
+                        $userService->newQuery()
+                            ->setFilter('id', $user)
+                    )->first();
+                })
+                ->filter()
+                ->filter(function (UserDto $userDto) {
+                    return array_key_exists(UserDto::SHOWCASE__REFERRAL_PARTNER, $userDto->roles);
+                })
+                ->each(function (UserDto $userDto) use ($serviceNotificationService, $discount) {
+                    $serviceNotificationService->send($userDto->id, 'sotrudnichestvouroven_personalnoy_skidki_izmenen', [
+                        'LVL_DISCOUNT' => $discount->value,
+                        'CUSTOMER_NAME' => $userDto->first_name
+                    ]);
+                });
         });
 
         self::deleting(function (self $discount) {
