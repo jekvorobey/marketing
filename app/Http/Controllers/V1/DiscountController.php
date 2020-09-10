@@ -497,7 +497,7 @@ class DiscountController extends Controller
                     $this->modifyQueryRelateToMerchant($query, $value);
                     break;
                 case 'offer_id':
-                    if ($filter['type'] === Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
+                    if ($filter['type'] == Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
                         $query->whereHas('bundleItems', function (Builder $query) use ($value) {
                             if (is_array($value)) {
                                 $query->whereIn('item_id', $value);
