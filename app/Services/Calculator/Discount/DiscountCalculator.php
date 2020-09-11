@@ -490,7 +490,7 @@ class DiscountCalculator extends AbstractCalculator
         $changed = 0;
         foreach ($offerIds as $offerId) {
             $offer               = &$this->input->offers[$offerId];
-            $lowestPossiblePrice = self::LOWEST_POSSIBLE_PRICE;
+            $lowestPossiblePrice = $offer['product_id'] ? self::LOWEST_POSSIBLE_PRICE : self::LOWEST_MASTERCLASS_PRICE;
 
             // Если в условии на суммирование скидки было "не более x%", то переопределяем минимально возможную цену товара
             if (isset($this->maxValueByDiscount[$discount->id])) {
