@@ -291,15 +291,15 @@ class PromoCode extends AbstractModel
             $userService = app(UserService::class);
             $user = $userService->users(
                 $userService->newQuery()
-                    ->setFilter('id', $item->creator_id)
+                    ->setFilter('id', $item->owner_id)
             )->first();
 
             switch ($item->status) {
                 case self::STATUS_CREATED:
-                    $serviceNotificationService->send($item->creator_id, 'marketingovye_instrumentyzapros_na_vypusk_novogo_promo_koda_otpravlen');
+                    $serviceNotificationService->send($item->owner_id, 'marketingovye_instrumentyzapros_na_vypusk_novogo_promo_koda_otpravlen');
                     return $serviceNotificationService->sendToAdmin('aozpromokodpromokod_sformirovan');
                 case self::STATUS_ACTIVE:
-                    return $serviceNotificationService->send($item->creator_id, 'marketingovye_instrumentyvypushchen_novyy_promo_kod', [
+                    return $serviceNotificationService->send($item->owner_id, 'marketingovye_instrumentyvypushchen_novyy_promo_kod', [
                         'NAME_PROMOKEY' => $item->name,
                         'LINK_NAME_PROMOKEY' => sprintf('%s/profile/account', config('app.showcase_host')),
                         'CUSTOMER_NAME' => $user->first_name
