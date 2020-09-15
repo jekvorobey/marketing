@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Faker\Factory;
 use Greensight\CommonMsa\Models\AbstractModel;
 use Greensight\CommonMsa\Services\AuthService\UserService;
+use Greensight\Customer\Services\CustomerService\CustomerService;
 use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -292,34 +293,28 @@ class PromoCode extends AbstractModel
             /** @var UserService */
             $userService = app(UserService::class);
 
-            /** @var MerchantService */
-            $merchantService = app(MerchantService::class);
+            /** @var CustomerService */
+            $customerService = app(CustomerService::class);
 
-            /** @var OperatorService */
-            $operatorService = app(OperatorService::class);
+            $customer = $customerService->customers(
+                $customerService->newQuery()
+                    ->setFilter('id', $item->owner_id)
+            )->first();
 
-            $merchant = $merchantService->merchant($item->owner_id);
-            $operators = $operatorService->operators(
-                $operatorService->newQuery()
-                    ->setFilter('merchant_id', $merchant->id)
-            );
+            $user = $userService->users(
+                $userService->newQuery()
+                    ->setFilter('id', $customer->user_id)
+            )->first();
 
-            foreach($operators as $operator) {
-                $user = $userService->users(
-                    $userService->newQuery()
-                        ->setFilter('id', $operator->user_id)
-                )->first();
-
-                switch ($item->status) {
-                    case self::STATUS_CREATED:
-                        return $serviceNotificationService->send($operator->user_id, 'marketingovye_instrumentyzapros_na_vypusk_novogo_promo_koda_otpravlen');
-                    case self::STATUS_ACTIVE:
-                        return $serviceNotificationService->send($operator->user_id, 'marketingovye_instrumentyvypushchen_novyy_promo_kod', [
-                            'NAME_PROMOKEY' => $item->name,
-                            'LINK_NAME_PROMOKEY' => sprintf('%s/profile/account', config('app.showcase_host')),
-                            'CUSTOMER_NAME' => $user->first_name
-                        ]);
-                }
+            switch ($item->status) {
+                case self::STATUS_CREATED:
+                    return $serviceNotificationService->send($customer->user_id, 'marketingovye_instrumentyzapros_na_vypusk_novogo_promo_koda_otpravlen');
+                case self::STATUS_ACTIVE:
+                    return $serviceNotificationService->send($customer->user_id, 'marketingovye_instrumentyvypushchen_novyy_promo_kod', [
+                        'NAME_PROMOKEY' => $item->name,
+                        'LINK_NAME_PROMOKEY' => sprintf('%s/profile/account', config('app.showcase_host')),
+                        'CUSTOMER_NAME' => $user->first_name
+                    ]);
             }
 
             switch ($item->status) {
