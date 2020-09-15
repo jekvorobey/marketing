@@ -12,6 +12,7 @@ use DB;
 use Greensight\CommonMsa\Dto\UserDto;
 use Greensight\CommonMsa\Rest\RestQuery;
 use Greensight\CommonMsa\Services\AuthService\UserService;
+use Greensight\Customer\Services\CustomerService\CustomerService;
 use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationService;
 use MerchantManagement\Services\OperatorService\OperatorService;
 use Pim\Services\SearchService\SearchService;
@@ -518,6 +519,9 @@ class Discount extends AbstractModel
             /** @var UserService */
             $userService = app(UserService::class);
 
+            /** @var CustomerService */
+            $customerService = app(CustomerService::class);
+
             $operators = $operatorService->operators((new RestQuery)->setFilter('merchant_id', '=', $discount->merchant_id));
 
             [$type, $data] = (function () use ($discount) {
@@ -561,17 +565,24 @@ class Discount extends AbstractModel
 
             $discount
                 ->conditions()
-                ->whereJsonLength('condition->customerIds', '>', 1)
+                ->whereJsonLength('condition->customerIds', '>=', 1)
                 ->get()
                 ->map(function (DiscountCondition $discountCondition) {
                     return $discountCondition->condition['customerIds'];
                 })
                 ->flatten()
                 ->unique()
+                ->map(function ($customer) use ($customerService) {
+                    return $customerService->customers(
+                        $customerService->newQuery()
+                            ->setFilter('id', $customer)
+                    )->first();
+                })
+                ->filter()
                 ->map(function ($user) use ($userService) {
                     return $userService->users(
                         $userService->newQuery()
-                            ->setFilter('id', $user)
+                            ->setFilter('id', $user->user_id)
                     )->first();
                 })
                 ->filter()

@@ -2,7 +2,6 @@
 
 namespace App\Services\Calculator;
 
-use App\Models\Bonus\ProductBonusOption\ProductBonusOption;
 use App\Models\Discount\Discount;
 use App\Models\Option\Option;
 use Illuminate\Support\Collection;
@@ -17,7 +16,9 @@ abstract class AbstractCalculator
     public const FREE_DELIVERY_PRICE = 0;
     /** @var int Самая низкая возможная цена (1 рубль) */
     public const LOWEST_POSSIBLE_PRICE = 1;
-    /** @var int Максимально возомжная скидка в процентах */
+    /** @var int Наименьшая возможная цена на мастер-класс */
+    public const LOWEST_MASTERCLASS_PRICE = 0;
+    /** @var int Максимально возможная скидка в процентах */
     public const HIGHEST_POSSIBLE_PRICE_PERCENT = 100;
     /** @var int отношение бонуса к рублю */
     public const DEFAULT_BONUS_PER_RUBLES = 1;
@@ -47,7 +48,7 @@ abstract class AbstractCalculator
     }
 
     /**
-     * Расчитать прцоент от значения и округлить указанным методом.
+     * Рассчитать процент от значения и округлить указанным методом.
      * @param int|float $value - значение от которого берётся процент
      * @param int|float $percent - процент (0-100)
      * @param int $method - способ округления (например self::FLOOR)
@@ -100,6 +101,10 @@ abstract class AbstractCalculator
     ) {
         if (!isset($item['price']) || $value <= 0) {
             return 0;
+        }
+
+        if (!$item['product_id']) {
+            $lowestPossiblePrice = self::LOWEST_MASTERCLASS_PRICE;
         }
 
         if ($discount && $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
