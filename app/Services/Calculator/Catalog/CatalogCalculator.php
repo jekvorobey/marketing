@@ -3,17 +3,17 @@
 namespace App\Services\Calculator\Catalog;
 
 use App\Models\Price\Price;
+use App\Services\Calculator\AbstractCalculator;
 use App\Services\Calculator\Bonus\BonusCatalogCalculator;
 use App\Services\Calculator\Discount\DiscountCatalogCalculator;
+use App\Services\Calculator\InputCalculator;
+use App\Services\Calculator\OutputCalculator;
 use Illuminate\Support\Collection;
 use Pim\Core\PimException;
 use Pim\Dto\Offer\OfferDto;
 use Pim\Dto\Product\ProductDto;
 use Pim\Services\OfferService\OfferService;
 use Pim\Services\ProductService\ProductService;
-use App\Services\Calculator\AbstractCalculator;
-use App\Services\Calculator\InputCalculator;
-use App\Services\Calculator\OutputCalculator;
 
 /**
  * Класс для расчета скидок (цен) для отображения в каталоге
@@ -57,9 +57,10 @@ class CatalogCalculator extends AbstractCalculator
     }
 
     /**
+     * @param  bool  $checkPermissions
      * @return array
      */
-    public function calculate()
+    public function calculate(bool $checkPermissions = true)
     {
         $calculators = [
             DiscountCatalogCalculator::class,
@@ -69,7 +70,7 @@ class CatalogCalculator extends AbstractCalculator
         foreach ($calculators as $calculatorName) {
             /** @var AbstractCalculator $calculator */
             $calculator = new $calculatorName($this->input, $this->output);
-            $calculator->calculate();
+            $calculator->calculate($checkPermissions);
         }
 
         return $this->getFormatOffers();

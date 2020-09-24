@@ -133,7 +133,7 @@ class PriceController extends Controller
                     'offer_ids' => $offerIds,
                     'role_ids' => [$role],
                     'segment_id' => $segment,
-                ]))->calculate();
+                ]))->calculate(false);
 
                 foreach ($items as $item) {
                     $discounts = $item['discounts'] ?? null;
