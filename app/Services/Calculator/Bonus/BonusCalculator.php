@@ -4,10 +4,10 @@ namespace App\Services\Calculator\Bonus;
 
 use App\Models\Bonus\Bonus;
 use App\Models\Option\Option;
-use Illuminate\Support\Collection;
 use App\Services\Calculator\AbstractCalculator;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
+use Illuminate\Support\Collection;
 
 /**
  * Class BonusCalculator
@@ -38,9 +38,12 @@ class BonusCalculator extends AbstractCalculator
         parent::__construct($inputCalculator, $outputCalculator);
     }
 
-    public function calculate()
+    /**
+     * @param  bool  $checkPermissions
+     */
+    public function calculate(bool $checkPermissions = true)
     {
-        if (!$this->checkPermissions()) {
+        if ($checkPermissions && !$this->checkPermissions()) {
             return;
         }
 
