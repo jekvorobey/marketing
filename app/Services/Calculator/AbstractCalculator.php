@@ -87,7 +87,7 @@ abstract class AbstractCalculator
      * @param int  $valueType
      * @param bool $apply               нужно ли применять скидку
      * @param int  $lowestPossiblePrice Самая низкая возможная цена (по умолчанию = 1 рубль)
-     * @param Discount  $discountType
+     * @param Discount  $discount
      *
      * @return int
      */

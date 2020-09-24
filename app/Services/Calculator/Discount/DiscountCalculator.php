@@ -339,6 +339,14 @@ class DiscountCalculator extends AbstractCalculator
      */
     protected function applicableToOffer($discount, $offerId)
     {
+        if (
+            $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER ||
+            $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS ||
+            $discount->type == Discount::DISCOUNT_TYPE_ANY_BUNDLE
+        ) {
+            return true;
+        }
+
         if ($this->appliedDiscounts->isEmpty() || !$this->offersByDiscounts->has($offerId)) {
             return true;
         }
@@ -367,11 +375,6 @@ class DiscountCalculator extends AbstractCalculator
 
                 return true;
             }
-        }
-
-        if ($discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER ||
-            $discount->type == Discount::DISCOUNT_TYPE_ANY_BUNDLE) {
-            return true;
         }
 
         return false;
