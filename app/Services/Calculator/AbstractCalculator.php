@@ -5,6 +5,7 @@ namespace App\Services\Calculator;
 use App\Models\Discount\Discount;
 use App\Models\Option\Option;
 use Illuminate\Support\Collection;
+use Pim\Dto\Offer\OfferDto;
 
 abstract class AbstractCalculator
 {
@@ -82,7 +83,7 @@ abstract class AbstractCalculator
     /**
      * Возвращает размер скидки (без учета предыдущих скидок)
      *
-     * @param      $item
+     * @param      OfferDto|array $item - оффер или доставка (если array)
      * @param      $value
      * @param int  $valueType
      * @param bool $apply               нужно ли применять скидку
@@ -103,7 +104,7 @@ abstract class AbstractCalculator
             return 0;
         }
 
-        if (!$item['product_id']) {
+        if ($item instanceof OfferDto && !$item->product_id) {
             $lowestPossiblePrice = self::LOWEST_MASTERCLASS_PRICE;
         }
 
