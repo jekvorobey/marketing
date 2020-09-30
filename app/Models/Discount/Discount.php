@@ -564,6 +564,24 @@ class Discount extends AbstractModel
             }
 
             $discount
+                ->roles()
+                ->get()
+                ->map(function (DiscountUserRole $discountUserRole) use ($userService) {
+                    return $userService->users(
+                        $userService->newQuery()
+                            ->setFilter('role', $discountUserRole->role_id)
+                    );
+                })
+                ->each(function ($role) use ($serviceNotificationService, $discount) {
+                    $role->each(function ($user) use ($serviceNotificationService, $discount) {
+                        $serviceNotificationService->send($user->id, 'sotrudnichestvouroven_personalnoy_skidki_izmenen', [
+                            'LVL_DISCOUNT' => $discount->value,
+                            'CUSTOMER_NAME' => $user->first_name
+                        ]);
+                    });
+                });
+
+            $discount
                 ->conditions()
                 ->whereJsonLength('condition->customerIds', '>=', 1)
                 ->get()
