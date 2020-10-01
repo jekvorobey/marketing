@@ -18,6 +18,11 @@ class BasketItem implements \JsonSerializable
      */
     public $totalCost;
     /**
+     * Цена единицы товара со скидкой
+     * @var float
+     */
+    public $unitPrice;
+    /**
      * Цена элемента корзины со скидкой (totalCost - discount).
      * @var float
      */
@@ -103,6 +108,7 @@ class BasketItem implements \JsonSerializable
             'id' => $this->id,
             'offerId' => $this->offerId,
             'qty' => $this->qty,
+            'unitPrice' => $this->unitPrice,
             'price' => $this->price,
             'discount' => $this->discount,
             'discounts' => $this->discounts,
