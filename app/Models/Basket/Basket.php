@@ -119,12 +119,23 @@ class Basket implements \JsonSerializable
      */
     public function addPricesAndBonuses()
     {
-        $offers = collect($this->items)->transform(function(BasketItem $item) {
-            return [
-                'id' => $item->offerId,
-                'qty' => $item->qty,
-                'bundleId' => $item->bundleId,
-            ];
+        $offers = collect($this->items)
+            ->groupBy('offerId')
+            ->map(function (Collection $items, $offerId) {
+                $bundleQty = $items->keyBy('bundleId')
+                    ->map(function ($item) {
+                        return collect([
+                            'qty' => $item->qty,
+                        ]);
+                    });
+
+                $qty = $bundleQty->pluck('qty')->sum();
+
+                return [
+                    'id' => $offerId,
+                    'qty' => $qty,
+                    'bundles' => $bundleQty,
+                ];
         });
 
         $calculation = (new CheckoutCalculatorBuilder())

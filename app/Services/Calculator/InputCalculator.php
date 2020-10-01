@@ -205,31 +205,6 @@ class InputCalculator
      */
     protected function loadData()
     {
-        $this->bundles = $this->offers->pluck('bundleId')
-            ->unique()
-            ->filter(function ($bundleId) {
-                return $bundleId > 0;
-            });
-
-        $this->offers = $this->offers
-            ->groupBy('id')
-            ->map(function (Collection $offers, $offerId) {
-                $bundleQty = $offers->keyBy('bundleId')
-                    ->map(function ($offer) use (&$qty) {
-                        return collect([
-                            'qty' => $offer['qty'],
-                        ]);
-                });
-
-                $qty = $bundleQty->pluck('qty')->sum();
-
-                return [
-                    'id' => $offerId,
-                    'qty' => $qty,
-                    'bundles' => $bundleQty,
-                ];
-            });
-
         $offerIds = $this->offers->pluck('id');
         if ($offerIds->isNotEmpty()) {
             $this->hydrateOffer();
@@ -239,23 +214,37 @@ class InputCalculator
             $this->offers = collect();
         }
 
+        $this->bundles = $this->offers->pluck('bundles')
+            ->map(function ($bundles, $key) {
+                return $bundles->keys();
+            })
+            ->collapse()
+            ->unique()
+            ->filter(function ($bundleId) {
+                return $bundleId > 0;
+            })
+            ->values();
+
         $this->brands = $this->offers->pluck('brand_id')
             ->unique()
             ->filter(function ($brandId) {
                 return $brandId > 0;
-            });
+            })
+            ->flip();
 
         $this->categories = $this->offers->pluck('category_id')
             ->unique()
             ->filter(function ($categoryId) {
                 return $categoryId > 0;
-            });
+            })
+            ->flip();
 
         $this->ticketTypeIds = $this->offers->pluck('ticket_type_id')
             ->unique()
             ->filter(function ($ticketType) {
                 return $ticketType > 0;
-            });
+            })
+            ->flip();
 
         if (isset($this->customer['id'])) {
             $this->customer = $this->getCustomerInfo((int)$this->customer['id']);
@@ -304,7 +293,7 @@ class InputCalculator
                 'brand_id'    => $offer['brand_id'] ?? null,
                 'category_id' => $offer['category_id'] ?? null,
                 'merchant_id' => $offerDto->merchant_id,
-                'bundles' => $offer['bundles'] ?? [],
+                'bundles' => $offer['bundles'] ?? collect(),
                 'ticket_type_id' => $offerDto->ticket_type_id ?? null,
             ]));
         }
