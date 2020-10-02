@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Collection;
 use Pim\Dto\Offer\OfferDto;
 use Pim\Dto\Product\ProductDto;
 use Pim\Services\OfferService\OfferService;
@@ -116,12 +117,18 @@ class DiscountController extends Controller
             throw new HttpException(400, 'Status not found');
         }
 
-        $r = Discount::query()
+        /** @var Collection|Discount[] $discounts */
+        $discounts = Discount::query()
             ->whereIn('id', $data['ids'])
-            ->update(['status' => $data['status']]);
+            ->get();
 
-        if (!$r) {
+        if ($discounts->isEmpty()) {
             throw new HttpException(500, 'Status update error');
+        }
+
+        foreach ($discounts as $discount) {
+            $discount->status = $data['status'];
+            $discount->save();
         }
 
         return response('', 204);

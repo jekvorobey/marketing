@@ -40,11 +40,11 @@ class DiscountBrand extends AbstractModel
         parent::boot();
 
         self::saved(function (self $discountBrand) {
-            $discountBrand->discount->updateProducts();
+            $discountBrand->discount->updatePimContents();
         });
 
         self::deleted(function (self $discountBrand) {
-            $discountBrand->discount->updateProducts();
+            $discountBrand->discount->updatePimContents();
         });
     }
 }

@@ -40,11 +40,11 @@ class DiscountCategory extends AbstractModel
         parent::boot();
 
         self::saved(function (self $discountCategory) {
-            $discountCategory->discount->updateProducts();
+            $discountCategory->discount->updatePimContents();
         });
 
         self::deleted(function (self $discountCategory) {
-            $discountCategory->discount->updateProducts();
+            $discountCategory->discount->updatePimContents();
         });
     }
 }
