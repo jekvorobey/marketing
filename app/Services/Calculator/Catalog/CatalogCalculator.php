@@ -17,18 +17,6 @@ use Pim\Core\PimException;
  */
 class CatalogCalculator extends AbstractCalculator
 {
-    const MAX_CHUNK = 1000;
-
-    /**
-     * @var Collection
-     */
-    protected $offerIds;
-
-    /**
-     * @var Collection
-     */
-    protected $offers;
-
     /**
      * DiscountPriceCalculator constructor.
      *
