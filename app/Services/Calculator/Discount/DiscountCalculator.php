@@ -983,6 +983,9 @@ class DiscountCalculator extends AbstractCalculator
     /**
      * Существует ли хотя бы одна скидка с одним из типов скидки ($types)
      *
+     * метод не совсем соответсвует названию, в случае если существует скидка с таким типом,
+     * то возвращается false, хотя по названию должно возвращаться true
+     *
      * @param array $types
      *
      * @return bool
@@ -1050,7 +1053,7 @@ class DiscountCalculator extends AbstractCalculator
 
         $this->relations['brands'] = DiscountBrand::select(['discount_id', 'brand_id', 'except'])
             ->whereIn('discount_id', $this->discounts->pluck('id'))
-            ->whereIn('brand_id', $this->input->brands)
+            ->whereIn('brand_id', $this->input->brands->keys())
             ->get()
             ->groupBy('discount_id');
 
@@ -1078,7 +1081,7 @@ class DiscountCalculator extends AbstractCalculator
             ->get()
             ->filter(function ($discountCategory) use ($categories) {
                 $categoryLeaf = $categories[$discountCategory->category_id];
-                foreach ($this->input->categories as $categoryId) {
+                foreach ($this->input->categories->keys() as $categoryId) {
                     if ($categoryLeaf->isSelfOrAncestorOf($categories[$categoryId])) {
                         return true;
                     }
@@ -1099,7 +1102,7 @@ class DiscountCalculator extends AbstractCalculator
     protected function fetchDiscountPublicEvents()
     {
         /** Если не передали ID типов билетов, то пропускаем скидки на мастер-классы */
-        $validTypes = [Discount::DISCOUNT_TYPE_MASTERCLASS];
+        $validTypes = [Discount::DISCOUNT_TYPE_MASTERCLASS, Discount::DISCOUNT_TYPE_ANY_MASTERCLASS];
         if ($this->input->ticketTypeIds->isEmpty() || $this->existsAnyTypeInDiscounts($validTypes)) {
             $this->relations['ticketTypeIds'] = collect();
 
@@ -1108,7 +1111,7 @@ class DiscountCalculator extends AbstractCalculator
 
         $this->relations['ticketTypeIds'] = DiscountPublicEvent::select(['discount_id', 'ticket_type_id'])
             ->whereIn('discount_id', $this->discounts->pluck('id'))
-            ->whereIn('ticket_type_id', $this->input->ticketTypeIds)
+            ->whereIn('ticket_type_id', $this->input->ticketTypeIds->keys())
             ->get()
             ->groupBy('discount_id');
 

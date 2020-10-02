@@ -39,6 +39,7 @@ class DiscountCatalogCalculator extends DiscountCalculator
                 return $this->input->brands->has($discountBrand['brand_id']);
             })
             ->groupBy('discount_id');
+
         return $this;
     }
 

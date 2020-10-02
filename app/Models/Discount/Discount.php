@@ -511,7 +511,7 @@ class Discount extends AbstractModel
         parent::boot();
 
         self::saved(function (self $discount) {
-            $discount->updateProducts();
+            $discount->updatePimContents();
 
             $operatorService = app(OperatorService::class);
             $serviceNotificationService = app(ServiceNotificationService::class);
@@ -625,20 +625,46 @@ class Discount extends AbstractModel
                 $synergy->delete();
             }
 
-            $discount->updateProducts();
+            $discount->updatePimContents();
 
             $serviceNotificationService = app(ServiceNotificationService::class);
             $serviceNotificationService->sendToAdmin('aozskidkaskidka_udalena');
         });
     }
 
-    public function updateProducts()
+    public function updatePimContents()
     {
         static $actionPerformed = false;
+
         if (!$actionPerformed) {
             /** @var SearchService $searchService */
             $searchService = resolve(SearchService::class);
-            $searchService->markAllProductsForIndex();
+
+            switch ($this->type) {
+                case self::DISCOUNT_TYPE_OFFER:
+                    $searchService->markProductsForIndexByOfferIds($this->offers->pluck('offer_id')->all());
+                    break;
+                case self::DISCOUNT_TYPE_BRAND:
+                    $searchService->markProductsForIndexByBrandIds($this->brands->pluck('brand_id')->all());
+                    break;
+                case self::DISCOUNT_TYPE_CATEGORY:
+                    $searchService->markProductsForIndexByCategoryIds($this->categories->pluck('category_id')->all());
+                    break;
+                case self::DISCOUNT_TYPE_ANY_OFFER:
+                case self::DISCOUNT_TYPE_ANY_BRAND:
+                case self::DISCOUNT_TYPE_ANY_CATEGORY:
+                    $searchService->markAllProductsForIndex();
+                    break;
+                case self::DISCOUNT_TYPE_MASTERCLASS:
+                    $searchService->markPublicEventsForIndexByTicketTypeIds($this->publicEvents->pluck('ticket_type_id')->all());
+                    break;
+                case self::DISCOUNT_TYPE_ANY_MASTERCLASS:
+                    $searchService->markAllPublicEventsForIndex();
+                    break;
+                default:
+                    break;
+            }
+
             $actionPerformed = true;
         }
     }

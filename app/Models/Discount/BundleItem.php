@@ -39,11 +39,11 @@ class BundleItem extends AbstractModel
         parent::boot();
 
         self::saved(function (self $discountOffer) {
-            $discountOffer->discount->updateProducts();
+            $discountOffer->discount->updatePimContents();
         });
 
         self::deleted(function (self $discountOffer) {
-            $discountOffer->discount->updateProducts();
+            $discountOffer->discount->updatePimContents();
         });
     }
 }

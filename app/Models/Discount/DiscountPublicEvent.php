@@ -41,11 +41,11 @@ class DiscountPublicEvent extends AbstractModel
         parent::boot();
 
         self::saved(function (self $discountPublicEvent) {
-            $discountPublicEvent->discount->updateProducts();
+            $discountPublicEvent->discount->updatePimContents();
         });
 
         self::deleted(function (self $discountPublicEvent) {
-            $discountPublicEvent->discount->updateProducts();
+            $discountPublicEvent->discount->updatePimContents();
         });
     }
 }

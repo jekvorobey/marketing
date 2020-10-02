@@ -41,11 +41,11 @@ class DiscountUserRole extends AbstractModel
         parent::boot();
 
         self::saved(function (self $discountUserRole) {
-            $discountUserRole->discount->updateProducts();
+            $discountUserRole->discount->updatePimContents();
         });
 
         self::deleted(function (self $discountUserRole) {
-            $discountUserRole->discount->updateProducts();
+            $discountUserRole->discount->updatePimContents();
         });
     }
 }

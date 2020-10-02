@@ -41,11 +41,11 @@ class DiscountSegment extends AbstractModel
         parent::boot();
 
         self::saved(function (self $discountSegment) {
-            $discountSegment->discount->updateProducts();
+            $discountSegment->discount->updatePimContents();
         });
 
         self::deleted(function (self $discountSegment) {
-            $discountSegment->discount->updateProducts();
+            $discountSegment->discount->updatePimContents();
         });
     }
 }
