@@ -130,7 +130,7 @@ abstract class AbstractCalculator
 
             if ($apply) {
                 $offerInBundle['discount'] = $currentDiscount + $discountValue;
-                $offerInBundle['price']    = round($currentCost - $offerInBundle['discount']);
+                $offerInBundle['price']    = self::round($currentCost - $offerInBundle['discount'], self::ROUND);
             }
         } else {
             $currentDiscount = $item['discount'] ?? 0;
@@ -144,7 +144,7 @@ abstract class AbstractCalculator
 
             if ($apply) {
                 $item['discount'] = $currentDiscount + $discountValue;
-                $item['price']    = round($currentCost - $item['discount']);
+                $item['price']    = self::round($currentCost - $item['discount'], self::ROUND);
                 $item['cost']     = $currentCost;
             }
         }
