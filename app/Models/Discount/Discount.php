@@ -563,6 +563,8 @@ class Discount extends AbstractModel
                 $serviceNotificationService->sendToAdmin('aozskidkaskidka_izmenena');
             }
 
+            $sentIds = [];
+
             $discount
                 ->roles()
                 ->get()
@@ -572,8 +574,9 @@ class Discount extends AbstractModel
                             ->setFilter('role', $discountUserRole->role_id)
                     );
                 })
-                ->each(function ($role) use ($serviceNotificationService, $discount) {
-                    $role->each(function ($user) use ($serviceNotificationService, $discount) {
+                ->each(function ($role) use ($serviceNotificationService, $discount, &$sentIds) {
+                    $role->each(function ($user) use ($serviceNotificationService, $discount, &$sentIds) {
+                        $sentIds[] = $user->id;
                         $serviceNotificationService->send($user->id, 'sotrudnichestvouroven_personalnoy_skidki_izmenen', [
                             'LVL_DISCOUNT' => $discount->value,
                             'CUSTOMER_NAME' => $user->first_name
@@ -606,6 +609,9 @@ class Discount extends AbstractModel
                 ->filter()
                 ->filter(function (UserDto $userDto) {
                     return array_key_exists(UserDto::SHOWCASE__REFERRAL_PARTNER, $userDto->roles);
+                })
+                ->filter(function (UserDto $userDto) use ($sentIds) {
+                    return !in_array($userDto->id, $sentIds);
                 })
                 ->each(function (UserDto $userDto) use ($serviceNotificationService, $discount) {
                     $serviceNotificationService->send($userDto->id, 'sotrudnichestvouroven_personalnoy_skidki_izmenen', [
