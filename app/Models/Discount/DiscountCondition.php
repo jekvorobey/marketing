@@ -244,8 +244,6 @@ class DiscountCondition extends AbstractModel
                 $condition->discount_id = $discountId;
                 $condition->save();
             }
-
-            $item->discount->updatePimContents();
         });
 
         self::deleted(function (DiscountCondition $item) {
@@ -272,8 +270,6 @@ class DiscountCondition extends AbstractModel
                     }
                 }
             }
-
-            $item->discount->updatePimContents();
         });
     }
 }

@@ -35,17 +35,4 @@ class DiscountSegment extends AbstractModel
     {
         return $this->belongsTo(Discount::class);
     }
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        self::saved(function (self $discountSegment) {
-            $discountSegment->discount->updatePimContents();
-        });
-
-        self::deleted(function (self $discountSegment) {
-            $discountSegment->discount->updatePimContents();
-        });
-    }
 }
