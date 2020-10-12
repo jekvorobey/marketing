@@ -643,18 +643,35 @@ class Discount extends AbstractModel
         static $actionPerformed = false;
 
         if (!$actionPerformed) {
+
             /** @var SearchService $searchService */
             $searchService = resolve(SearchService::class);
 
+            $reindexRelations = function (string $function, string $relationName, string $column, bool &$actionPerformed) use ($searchService) {
+
+                /** @var Collection $oldRelations */
+                $oldRelations = $this->{$relationName};
+
+                $this->refresh();
+                /** @var Collection $newRelations */
+                $newRelations = $this->{$relationName};
+
+                $relations = array_unique(array_merge($oldRelations->pluck($column)->all(), $newRelations->pluck($column)->all()));
+                if (!empty($relations)) {
+                    call_user_func([$searchService, $function], $relations);
+                    $actionPerformed = true;
+                }
+            };
+
             switch ($this->type) {
                 case self::DISCOUNT_TYPE_OFFER:
-                    $searchService->markProductsForIndexByOfferIds($this->offers->pluck('offer_id')->all());
+                    $reindexRelations('markProductsForIndexByOfferIds', 'offers', 'offer_id', $actionPerformed);
                     break;
                 case self::DISCOUNT_TYPE_BRAND:
-                    $searchService->markProductsForIndexByBrandIds($this->brands->pluck('brand_id')->all());
+                    $reindexRelations('markProductsForIndexByBrandIds', 'brands', 'brand_id', $actionPerformed);
                     break;
                 case self::DISCOUNT_TYPE_CATEGORY:
-                    $searchService->markProductsForIndexByCategoryIds($this->categories->pluck('category_id')->all());
+                    $reindexRelations('markProductsForIndexByCategoryIds', 'categories', 'category_id', $actionPerformed);
                     break;
                 case self::DISCOUNT_TYPE_ANY_OFFER:
                 case self::DISCOUNT_TYPE_ANY_BRAND:
@@ -662,7 +679,7 @@ class Discount extends AbstractModel
                     $searchService->markAllProductsForIndex();
                     break;
                 case self::DISCOUNT_TYPE_MASTERCLASS:
-                    $searchService->markPublicEventsForIndexByTicketTypeIds($this->publicEvents->pluck('ticket_type_id')->all());
+                    $reindexRelations('markPublicEventsForIndexByTicketTypeIds', 'publicEvents', 'ticket_type_id', $actionPerformed);
                     break;
                 case self::DISCOUNT_TYPE_ANY_MASTERCLASS:
                     $searchService->markAllPublicEventsForIndex();
@@ -671,7 +688,6 @@ class Discount extends AbstractModel
                     break;
             }
 
-            $actionPerformed = true;
         }
     }
 }

@@ -141,6 +141,8 @@ class DiscountHelper
             });
         }
 
+        $discount->updatePimContents();
+
         return $discount->id;
     }
 

@@ -35,17 +35,4 @@ class DiscountPublicEvent extends AbstractModel
     {
         return $this->belongsTo(Discount::class);
     }
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        self::saved(function (self $discountPublicEvent) {
-            $discountPublicEvent->discount->updatePimContents();
-        });
-
-        self::deleted(function (self $discountPublicEvent) {
-            $discountPublicEvent->discount->updatePimContents();
-        });
-    }
 }
