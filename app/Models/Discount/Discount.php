@@ -677,12 +677,14 @@ class Discount extends AbstractModel
                 case self::DISCOUNT_TYPE_ANY_BRAND:
                 case self::DISCOUNT_TYPE_ANY_CATEGORY:
                     $searchService->markAllProductsForIndex();
+                    $actionPerformed = true;
                     break;
                 case self::DISCOUNT_TYPE_MASTERCLASS:
                     $reindexRelations('markPublicEventsForIndexByTicketTypeIds', 'publicEvents', 'ticket_type_id', $actionPerformed);
                     break;
                 case self::DISCOUNT_TYPE_ANY_MASTERCLASS:
                     $searchService->markAllPublicEventsForIndex();
+                    $actionPerformed = true;
                     break;
                 default:
                     break;
