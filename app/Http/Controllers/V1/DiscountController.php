@@ -204,12 +204,12 @@ class DiscountController extends Controller
 
         try {
             DB::beginTransaction();
-            $discount->save();
             if (array_key_exists('relations', $data)) {
                 DiscountHelper::updateRelations($discount, $data['relations'] ?? []);
             } else {
                 DiscountHelper::validateRelations($discount, []);
             }
+            $discount->save();
             DB::commit();
         } catch (Exception $e) {
             DB::rollBack();
