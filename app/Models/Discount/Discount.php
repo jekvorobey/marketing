@@ -563,62 +563,64 @@ class Discount extends AbstractModel
                 $serviceNotificationService->sendToAdmin('aozskidkaskidka_izmenena');
             }
 
-            $sentIds = [];
+            if($discount->value != $discount->getOriginal('value')) {
+                $sentIds = [];
 
-            $discount
-                ->roles()
-                ->get()
-                ->map(function (DiscountUserRole $discountUserRole) use ($userService) {
-                    return $userService->users(
-                        $userService->newQuery()
-                            ->setFilter('role', $discountUserRole->role_id)
-                    );
-                })
-                ->each(function ($role) use ($serviceNotificationService, $discount, &$sentIds) {
-                    $role->each(function ($user) use ($serviceNotificationService, $discount, &$sentIds) {
-                        $sentIds[] = $user->id;
-                        $serviceNotificationService->send($user->id, 'sotrudnichestvouroven_personalnoy_skidki_izmenen', [
+                $discount
+                    ->roles()
+                    ->get()
+                    ->map(function (DiscountUserRole $discountUserRole) use ($userService) {
+                        return $userService->users(
+                            $userService->newQuery()
+                                ->setFilter('role', $discountUserRole->role_id)
+                        );
+                    })
+                    ->each(function ($role) use ($serviceNotificationService, $discount, &$sentIds) {
+                        $role->each(function ($user) use ($serviceNotificationService, $discount, &$sentIds) {
+                            $sentIds[] = $user->id;
+                            $serviceNotificationService->send($user->id, 'sotrudnichestvouroven_personalnoy_skidki_izmenen', [
+                                'LVL_DISCOUNT' => $discount->value,
+                                'CUSTOMER_NAME' => $user->first_name
+                            ]);
+                        });
+                    });
+
+                $discount
+                    ->conditions()
+                    ->whereJsonLength('condition->customerIds', '>=', 1)
+                    ->get()
+                    ->map(function (DiscountCondition $discountCondition) {
+                        return $discountCondition->condition['customerIds'];
+                    })
+                    ->flatten()
+                    ->unique()
+                    ->map(function ($customer) use ($customerService) {
+                        return $customerService->customers(
+                            $customerService->newQuery()
+                                ->setFilter('id', $customer)
+                        )->first();
+                    })
+                    ->filter()
+                    ->map(function ($user) use ($userService) {
+                        return $userService->users(
+                            $userService->newQuery()
+                                ->setFilter('id', $user->user_id)
+                        )->first();
+                    })
+                    ->filter()
+                    ->filter(function (UserDto $userDto) {
+                        return array_key_exists(UserDto::SHOWCASE__REFERRAL_PARTNER, $userDto->roles);
+                    })
+                    ->filter(function (UserDto $userDto) use ($sentIds) {
+                        return !in_array($userDto->id, $sentIds);
+                    })
+                    ->each(function (UserDto $userDto) use ($serviceNotificationService, $discount) {
+                        $serviceNotificationService->send($userDto->id, 'sotrudnichestvouroven_personalnoy_skidki_izmenen', [
                             'LVL_DISCOUNT' => $discount->value,
-                            'CUSTOMER_NAME' => $user->first_name
+                            'CUSTOMER_NAME' => $userDto->first_name
                         ]);
                     });
-                });
-
-            $discount
-                ->conditions()
-                ->whereJsonLength('condition->customerIds', '>=', 1)
-                ->get()
-                ->map(function (DiscountCondition $discountCondition) {
-                    return $discountCondition->condition['customerIds'];
-                })
-                ->flatten()
-                ->unique()
-                ->map(function ($customer) use ($customerService) {
-                    return $customerService->customers(
-                        $customerService->newQuery()
-                            ->setFilter('id', $customer)
-                    )->first();
-                })
-                ->filter()
-                ->map(function ($user) use ($userService) {
-                    return $userService->users(
-                        $userService->newQuery()
-                            ->setFilter('id', $user->user_id)
-                    )->first();
-                })
-                ->filter()
-                ->filter(function (UserDto $userDto) {
-                    return array_key_exists(UserDto::SHOWCASE__REFERRAL_PARTNER, $userDto->roles);
-                })
-                ->filter(function (UserDto $userDto) use ($sentIds) {
-                    return !in_array($userDto->id, $sentIds);
-                })
-                ->each(function (UserDto $userDto) use ($serviceNotificationService, $discount) {
-                    $serviceNotificationService->send($userDto->id, 'sotrudnichestvouroven_personalnoy_skidki_izmenen', [
-                        'LVL_DISCOUNT' => $discount->value,
-                        'CUSTOMER_NAME' => $userDto->first_name
-                    ]);
-                });
+            }
         });
 
         self::deleting(function (self $discount) {
