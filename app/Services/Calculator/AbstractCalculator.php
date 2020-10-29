@@ -90,7 +90,7 @@ abstract class AbstractCalculator
      * @param int  $lowestPossiblePrice Самая низкая возможная цена (по умолчанию = 1 рубль)
      * @param Discount  $discount
      *
-     * @return int
+     * @return float
      */
     protected function changePrice(
         &$item,
@@ -130,8 +130,8 @@ abstract class AbstractCalculator
 
             if ($apply) {
                 $offerInBundle['discount'] = $currentDiscount + $discountValue;
-                $offerInBundle['price']    = $currentCost - $offerInBundle['discount'];
-//                $offerInBundle['price']    = self::round($currentCost - $offerInBundle['discount'], self::ROUND);
+                $offerInBundle['price']    = self::round($currentCost - $offerInBundle['discount'], self::ROUND);
+                $item['cost'] = $currentCost;
             }
         } else {
             $currentDiscount = $item['discount'] ?? 0;
@@ -145,8 +145,7 @@ abstract class AbstractCalculator
 
             if ($apply) {
                 $item['discount'] = $currentDiscount + $discountValue;
-                $item['price']    = $currentCost - $item['discount'];
-//                $item['price']    = self::round($currentCost - $item['discount'], self::ROUND);
+                $item['price']    = self::round($currentCost - $item['discount'], self::ROUND);
                 $item['cost']     = $currentCost;
             }
         }
@@ -159,14 +158,13 @@ abstract class AbstractCalculator
      * @param $value
      * @param $valueType
      *
-     * @return int
+     * @return float
      */
     protected function calculateDiscountByType($cost, $value, $valueType)
     {
         switch ($valueType) {
             case Discount::DISCOUNT_VALUE_TYPE_PERCENT:
-                return round($cost * $value / 100);
-//                return $cost * $value / 100;
+                return round($cost * $value / 100,2);
             case Discount::DISCOUNT_VALUE_TYPE_RUB:
                 return $value;
             default:
