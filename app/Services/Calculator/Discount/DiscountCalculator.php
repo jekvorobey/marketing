@@ -116,6 +116,8 @@ class DiscountCalculator extends AbstractCalculator
                 $offer['discounts'] = null;
                 return $offer;
             }
+            # Конечная цена товара после применения скидки всегда округляется до целого
+            $offer['price'] = round($offer['price']);
 
             $roundOffs = collect();
             # Погрешность после применения базовых товарных скидок (не бандлов)
@@ -183,7 +185,7 @@ class DiscountCalculator extends AbstractCalculator
             $sum = round($discountsWithoutBundles->sum('change'),2);
             $offer['discount'] = $sum;
 
-            $offer['discounts'] =$discountsWithoutBundles->toArray();
+            $offer['discounts'] = $discountsWithoutBundles->toArray();
 
             /** @var Collection|null $discountsWithBundles */
             $discountsWithBundles = $this->offersByDiscounts[$offerId]->filter(function ($discount) {

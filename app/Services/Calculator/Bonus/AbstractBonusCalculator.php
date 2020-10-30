@@ -54,7 +54,7 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
      *
      * @return int
      */
-    protected function maxBonusPriceForOffer($offer)
+    protected function maxBonusPriceForOffer(array $offer)
     {
         $productId = $offer['product_id'];
         $percent = $this->getBonusProductOption($productId, ProductBonusOption::MAX_PERCENTAGE_PAYMENT);
@@ -77,39 +77,43 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
     }
 
     /**
+     * @param Collection $items
      * @return Collection
      */
-    protected function sortOffers()
+    protected function sortItems(Collection $items)
     {
-        return $this->input->offers->sortBy(function ($offer) {
-            return $this->maxBonusPriceForOffer($offer);
-        })->keys();
+        return $items->sortBy(function ($item) {
+            return $this->maxBonusPriceForOffer($item);
+        });
     }
 
     protected function setBonusToEachOffer($bonusPrice, $callback)
     {
-        $orderPrice = $this->input->getPriceOrders();
+        $items = $this->prepareItems();
+        $orderPrice = $items->map(function ($item) {
+            return $item['price'] * $item['qty'];
+        })->sum();
+//        $orderPrice = $this->input->getPriceOrders();
         $maxSpendForOrder = AbstractCalculator::percent($orderPrice, $this->getOption(Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER));
         $spendForOrder = $bonusPrice === null ? $maxSpendForOrder : min($bonusPrice, $maxSpendForOrder);
 
-        $offerIds = $this->sortOffers();
+        $sortedItems = $this->sortItems($items);
 
-        foreach ($offerIds as $offerId) {
-            $offer = $this->input->offers[$offerId];
-            $maxSpendForOffer = $this->maxBonusPriceForOffer($offer);
-            $offerPrice       = $offer['price'];
-            $percent          = $offer['price'] > 0 ? $offerPrice / $orderPrice * 100 : 0;
+        foreach ($sortedItems as $item) {
+            $maxSpendForOffer = $this->maxBonusPriceForOffer($item);
+            $offerPrice       = $item['price'];
+            $percent          = $item['price'] > 0 ? $offerPrice / $orderPrice * 100 : 0;
             $spendForOffer    = AbstractCalculator::percent($spendForOrder, $percent, AbstractCalculator::ROUND);
             $changePriceValue = min($maxSpendForOffer, $spendForOffer);
-            if ($spendForOrder < $changePriceValue * $offer['qty']) {
+            if ($spendForOrder < $changePriceValue * $item['qty']) {
                 $spendForOffer    = AbstractCalculator::percent($spendForOrder, $percent, AbstractCalculator::FLOOR);
                 $changePriceValue = min($maxSpendForOffer, $spendForOffer);
             }
 
-            $discount = $callback($offer, $changePriceValue);
+            $discount = $callback($item, $changePriceValue);
 
-            $spendForOrder -= $discount * $offer['qty'];
-            $orderPrice    -= $offerPrice * $offer['qty'];
+            $spendForOrder -= $discount * $item['qty'];
+            $orderPrice    -= $offerPrice * $item['qty'];
         }
     }
 
@@ -126,5 +130,26 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
             ->whereIn('product_id', $offerProductIds->values())
             ->get()
             ->pluck('value', 'product_id');
+    }
+
+    /**
+     * @return Collection
+     */
+    private function prepareItems() : Collection
+    {
+        $items = collect();
+        $this->input->offers->each(function ($offer) use ($items) {
+            foreach ($offer['bundles'] as $id => $bundle) {
+                $items->push([
+                    'offer_id' => $offer['id'],
+                    'product_id' => $offer['product_id'],
+                    'qty' => $bundle['qty'],
+                    'price' => $id == 0 ? $offer['price'] : $bundle['price'],
+                    'bundle_id' => $this->input->bundles->contains($id) ? $id : null
+                ]);
+            }
+        });
+
+        return $items;
     }
 }
