@@ -12,18 +12,29 @@ class BonusMayBeSpentCalculator extends AbstractBonusCalculator
             return;
         }
         $totalBonusPrice = 0;
-        $this->setBonusToEachOffer(null, function (&$offer, $changePriceValue) use (&$totalBonusPrice) {
+        $this->setBonusToEachOffer(null, function ($affectedItem, $changePriceValue) use (&$totalBonusPrice) {
+            @([
+                'offer_id' => $offerId,
+                'bundle_id'   => $bundleId
+            ] = $affectedItem);
+
+            if ($bundleId) {
+                $item = &$this->input->offers[$offerId]['bundles'][$bundleId];
+            } else {
+                $item = &$this->input->offers[$offerId];
+            }
+
             $discount = $this->changePrice(
-                $offer,
+                $item,
                 $changePriceValue,
                 Discount::DISCOUNT_VALUE_TYPE_RUB,
                 false,
                 self::LOWEST_POSSIBLE_PRICE
             );
-            $totalBonusPrice += $discount * $offer['qty'];
+            $totalBonusPrice += $discount * $affectedItem['qty'];
             return $changePriceValue;
         });
-        
+
         $this->output->maxSpendableBonus = $this->priceToBonus($totalBonusPrice);
     }
 }

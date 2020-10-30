@@ -17,19 +17,30 @@ class BonusSpentCalculator extends AbstractBonusCalculator
         }
 
         $price = $this->bonusToPrice($this->input->bonus);
-        
-        $this->setBonusToEachOffer($price, function (&$offer, $changePriceValue) {
+
+        $this->setBonusToEachOffer($price, function ($affectedItem, $changePriceValue) {
+            @([
+                'offer_id' => $offerId,
+                'bundle_id'   => $bundleId
+            ] = $affectedItem);
+
+            if ($bundleId) {
+                $item = &$this->input->offers[$offerId]['bundles'][$bundleId];
+            } else {
+                $item = &$this->input->offers[$offerId];
+            }
+
             $discount = $this->changePrice(
-                $offer,
+                $item,
                 $changePriceValue,
                 Discount::DISCOUNT_VALUE_TYPE_RUB,
                 true,
                 self::LOWEST_POSSIBLE_PRICE
             );
-    
-            $offer['bonusSpent'] = self::priceToBonus($discount);
-            $offer['bonusDiscount'] = $discount;
-            
+
+            $item['bonusSpent'] = self::priceToBonus($discount);
+            $item['bonusDiscount'] = $discount;
+
             return $discount;
         });
     }
