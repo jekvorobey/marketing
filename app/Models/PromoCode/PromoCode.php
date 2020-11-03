@@ -288,43 +288,45 @@ class PromoCode extends AbstractModel
                 }
             }
 
-            $serviceNotificationService = app(ServiceNotificationService::class);
-
-            /** @var UserService */
-            $userService = app(UserService::class);
-
-            /** @var CustomerService */
-            $customerService = app(CustomerService::class);
-
-            $customer = $customerService->customers(
-                $customerService->newQuery()
-                    ->setFilter('id', $item->owner_id)
-            )->first();
-
-            $user = $userService->users(
-                $userService->newQuery()
-                    ->setFilter('id', $customer->user_id)
-            )->first();
-
-            switch ($item->status) {
-                case self::STATUS_CREATED:
-                    return $serviceNotificationService->send($customer->user_id, 'marketingovye_instrumentyzapros_na_vypusk_novogo_promo_koda_otpravlen');
-                case self::STATUS_ACTIVE:
-                    return $serviceNotificationService->send($customer->user_id, 'marketingovye_instrumentyvypushchen_novyy_promo_kod', [
-                        'NAME_PROMOKEY' => $item->name,
-                        'LINK_NAME_PROMOKEY' => sprintf('%s/profile/promocodes', config('app.showcase_host')),
-                        'CUSTOMER_NAME' => $user->first_name
-                    ]);
-            }
-
-            switch ($item->status) {
-                case self::STATUS_CREATED:
-                    return $serviceNotificationService->sendToAdmin('aozpromokodpromokod_sformirovan');
-                case self::STATUS_EXPIRED:
-                    return $serviceNotificationService->sendToAdmin('aozpromokodpromokod_otklyuchen');
-                default:
-                    return $serviceNotificationService->sendToAdmin('aozpromokodpromokod_izmenen');
-            }
+            if($item->owner_id) {
+                $serviceNotificationService = app(ServiceNotificationService::class);
+    
+                /** @var UserService */
+                $userService = app(UserService::class);
+    
+                /** @var CustomerService */
+                $customerService = app(CustomerService::class);
+    
+                $customer = $customerService->customers(
+                    $customerService->newQuery()
+                        ->setFilter('id', $item->owner_id)
+                )->first();
+    
+                $user = $userService->users(
+                    $userService->newQuery()
+                        ->setFilter('id', $customer->user_id)
+                )->first();
+    
+                switch ($item->status) {
+                    case self::STATUS_CREATED:
+                        return $serviceNotificationService->send($customer->user_id, 'marketingovye_instrumentyzapros_na_vypusk_novogo_promo_koda_otpravlen');
+                    case self::STATUS_ACTIVE:
+                        return $serviceNotificationService->send($customer->user_id, 'marketingovye_instrumentyvypushchen_novyy_promo_kod', [
+                            'NAME_PROMOKEY' => $item->name,
+                            'LINK_NAME_PROMOKEY' => sprintf('%s/profile/promocodes', config('app.showcase_host')),
+                            'CUSTOMER_NAME' => $user->first_name
+                        ]);
+                }
+    
+                switch ($item->status) {
+                    case self::STATUS_CREATED:
+                        return $serviceNotificationService->sendToAdmin('aozpromokodpromokod_sformirovan');
+                    case self::STATUS_EXPIRED:
+                        return $serviceNotificationService->sendToAdmin('aozpromokodpromokod_otklyuchen');
+                    default:
+                        return $serviceNotificationService->sendToAdmin('aozpromokodpromokod_izmenen');
+                }
+}
         });
     }
 }
