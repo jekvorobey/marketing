@@ -592,41 +592,47 @@ class Discount extends AbstractModel
                         });
                     });
 
-                $discount
-                    ->conditions()
-                    ->whereJsonLength('condition->customerIds', '>=', 1)
-                    ->get()
-                    ->map(function (DiscountCondition $discountCondition) {
-                        return $discountCondition->condition['customerIds'];
-                    })
-                    ->flatten()
-                    ->unique()
-                    ->map(function ($customer) use ($customerService) {
-                        return $customerService->customers(
-                            $customerService->newQuery()
-                                ->setFilter('id', $customer)
-                        )->first();
-                    })
-                    ->filter()
-                    ->map(function ($user) use ($userService) {
-                        return $userService->users(
-                            $userService->newQuery()
-                                ->setFilter('id', $user->user_id)
-                        )->first();
-                    })
-                    ->filter()
-                    ->filter(function (UserDto $userDto) {
-                        return array_key_exists(UserDto::SHOWCASE__REFERRAL_PARTNER, $userDto->roles);
-                    })
-                    ->filter(function (UserDto $userDto) use ($sentIds) {
-                        return !in_array($userDto->id, $sentIds);
-                    })
-                    ->each(function (UserDto $userDto) use ($serviceNotificationService, $discount) {
-                        $serviceNotificationService->send($userDto->id, 'sotrudnichestvouroven_personalnoy_skidki_izmenen', [
-                            'LVL_DISCOUNT' => $discount->value,
-                            'CUSTOMER_NAME' => $userDto->first_name
-                        ]);
-                    });
+                // $discount
+                //     ->conditions()
+                //     ->whereJsonLength('condition->customerIds', '>=', 1)
+                //     ->get()
+                //     ->map(function (DiscountCondition $discountCondition) {
+                //         return $discountCondition->condition['customerIds'];
+                //     })
+                //     ->flatten()
+                //     ->unique()
+                //     ->map(function ($customer) use ($customerService) {
+                //         return $customerService->customers(
+                //             $customerService->newQuery()
+                //                 ->setFilter('id', $customer)
+                //         )->first();
+                //     })
+                //     ->filter()
+                //     ->map(function ($user) use ($userService) {
+                //         return $userService->users(
+                //             $userService->newQuery()
+                //                 ->setFilter('id', $user->user_id)
+                //         )->first();
+                //     })
+                //     ->filter()
+                //     ->filter(function (UserDto $userDto) {
+                //         return array_key_exists(UserDto::SHOWCASE__REFERRAL_PARTNER, $userDto->roles);
+                //     })
+                //     ->filter(function (UserDto $userDto) use ($sentIds) {
+                //         return !in_array($userDto->id, $sentIds);
+                //     })
+                //     ->each(function (UserDto $userDto) use ($serviceNotificationService, $discount) {
+                //         if($discount->value_type == Discount::DISCOUNT_VALUE_TYPE_PERCENT) {
+                //             $type = '%';
+                //         } else {
+                //             $type = ' руб.';
+                //         }
+
+                //         $serviceNotificationService->send($userDto->id, 'sotrudnichestvouroven_personalnoy_skidki_izmenen', [
+                //             'LVL_DISCOUNT' => sprintf("%s%s", $discount->value, $type),
+                //             'CUSTOMER_NAME' => $userDto->first_name
+                //         ]);
+                //     });
             }
         });
 

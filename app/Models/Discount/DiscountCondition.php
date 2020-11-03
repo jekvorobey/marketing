@@ -5,6 +5,10 @@ namespace App\Models\Discount;
 use Greensight\CommonMsa\Models\AbstractModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Hash;
+use Greensight\CommonMsa\Dto\UserDto;
+use Greensight\CommonMsa\Services\AuthService\UserService;
+use Greensight\Customer\Services\CustomerService\CustomerService;
+use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationService;
 
 /**
  * Класс-модель для сущности "Условие возникновения скидки"
@@ -207,6 +211,48 @@ class DiscountCondition extends AbstractModel
         parent::boot();
 
         self::created(function (DiscountCondition $item) {
+            if($item->type == self::CUSTOMER) {
+                $serviceNotificationService = app(ServiceNotificationService::class);
+
+                /** @var UserService */
+                $userService = app(UserService::class);
+
+                /** @var CustomerService */
+                $customerService = app(CustomerService::class);
+
+                collect($item->getCustomerIds())
+                    ->unique()
+                    ->map(function ($customer) use ($customerService) {
+                        return $customerService->customers(
+                            $customerService->newQuery()
+                                ->setFilter('id', $customer)
+                        )->first();
+                    })
+                    ->filter()
+                    ->map(function ($user) use ($userService) {
+                        return $userService->users(
+                            $userService->newQuery()
+                                ->setFilter('id', $user->user_id)
+                        )->first();
+                    })
+                    ->filter()
+                    ->filter(function (UserDto $userDto) {
+                        return array_key_exists(UserDto::SHOWCASE__REFERRAL_PARTNER, $userDto->roles);
+                    })
+                    ->each(function (UserDto $userDto) use ($serviceNotificationService, $item) {
+                        if($item->discount->value_type == Discount::DISCOUNT_VALUE_TYPE_PERCENT) {
+                            $type = '%';
+                        } else {
+                            $type = ' руб.';
+                        }
+
+                        $serviceNotificationService->send($userDto->id, 'sotrudnichestvouroven_personalnoy_skidki_izmenen', [
+                            'LVL_DISCOUNT' => sprintf("%s%s", $item->discount->value, $type),
+                            'CUSTOMER_NAME' => $userDto->first_name
+                        ]);
+                    });
+            }
+
             if ($item->type !== self::DISCOUNT_SYNERGY || empty($item->condition[self::FIELD_SYNERGY] ?? [])) {
                 return;
             }
