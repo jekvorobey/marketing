@@ -563,7 +563,7 @@ class Discount extends AbstractModel
                 $serviceNotificationService->sendToAdmin('aozskidkaskidka_izmenena');
             }
 
-            if($discount->value != $discount->getOriginal('value')) {
+            if($discount->value != $discount->getOriginal('value') || $discount->wasRecentlyCreated) {
                 $sentIds = [];
 
                 $discount
