@@ -174,11 +174,15 @@ class Basket implements \JsonSerializable
                 $discount = $offer['bundles'][$item->bundleId]['discount'] ?? 0;
                 $discounts = $offer['bundles'][$item->bundleId]['discounts'] ?? [];
                 $price = $offer['bundles'][$item->bundleId]['price'] ?? 0;
+                $bonusSpent = ($offer['bundles'][$item->bundleId]['bonusSpent'] ?? 0) * $qty;
+                $bonusDiscount = ($offer['bundles'][$item->bundleId]['bonusDiscount'] ?? 0) * $qty;
             } else {
                 $qty = $offer['bundles'][0]['qty'];
                 $discount = $offer['discount'] ?? 0;
                 $discounts = $offer['discounts'] ?? [];
                 $price = $offer['price'];
+                $bonusSpent = ($offer['bonusSpent'] ?? 0) * $qty;
+                $bonusDiscount = ($offer['bonusDiscount'] ?? 0) * $qty;
             }
 
             $offer['cost'] = $offer['cost'] ?? $price;
@@ -190,8 +194,8 @@ class Basket implements \JsonSerializable
             $item->price = $price * $qty;
             $item->bonus = $offer['bonus'];
             $item->bonuses = $offer['bonuses']->toArray();
-            $item->bonusSpent = ($offer['bonusSpent'] ?? 0) * $qty;
-            $item->bonusDiscount = ($offer['bonusDiscount'] ?? 0) * $qty;
+            $item->bonusSpent = $bonusSpent;
+            $item->bonusDiscount = $bonusDiscount;
 
             $totalCost += $item->totalCost;
             $totalItemDiscount += $item->discount;

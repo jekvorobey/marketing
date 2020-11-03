@@ -110,28 +110,87 @@ class DiscountCalculator extends AbstractCalculator
         $this->filter()->sort()->apply();
 
         $this->input->offers->transform(function ($offer, $offerId) {
-            /** @var Collection|null $discountsWithoutBundles */
-            $discountsWithoutBundles = $this->offersByDiscounts->has($offerId)
-                ? $this->offersByDiscounts[$offerId]->filter(function ($discount) {
-                    return !($this->input->bundles->contains($discount['id']));
-                })->values()
-                : null;
 
-            $sum = $discountsWithoutBundles
-                ? $discountsWithoutBundles->sum('change')
-                : null;
+            if (!$this->offersByDiscounts->has($offerId)) {
+                $offer['discount'] = null;
+                $offer['discounts'] = null;
+                return $offer;
+            }
+            # Конечная цена товара после применения скидки всегда округляется до целого
+            $offer['price'] = round($offer['price']);
+
+            $roundOffs = collect();
+            # Погрешность после применения базовых товарных скидок (не бандлов)
+            $basicError = 0;
+            if (isset($offer['discount'])) {
+                # Финальная скидка, в которую входит сама скидка и ошибка округления
+                $finalDiscount = $offer['cost'] - $offer['price'];
+                $basicError = $finalDiscount - $offer['discount'];
+                $basicDiscountsNumber = $this->offersByDiscounts[$offerId]->filter(function ($discount) {
+                        return !($this->input->bundles->contains($discount['id']));
+                    })->count();
+                $diffPerDiscount = $basicDiscountsNumber > 0
+                    ? round($basicError / $basicDiscountsNumber,2)
+                    : 0;
+                $correctionValue = $diffPerDiscount
+                    ? round($basicError - $diffPerDiscount * $basicDiscountsNumber,3)
+                    : 0;
+
+                $roundOffs->put(0, [
+                    'error' => $diffPerDiscount,
+                    'correction' => $correctionValue,
+                    'affectedQty' => $offer['qty']
+                ]);
+            }
+
+            $offer['bundles']->each(function ($bundle, $id) use ($roundOffs, $offer, $offerId, &$basicError) {
+                if ($id == 0 || !isset($bundle['discount'])) {
+                    return;
+                }
+                $finalDiscount = $offer['cost'] - $bundle['price'];
+                $roundOffError = $finalDiscount - $bundle['discount'];
+
+                $roundOffs->put($id, [
+                    'error' => round($roundOffError - $basicError,2),
+                    'correction' => 0,
+                    'affectedQty' => $bundle['qty']
+                ]);
+            });
+
+            $this->offersByDiscounts[$offerId]->transform(function ($discount) use ($roundOffs) {
+                $key = $roundOffs->has($discount['id']) ? $discount['id'] : 0;
+                $roundOff = $roundOffs->get($key);
+                if (!$roundOff) {
+                    return $discount;
+                }
+
+                $resultedDiff = $roundOff['error'] + $roundOff['correction'];
+                $roundOff['correction'] = 0;
+                $roundOffs->put($key, $roundOff);
+
+                $discount['change'] = round($discount['change'] + $resultedDiff, 2);
+
+                $appliedDiscount = $this->appliedDiscounts->get($discount['id']);
+                $appliedDiscount['change'] = round($appliedDiscount['change'] + $resultedDiff * $roundOff['affectedQty'], 2);
+                $this->appliedDiscounts->put($discount['id'], $appliedDiscount);
+
+                return $discount;
+            });
+
+            /** @var Collection|null $discountsWithoutBundles */
+            $discountsWithoutBundles = $this->offersByDiscounts[$offerId]->filter(function ($discount) {
+                    return !($this->input->bundles->contains($discount['id']));
+                })->values();
+
+            $sum = round($discountsWithoutBundles->sum('change'),2);
             $offer['discount'] = $sum;
 
-            $offer['discounts'] = $discountsWithoutBundles
-                ? $discountsWithoutBundles->toArray()
-                : null;
+            $offer['discounts'] = $discountsWithoutBundles->toArray();
 
             /** @var Collection|null $discountsWithBundles */
-            $discountsWithBundles = $this->offersByDiscounts->has($offerId)
-                ? $this->offersByDiscounts[$offerId]->filter(function ($discount) {
+            $discountsWithBundles = $this->offersByDiscounts[$offerId]->filter(function ($discount) {
                     return $this->input->bundles->contains($discount['id']);
-                })->keyBy('id')
-                : null;
+                })->keyBy('id');
 
             if ($discountsWithBundles && !($discountsWithBundles->isEmpty())) {
                 $offer['bundles']->transform(function ($bundle, $bundleId) use ($sum, $discountsWithBundles, $discountsWithoutBundles) {
@@ -626,6 +685,13 @@ class DiscountCalculator extends AbstractCalculator
             $offer['price'] = $offer['cost'] ?? $offer['price'];
             unset($offer['discount']);
             unset($offer['cost']);
+            if (isset($offer['bundles'])) {
+                $offer['bundles']->transform(function ($bundle) use ($offer) {
+                    $bundle['price'] = $offer['price'];
+                    unset($bundle['discount']);
+                    return $bundle;
+                });
+            }
             $offers->put($offer['id'], $offer);
         }
         $this->input->offers = $offers;
