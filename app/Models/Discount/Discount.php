@@ -578,8 +578,15 @@ class Discount extends AbstractModel
                     ->each(function ($role) use ($serviceNotificationService, $discount, &$sentIds) {
                         $role->each(function ($user) use ($serviceNotificationService, $discount, &$sentIds) {
                             $sentIds[] = $user->id;
+
+                            if($discount->value_type == Discount::DISCOUNT_VALUE_TYPE_PERCENT) {
+                                $type = '%';
+                            } else {
+                                $type = ' руб.';
+                            }
+
                             $serviceNotificationService->send($user->id, 'sotrudnichestvouroven_personalnoy_skidki_izmenen', [
-                                'LVL_DISCOUNT' => $discount->value,
+                                'LVL_DISCOUNT' => sprintf("%s%s", $discount->value, $type),
                                 'CUSTOMER_NAME' => $user->first_name
                             ]);
                         });
