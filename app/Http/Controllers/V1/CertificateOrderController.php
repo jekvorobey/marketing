@@ -51,6 +51,7 @@ class CertificateOrderController extends Controller
 
         try {
             $data = $this->validate($request, $rules);
+            $data['delivery_at'] = $data['delivery_time'] ?? null;
         } catch (\Exception $e) {
             throw new HttpException(400, $e->getMessage());
         }

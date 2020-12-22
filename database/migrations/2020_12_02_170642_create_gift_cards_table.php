@@ -34,8 +34,6 @@ class CreateGiftCardsTable extends Migration
             $table->dateTime('activate_before')->nullable();
             $table->dateTime('valid_until')->nullable();
             $table->dateTime('activated_at')->nullable();
-            $table->dateTime('notified_at')->nullable();
-            $table->dateTime('paid_at')->nullable();
 
             $table->foreign('nominal_id')
                 ->references('id')

@@ -33,8 +33,6 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $activate_before
  * @property Carbon|null $valid_until
  * @property Carbon|null $activated_at
- * @property Carbon|null $notified_at
- * @property Carbon|null $paid_at
  *
  * @property Carbon $created_at
  * @property Carbon $updated_at
@@ -81,15 +79,12 @@ class Card extends AbstractModel implements HistoryInterface
         'activate_before',
         'valid_until',
         'activated_at',
-        'notified_at',
-        'paid_at'
     ];
 
     protected $casts = [
         'activate_before' => 'datetime',
         'valid_until' => 'datetime',
         'activated_at' => 'datetime',
-        'paid_at' => 'datetime',
     ];
 
     public function buildPin()
@@ -127,7 +122,6 @@ class Card extends AbstractModel implements HistoryInterface
         if ($this->status === self::STATUS_NEW)
         {
             $this->status = self::STATUS_PAID;
-            $this->paid_at = Carbon::now();
             $this->buildPin();
             $this->save();
             $this->nominal->onPayment();

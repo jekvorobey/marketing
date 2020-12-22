@@ -24,7 +24,10 @@ use Illuminate\Support\Carbon;
  * @property int         $qty
  * @property int         $price
  *
- * @property Carbon      $delivery_time
+ * @property Carbon      $delivery_at
+ * @property Carbon|null $notified_at
+ * @property Carbon|null $paid_at
+ *
  * @property int         $is_anonymous
  * @property int         $is_to_self
  *
@@ -64,7 +67,10 @@ class Order extends AbstractModel implements HistoryInterface
         'qty',
         'price',
 
-        'delivery_time',
+        'delivery_at',
+        'notified_at',
+        'paid_at',
+
         'is_anonymous',
         'is_to_self',
 
@@ -78,7 +84,9 @@ class Order extends AbstractModel implements HistoryInterface
     ];
 
     protected $casts = [
-        'delivery_time' => 'datetime'
+        'delivery_at' => 'datetime',
+        'notified_at' => 'datetime',
+        'paid_at' => 'datetime',
     ];
 
     public function cards()
@@ -98,16 +106,18 @@ class Order extends AbstractModel implements HistoryInterface
 
     public function setPaymentStatus($status): self
     {
+        $isPaid = in_array($status, [PaymentStatus::PAID, PaymentStatus::HOLD]);
+
         $this->payment_status = $status;
+
+        if ($isPaid)
+            $this->paid_at = Carbon::now();
+
         $this->save();
 
-        switch ($status)
-        {
-            case PaymentStatus::PAID:
-            case PaymentStatus::HOLD:
-                foreach ($this->cards as $card)
-                    $card->onPayment();
-                break;
+        if ($isPaid) {
+            foreach ($this->cards as $card)
+                $card->onPayment();
         }
 
         return $this;

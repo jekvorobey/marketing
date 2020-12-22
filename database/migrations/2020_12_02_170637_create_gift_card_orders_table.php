@@ -30,7 +30,10 @@ class CreateGiftCardOrdersTable extends Migration
             $table->integer('qty')->default(1);
             $table->integer('price');
 
-            $table->datetime('delivery_time')->nullable();
+            $table->datetime('delivery_at')->nullable();
+            $table->dateTime('notified_at')->nullable();
+            $table->dateTime('paid_at')->nullable();
+
             $table->boolean('is_anonymous')->default(false);
             $table->boolean('is_to_self')->default(false);
 
