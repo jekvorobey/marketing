@@ -116,6 +116,8 @@ Route::namespace('V1')->prefix('v1')->group(function () {
         Route::prefix('cards')->group(function () {
 
             Route::post('activate', 'CertificateCardController@activateByPin');
+            Route::post('reserve', 'CertificateCardController@reserve');
+            Route::get('usable/{customerId}', 'CertificateCardController@usable');
 
             Route::get('{id?}', 'CertificateCardController@read');
             Route::post('{id}/activate', 'CertificateCardController@activateById');

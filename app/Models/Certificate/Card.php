@@ -6,6 +6,7 @@ namespace App\Models\Certificate;
 use App\Services\History\HasHistory;
 use App\Services\History\HistoryInterface;
 use Greensight\CommonMsa\Models\AbstractModel;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
 /**
@@ -30,6 +31,9 @@ use Illuminate\Support\Carbon;
  * @property Design $design
  * @property Order $order
  *
+ * @property string $name
+ * @property bool   $usable
+ *
  * @property Carbon|null $activate_before
  * @property Carbon|null $valid_until
  * @property Carbon|null $activated_at
@@ -39,7 +43,9 @@ use Illuminate\Support\Carbon;
  *
  * @method static Card|null find($id)
  * @method static Card|null findOrFail($id)
+ * @method static Builder usableForOrders(int $customerId = null)
  */
+
 class Card extends AbstractModel implements HistoryInterface
 {
     use HasHistory;
@@ -49,6 +55,8 @@ class Card extends AbstractModel implements HistoryInterface
     public static $historyEvents = ['created', 'updated', 'deleted'];
     public $historyTag = 'gift_card';
     protected static $restIncludes = ['design', 'nominal', 'order', 'order.cards'];
+
+    protected $appends = ['name', 'usable'];
 
     const STATUS_NEW = 0;                       // Новая неоплаченная карта
     const STATUS_PAID = 300;                    // Приобретен
@@ -87,6 +95,16 @@ class Card extends AbstractModel implements HistoryInterface
         'activated_at' => 'datetime',
     ];
 
+    public function getNameAttribute()
+    {
+        return 'CERT' . substr((string)$this->created_at, 0, 4) . '-' . $this->price;
+    }
+
+    public function getUsableAttribute()
+    {
+        return in_array($this->status, [self::STATUS_ACTIVATED, self::STATUS_IN_USE]);
+    }
+
     public function buildPin()
     {
         try {
@@ -112,6 +130,16 @@ class Card extends AbstractModel implements HistoryInterface
     public function order()
     {
         return $this->belongsTo(Order::class, 'gift_card_order_id');
+    }
+
+    public function scopeUsableForOrders(Builder $query, $customerId = null): Builder
+    {
+        if ($customerId)
+            $query = $query->where('recipient_id', $customerId);
+
+        return $query
+            ->whereIn('status', [self::STATUS_ACTIVATED, self::STATUS_IN_USE])
+            ->orderBy('valid_until');
     }
 
     /**
