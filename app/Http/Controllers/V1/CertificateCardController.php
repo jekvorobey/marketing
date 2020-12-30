@@ -9,6 +9,7 @@ use App\Http\Traits\HasUsers;
 use App\Models\Certificate\Card;
 use App\Services\Certificate\ActivatingHelper;
 use App\Services\Certificate\ActivatingStatus;
+use App\Services\Certificate\ReserveHelper;
 use App\Services\Certificate\TransactionHelper;
 use App\Services\Certificate\TransactionStatus;
 use Illuminate\Http\JsonResponse;
@@ -71,4 +72,32 @@ class CertificateCardController extends Controller
 
         return response()->json($status->toArray());
     }
+
+    public function reserve(Request $request): JsonResponse
+    {
+        $status = ReserveHelper::reserve(
+            $request->get('customer_id'),
+            $request->get('sum', 0)
+        );
+
+        return response()->json($status->toArray());
+    }
+
+    public function usable($customerId): JsonResponse
+    {
+        $amount = 0;
+        $certificates = [];
+
+        foreach (Card::usableForOrders($customerId)->get() as $card) {
+            $certificates[] = [
+                'id' => $card->id,
+                'code' => $card->name,
+                'amount' => $card->balance,
+            ];
+            $amount += $card->balance;
+        }
+
+        return response()->json(compact('amount', 'certificates'));
+    }
+
 }

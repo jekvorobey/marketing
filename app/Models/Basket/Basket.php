@@ -2,6 +2,7 @@
 
 namespace App\Models\Basket;
 
+use App\Models\Certificate\Card;
 use App\Models\Option\Option;
 use App\Services\Calculator\Checkout\CheckoutCalculatorBuilder;
 use Illuminate\Support\Collection;
@@ -9,11 +10,6 @@ use Exception;
 
 class Basket implements \JsonSerializable
 {
-    private const CERTS = [
-        'CERT2020-500' => ['id' => 1, 'code' => 'CERT2020-500', 'amount' => 500],
-        'CERT2019-1000' => ['id' => 2, 'code' => 'CERT2019-1000', 'amount' => 1000],
-    ];
-
     /**
      * Стоимость корзины без скидок.
      * @var float
@@ -205,7 +201,8 @@ class Basket implements \JsonSerializable
 
         $this->applyCertificates();
 
-        $basketDiscount = 0;
+        $basketDiscount = $this->discountByCertificates;
+
         $this->cost = $totalCost;
         $this->discount = $totalItemDiscount + $basketDiscount;
         $this->price = $totalCost - $this->discount;
@@ -213,21 +210,23 @@ class Basket implements \JsonSerializable
         $this->bonusDiscount = $totalBonusDiscount;
     }
 
-    private function applyCertificates(): void
+    private function applyCertificates(): int
     {
-        if (!$this->certificates) {
-            return;
-        }
-        foreach ($this->certificates as $code) {
-            if (isset($this->appliedCertificates[$code])) {
-                continue;
+        $this->discountByCertificates = 0;
+        $this->appliedCertificates = [];
+
+        if ($this->certificates) {
+            foreach ($this->certificates as $certificate) {
+                $id = $certificate['id'];
+                if (isset($this->appliedCertificates[$id])) {
+                    continue;
+                }
+                $this->appliedCertificates[$id] = $certificate;
+                $this->discountByCertificates += $certificate['amount'];
             }
-            $cert = self::CERTS[$code] ?? null;
-            if ($cert) {
-                $this->appliedCertificates[] = $cert;
-                $this->discountByCertificates += $cert['amount'];
-            }
         }
+
+        return $this->discountByCertificates;
     }
 
     public function jsonSerialize()
@@ -241,6 +240,8 @@ class Basket implements \JsonSerializable
             'maxSpendableBonus' => $this->maxSpendableBonus,
             'bonusDiscount' => $this->bonusDiscount,
             'bonusPerRub' => $this->bonusPerRub,
+            'appliedCertificates' => $this->appliedCertificates,
+            'discountByCertificates' => $this->discountByCertificates,
             'promoCodes' => $this->appliedPromoCodes,
             'items' => $this->items,
             'deliveries' => $this->deliveries,

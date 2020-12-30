@@ -6,6 +6,7 @@ use App\Services\History\HasHistory;
 use App\Services\History\HistoryInterface;
 use Greensight\CommonMsa\Models\AbstractModel;
 use Greensight\Oms\Dto\Payment\PaymentStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Carbon;
 
@@ -39,10 +40,13 @@ use Illuminate\Support\Carbon;
  * @property string      $to_phone
  * @property string      $to_email
  *
- * @property Card[]  $cards
+ * @property Card[]      $cards
+ * @property Design      $design
+ * @property Nominal     $nominal
  *
  * @method static Order|null find($id)
  * @method static Order|null findOrFail($id)
+ * @method static Builder    paid()
  */
 class Order extends AbstractModel implements HistoryInterface
 {
@@ -102,6 +106,11 @@ class Order extends AbstractModel implements HistoryInterface
     public function design()
     {
         return $this->belongsTo(Design::class);
+    }
+
+    public function scopePaid(Builder $builder)
+    {
+        return $builder->whereIn('payment_status', [PaymentStatus::PAID, PaymentStatus::HOLD]);
     }
 
     public function setPaymentStatus($status): self
