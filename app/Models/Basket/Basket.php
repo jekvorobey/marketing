@@ -2,7 +2,6 @@
 
 namespace App\Models\Basket;
 
-use App\Models\Certificate\Card;
 use App\Models\Option\Option;
 use App\Services\Calculator\Checkout\CheckoutCalculatorBuilder;
 use Illuminate\Support\Collection;

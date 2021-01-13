@@ -15,9 +15,5 @@ class DatabaseSeeder extends Seeder
          $this->call(PricesSeeder::class);
          $this->call(BonusesTableSeeder::class);
          $this->call(PromoCodesTableSeeder::class);
-
-         $this->call(GiftCardContentSeeder::class);
-         $this->call(GiftCardDesignSeeder::class);
-         $this->call(GiftCardNominalSeeder::class);
     }
 }
