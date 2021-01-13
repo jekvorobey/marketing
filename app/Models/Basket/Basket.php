@@ -53,6 +53,7 @@ class Basket implements \JsonSerializable
     /** @var array */
     private $appliedCertificates;
     private $discountByCertificates = 0;
+    private $maxSpendableCertificates = 0;
 
     /** @var array */
     private $appliedDiscounts;
@@ -154,6 +155,7 @@ class Basket implements \JsonSerializable
         $totalItemDiscount = 0;
         $totalBonusSpent = 0;
         $totalBonusDiscount = 0;
+        $totalItemsAmount = 0;
         foreach ($this->items as $item) {
             if (!$calculation['offers']->has($item->offerId)) {
                 throw new Exception("basket item offer {$item->offerId} without price");
@@ -197,9 +199,10 @@ class Basket implements \JsonSerializable
             $totalItemDiscount += $item->discount;
             $totalBonusSpent += $item->bonusSpent;
             $totalBonusDiscount += $item->bonusDiscount;
+            $totalItemsAmount += $qty;
         }
 
-        $this->applyCertificates();
+        $this->applyCertificates($totalCost, $totalItemsAmount);
 
         $basketDiscount = $this->discountByCertificates;
 
@@ -210,23 +213,88 @@ class Basket implements \JsonSerializable
         $this->bonusDiscount = $totalBonusDiscount;
     }
 
-    private function applyCertificates(): int
+    private function applyCertificates($totalCost, $totalItemsAmount): int
     {
+        // С сертификатов можно списывать только целые числа,
+        // поэтому если общая цена - целое, то заказ можно полностью оплатить сертификатами
+        // Если не целое, то ОБЯЗАТЕЛЬНО требуется доп. оплата деньгами,
+        // минимум: по 1 рублю за каждый продукт + минимум 1 руб за каждую выбранную доставку (если она платная)
+
+        $paidItemsAmount = (int) $totalItemsAmount;
+
+        // Доставку тоже можно оплачивать сертификатами, поэтому учитываем доставку
+        foreach ($this->deliveries as $deliveryItem) {
+            if ($deliveryItem['selected'] && $deliveryItem['price']) {
+                $totalCost += $deliveryItem['price'];
+                $paidItemsAmount += 1;
+            }
+        }
+
+        // Если общая цена получилась с копейками
+        // => уменьшаем общую возможную оплату сертификатами на кол-во оплачиваемых элементов корзины
+        // т.е. по рублю за штуку
+        $this->maxSpendableCertificates = (boolval(($totalCost * 100) % 100))
+            ? (int) $totalCost - $paidItemsAmount
+            : (int) $totalCost;
+
         $this->discountByCertificates = 0;
         $this->appliedCertificates = [];
 
         if ($this->certificates) {
-            foreach ($this->certificates as $certificate) {
-                $id = $certificate['id'];
-                if (isset($this->appliedCertificates[$id])) {
-                    continue;
-                }
-                $this->appliedCertificates[$id] = $certificate;
-                $this->discountByCertificates += $certificate['amount'];
+            $data = $this->getAppliedCertificates($this->certificates, $this->maxSpendableCertificates);
+
+            // Остаток суммы, которую нужно оплатить рублями
+            $restSum = (int) $totalCost - $data['discount'];
+
+            if ($restSum > 0 && $restSum < $paidItemsAmount) {
+                // попали в ситуацию, когда доплатить рублями надо меньше рублей, чем элементов в корзине
+                // Уменьшаем кол-во используемых сертификатов до такой суммы,
+                // что бы доплатить осталось по рублю за каждый элемент корзины
+                $data = $this->getAppliedCertificates($this->certificates, (int) $totalCost - $paidItemsAmount);
             }
+
+            $this->appliedCertificates = $data['certificates'];
+            $this->discountByCertificates = $data['discount'];
         }
 
         return $this->discountByCertificates;
+    }
+
+    private function getAppliedCertificates(array $certificates, int $maxDiscount) : array
+    {
+        $response = [
+            'certificates' => [],
+            'discount' => 0
+        ];
+
+        foreach ($certificates as $certificate) {
+            $id = $certificate['id'];
+            $amount = $certificate['amount'];
+
+            // один и тот же сертификат не применяется более одного раза
+            if (isset($response['certificates'][$id])) {
+                continue;
+            }
+
+            // Возможная сумма при применении текущего сертификата
+            $possibleDiscount = $response['discount'] + $amount;
+
+            // Если сумма получилась больше ограниченной, берем только часть до ограничения
+            if ($possibleDiscount > $maxDiscount) {
+                $amount = $maxDiscount - $response['discount'];
+                if ($amount > 0) {
+                    $certificate['amount'] = $amount;
+                    $response['certificates'][$id] = $certificate;
+                    $response['discount'] += $certificate['amount'];
+                }
+                break;
+            } else {
+                // Сумма меньше ограниченной, берем всю
+                $response['certificates'][$id] = $certificate;
+                $response['discount'] += $certificate['amount'];
+            }
+        }
+        return $response;
     }
 
     public function jsonSerialize()
@@ -242,6 +310,7 @@ class Basket implements \JsonSerializable
             'bonusPerRub' => $this->bonusPerRub,
             'appliedCertificates' => $this->appliedCertificates,
             'discountByCertificates' => $this->discountByCertificates,
+            'maxSpendableCertificates' => $this->maxSpendableCertificates,
             'promoCodes' => $this->appliedPromoCodes,
             'items' => $this->items,
             'deliveries' => $this->deliveries,
