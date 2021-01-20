@@ -201,7 +201,8 @@ class Basket implements \JsonSerializable
             $totalItemsAmount += $qty;
         }
 
-        $this->applyCertificates($totalCost, $totalItemsAmount);
+        $totalCostWithoutBonuses = $totalCost - $totalItemDiscount + $totalBonusDiscount;
+        $this->applyCertificates($totalCostWithoutBonuses, $totalItemsAmount);
 
         $basketDiscount = $this->discountByCertificates;
 
@@ -224,7 +225,7 @@ class Basket implements \JsonSerializable
         // Доставку тоже можно оплачивать сертификатами, поэтому учитываем доставку
         foreach ($this->deliveries as $deliveryItem) {
             if ($deliveryItem['selected'] && $deliveryItem['price']) {
-                $totalCost += $deliveryItem['price'];
+                $totalCost += (int) $deliveryItem['price'];
                 $paidItemsAmount += 1;
             }
         }
