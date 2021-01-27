@@ -58,8 +58,7 @@ class AggregateController extends Controller
                 $query
                     ->where('type', DiscountCondition::CUSTOMER)
                     ->whereJsonContains('condition->' . DiscountCondition::FIELD_CUSTOMER_IDS, $customer_id)
-                    ->whereJsonLength('condition', 1)
-                    ->whereJsonLength('condition->' . DiscountCondition::FIELD_CUSTOMER_IDS, 1);
+                    ->whereJsonLength('condition', 1);
             })
             ->whereDoesntHave('conditions', function(Builder $query) {
                 $query->where('type', '!=', DiscountCondition::CUSTOMER);
