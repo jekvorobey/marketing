@@ -64,6 +64,15 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
         return self::percent($offer['price'], $percent);
     }
 
+    protected function maxBonusPriceForDiscountOffer(array $offer) {
+        $productId = $offer['product_id'];
+        $percent = $this->getBonusProductOption($productId, ProductBonusOption::MAX_PERCENTAGE_DISCOUNT_PAYMENT);
+        if ($percent === null) {
+            $percent = $this->getOption(Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_DISCOUNT_PRODUCT);
+        }
+        return self::percent($offer['price'], $percent);
+    }
+
     protected function needCalculateBonus(): bool
     {
         return $this->bonusSettingsIsSet() && $this->input->bonus > 0;
@@ -100,7 +109,9 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
         $sortedItems = $this->sortItems($items);
 
         foreach ($sortedItems as $item) {
-            $maxSpendForOffer = $this->maxBonusPriceForOffer($item);
+            $maxSpendForOffer = (!$item['has_discount'])
+                ? $this->maxBonusPriceForOffer($item)
+                : $this->maxBonusPriceForDiscountOffer($item);
             $offerPrice       = $item['price'];
             $percent          = $item['price'] > 0 ? $offerPrice / $orderPrice * 100 : 0;
             $spendForOffer    = AbstractCalculator::percent($spendForOrder, $percent, AbstractCalculator::ROUND);
@@ -145,7 +156,8 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
                     'product_id' => $offer['product_id'],
                     'qty' => $bundle['qty'],
                     'price' => $id == 0 ? $offer['price'] : $bundle['price'],
-                    'bundle_id' => $this->input->bundles->contains($id) ? $id : null
+                    'bundle_id' => $this->input->bundles->contains($id) ? $id : null,
+                    'has_discount' => (isset($offer['discount']) && $offer['discount'] > 0),
                 ]);
             }
         });

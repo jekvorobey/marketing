@@ -15,6 +15,8 @@ class ProductBonusOption extends AbstractModel
 {
     /** Максимальный процент от единицы товара, который можно оплатить бонусами */
     const MAX_PERCENTAGE_PAYMENT = 'max_percentage_payment';
+    /** Максимальный процент от единицы товара со скидкой, который можно оплатить бонусами */
+    const MAX_PERCENTAGE_DISCOUNT_PAYMENT = 'max_percentage_discount_payment';
 
     /**
      * Заполняемые поля модели
