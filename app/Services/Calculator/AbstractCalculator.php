@@ -25,6 +25,8 @@ abstract class AbstractCalculator
     public const DEFAULT_BONUS_PER_RUBLES = 1;
     /** @var int сколько процентов стоимости товара можно оплатить бонусами */
     public const DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT = 100;
+    /** @var int сколько процентов стоимости товара со скидкой можно оплатить бонусами */
+    public const DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_DISCOUNT_PRODUCT = 100;
     /** @var int сколько процентов стоимости заказа можно оплатить бонусами */
     public const DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_ORDER = 100;
 
@@ -250,9 +252,14 @@ abstract class AbstractCalculator
         foreach ($rawOptions as $option) {
             $options[$option->key] = $option->value['value'];
         }
-        $options[Option::KEY_BONUS_PER_RUBLES] = $options[Option::KEY_BONUS_PER_RUBLES] ?? self::DEFAULT_BONUS_PER_RUBLES;
-        $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT] = $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT] ?? self::DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT;
-        $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER] = $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER] ?? self::DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_ORDER;
+        $options[Option::KEY_BONUS_PER_RUBLES] = $options[Option::KEY_BONUS_PER_RUBLES]
+            ?? self::DEFAULT_BONUS_PER_RUBLES;
+        $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT] = $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT]
+            ?? self::DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT;
+        $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_DISCOUNT_PRODUCT] = $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_DISCOUNT_PRODUCT]
+            ?? self::DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_DISCOUNT_PRODUCT;
+        $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER] = $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER]
+            ?? self::DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_ORDER;
         $this->options = $options;
     }
 
