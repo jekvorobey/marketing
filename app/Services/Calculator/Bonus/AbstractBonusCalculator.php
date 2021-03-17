@@ -64,7 +64,8 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
         return self::percent($offer['price'], $percent);
     }
 
-    protected function maxBonusPriceForDiscountOffer(array $offer) {
+    protected function maxBonusPriceForDiscountOffer(array $offer)
+    {
         $productId = $offer['product_id'];
         $percent = $this->getBonusProductOption($productId, ProductBonusOption::MAX_PERCENTAGE_DISCOUNT_PAYMENT);
         if ($percent === null) {
@@ -81,8 +82,8 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
     protected function bonusSettingsIsSet()
     {
         return $this->getOption(Option::KEY_BONUS_PER_RUBLES) > 0
-        && $this->getOption(Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT) > 0
-        && $this->getOption(Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER) > 0;
+            && $this->getOption(Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT) > 0
+            && $this->getOption(Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER) > 0;
     }
 
     /**
@@ -102,7 +103,7 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
         $orderPrice = $items->map(function ($item) {
             return $item['price'] * $item['qty'];
         })->sum();
-//        $orderPrice = $this->input->getPriceOrders();
+        //$orderPrice = $this->input->getPriceOrders();
         $maxSpendForOrder = AbstractCalculator::percent($orderPrice, $this->getOption(Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER));
         $spendForOrder = $bonusPrice === null ? $maxSpendForOrder : min($bonusPrice, $maxSpendForOrder);
 
@@ -112,19 +113,23 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
             $maxSpendForOffer = (!$item['has_discount'])
                 ? $this->maxBonusPriceForOffer($item)
                 : $this->maxBonusPriceForDiscountOffer($item);
-            $offerPrice       = $item['price'];
-            $percent          = $item['price'] > 0 ? $offerPrice / $orderPrice * 100 : 0;
-            $spendForOffer    = AbstractCalculator::percent($spendForOrder, $percent, AbstractCalculator::ROUND);
+            $offerPrice = $item['price'];
+            $percent = $item['price'] > 0 ? $offerPrice / $orderPrice * 100 : 0;
+            /**
+             * Временное решение, пока не будут реализованы правила списания
+             * $spendForOffer = AbstractCalculator::percent($maxSpendForOrder, $percent, AbstractCalculator::ROUND);
+             */
+            $spendForOffer = AbstractCalculator::percent($maxSpendForOffer, $percent, AbstractCalculator::ROUND);
             $changePriceValue = min($maxSpendForOffer, $spendForOffer);
             if ($spendForOrder < $changePriceValue * $item['qty']) {
-                $spendForOffer    = AbstractCalculator::percent($spendForOrder, $percent, AbstractCalculator::FLOOR);
+                $spendForOffer = AbstractCalculator::percent($spendForOrder, $percent, AbstractCalculator::FLOOR);
                 $changePriceValue = min($maxSpendForOffer, $spendForOffer);
             }
 
             $discount = $callback($item, $changePriceValue);
 
             $spendForOrder -= $discount * $item['qty'];
-            $orderPrice    -= $offerPrice * $item['qty'];
+            $orderPrice -= $offerPrice * $item['qty'];
         }
     }
 
@@ -146,7 +151,7 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
     /**
      * @return Collection
      */
-    private function prepareItems() : Collection
+    private function prepareItems(): Collection
     {
         $items = collect();
         $this->input->offers->each(function ($offer) use ($items) {
