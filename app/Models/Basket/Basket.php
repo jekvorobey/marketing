@@ -148,7 +148,7 @@ class Basket implements \JsonSerializable
         $this->appliedDiscounts  = $calculation['discounts'];
         $this->appliedBonuses    = $calculation['bonuses'];
         $this->deliveries        = $calculation['deliveries'];
-        $this->maxSpendableBonus        = $calculation['maxSpendableBonus'];
+        $this->maxSpendableBonus = $calculation['maxSpendableBonus'];
 
         $totalCost = 0;
         $totalItemDiscount = 0;
