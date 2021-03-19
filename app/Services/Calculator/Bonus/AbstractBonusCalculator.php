@@ -114,17 +114,16 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
                 ? $this->maxBonusPriceForOffer($item)
                 : $this->maxBonusPriceForDiscountOffer($item);
             $offerPrice = $item['price'];
-            $percent = $item['price'] > 0 ? $offerPrice / $orderPrice * 100 : 0;
+//            $percent = $item['price'] > 0 ? $offerPrice / $orderPrice * 100 : 0;
             /**
              * Временное решение, пока не будут реализованы правила списания
-             * $spendForOffer = AbstractCalculator::percent($maxSpendForOrder, $percent, AbstractCalculator::ROUND);
              */
-            $spendForOffer = AbstractCalculator::percent($maxSpendForOffer, $percent, AbstractCalculator::ROUND);
-            $changePriceValue = min($maxSpendForOffer, $spendForOffer);
-            if ($spendForOrder < $changePriceValue * $item['qty']) {
-                $spendForOffer = AbstractCalculator::percent($spendForOrder, $percent, AbstractCalculator::FLOOR);
-                $changePriceValue = min($maxSpendForOffer, $spendForOffer);
-            }
+//            $spendForOffer = AbstractCalculator::percent($maxSpendForOffer, $percent, AbstractCalculator::ROUND);
+            $changePriceValue = $maxSpendForOffer;//min($maxSpendForOffer, $spendForOffer);
+//            if ($spendForOrder < $changePriceValue * $item['qty']) {
+//                $spendForOffer = AbstractCalculator::percent($spendForOrder, $percent, AbstractCalculator::FLOOR);
+//                $changePriceValue = min($maxSpendForOffer, $spendForOffer);
+//            }
 
             $discount = $callback($item, $changePriceValue);
 
