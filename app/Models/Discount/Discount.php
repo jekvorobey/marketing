@@ -553,9 +553,6 @@ class Discount extends AbstractModel
                 }
             })();
 
-            foreach($operators as $operator) {
-                $serviceNotificationService->send($operator->user_id, $type, $data);
-            }
 
             if($discount->status == static::STATUS_CREATED) {
                 $serviceNotificationService->sendToAdmin('aozskidkaskidka_sozdana');
@@ -564,6 +561,10 @@ class Discount extends AbstractModel
             }
 
             if($discount->value != $discount->getOriginal('value') || $discount->wasRecentlyCreated) {
+                foreach($operators as $operator) {
+                    $serviceNotificationService->send($operator->user_id, $type, $data);
+                }
+                
                 $sentIds = [];
 
                 $discount
