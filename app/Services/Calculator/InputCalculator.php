@@ -236,8 +236,8 @@ class InputCalculator
             ->unique()
             ->filter(function ($categoryId) {
                 return $categoryId > 0;
-            })
-            ->flip();
+            });
+            //->flip();
 
         $this->ticketTypeIds = $this->offers->pluck('ticket_type_id')
             ->unique()
