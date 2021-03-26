@@ -114,6 +114,7 @@ class BonusCalculator extends AbstractCalculator
                     $categoryIds = ($bonus->type === Bonus::TYPE_CATEGORY)
                         ? $bonus->categories->pluck('category_id')
                         : $this->input->categories;
+                    $categoryIds = $categoryIds->flip();
                     # За исключением брендов
                     $exceptBrandIds = $bonus->brands->pluck('brand_id');
                     # За исключением офферов
@@ -168,7 +169,13 @@ class BonusCalculator extends AbstractCalculator
         $totalBonusValue = 0;
         foreach ($offerIds as $offerId) {
             $offer      = &$this->input->offers[$offerId];
-            $bonusValue = $this->priceToBonusValue($offer['price'], $bonus);
+            //$bonusValue = $this->priceToBonusValue($offer['price'], $bonus);
+            $offerPriceWithDiscount = (isset($offer['cost']))
+                ? ($offer['discounts'])
+                    ? $offer['cost'] - array_sum(array_column($offer['discounts'], 'change'))
+                    : $offer['cost']
+                : $offer['price'];
+            $bonusValue = $this->priceToBonusValue($offerPriceWithDiscount, $bonus);
 
             if (!$this->offersByBonuses->has($offerId)) {
                 $this->offersByBonuses->put($offerId, collect());
