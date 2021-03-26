@@ -35,6 +35,35 @@ class BonusMayBeSpentCalculator extends AbstractBonusCalculator
             return $changePriceValue;
         });
 
-        $this->output->maxSpendableBonus = $this->priceToBonus($totalBonusPrice);
+        /*
+         * По сути дела - костыль
+         * В МС не приходят данные о максимально возможном количестве бонусов, которое можно списать на заказ
+         * поэтому дополнительно считаем здесь
+         */
+        $items = collect();
+        $this->input->offers->each(function ($offer) use ($items) {
+            foreach ($offer['bundles'] as $id => $bundle) {
+                $items->push([
+                    'offer_id' => $offer['id'],
+                    'product_id' => $offer['product_id'],
+                    'qty' => $bundle['qty'],
+                    'price' => $id == 0 ? $offer['price'] : $bundle['price'],
+                    'bundle_id' => $this->input->bundles->contains($id) ? $id : null,
+                    'has_discount' => (isset($offer['discount']) && $offer['discount'] > 0),
+                ]);
+            }
+        });
+        $totalBonusPrice = 0;
+        foreach ($items as $item) {
+            $maxSpendForOffer = (!$item['has_discount'])
+                ? $this->maxBonusPriceForOffer($item)
+                : $this->maxBonusPriceForDiscountOffer($item);
+            $totalBonusPrice += $maxSpendForOffer;
+        }
+        /*
+         * Конец костыля
+         */
+
+        $this->output->maxSpendableBonus = $this->priceToBonus(min($totalBonusPrice, $this->input->customerBonusAmount));
     }
 }

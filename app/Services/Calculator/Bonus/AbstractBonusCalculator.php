@@ -97,6 +97,33 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
         });
     }
 
+    protected function setBonusToEachOffer($bonusPrice, $callback) {
+        $items = $this->prepareItems();
+        $sortedItems = $this->sortItems($items);
+
+        $bonusRemains = $bonusPrice ?? $this->input->bonus;
+        $lastBonusRemains = $bonusRemains;
+
+        foreach ($sortedItems as $item) {
+            $maxSpendForOffer = (!$item['has_discount'])
+                ? $this->maxBonusPriceForOffer($item)
+                : $this->maxBonusPriceForDiscountOffer($item);
+            $bonusRemains -= $maxSpendForOffer;
+            if ($bonusRemains < 0 && $sortedItems->count() == 1) {
+                $callback($item, $this->input->bonus);
+                continue;
+            }
+            if ($bonusRemains > 0) {
+                $callback($item, $maxSpendForOffer);
+                $lastBonusRemains = $bonusRemains;
+            } else {
+                $callback($item, $lastBonusRemains);
+                $lastBonusRemains = 0;
+            }
+        }
+    }
+
+/*
     protected function setBonusToEachOffer($bonusPrice, $callback)
     {
         $items = $this->prepareItems();
@@ -115,10 +142,10 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
                 : $this->maxBonusPriceForDiscountOffer($item);
             $offerPrice = $item['price'];
             $percent = $item['price'] > 0 ? $offerPrice / $orderPrice * 100 : 0;
-            /**
+            **
              * Временное решение, пока не будут реализованы правила списания
              * $spendForOffer = AbstractCalculator::percent($maxSpendForOrder, $percent, AbstractCalculator::ROUND);
-             */
+             *
             $spendForOffer = AbstractCalculator::percent($maxSpendForOffer, $percent, AbstractCalculator::ROUND);
             $changePriceValue = min($maxSpendForOffer, $spendForOffer);
             if ($spendForOrder < $changePriceValue * $item['qty']) {
@@ -132,7 +159,7 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
             $orderPrice -= $offerPrice * $item['qty'];
         }
     }
-
+*/
     /**
      * Загрузить опции бонусов всех товаров для текущего input (не грузит повторно)
      */

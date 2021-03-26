@@ -78,6 +78,8 @@ class InputCalculator
 
     /** @var array */
     public $userRegion;
+    /** @var int */
+    public $customerBonusAmount;
     /**
      * @var Collection|CategoryDto[]
      */
@@ -136,6 +138,7 @@ class InputCalculator
                 'roles' => $params['customer']['roles'] ?? [],
                 'segment' => isset($params['customer']['segment']) ? (int) $params['customer']['segment'] : null,
             ];
+            $this->customerBonusAmount = $this->loadCustomerBonusAmount($this->customer['id']) ?? 0;
         } else {
             if (isset($params['role_ids']) && is_array($params['role_ids'])) {
                 $this->customer['roles'] = array_map(function ($roleId) { return (int)$roleId; }, $params['role_ids']);
@@ -143,6 +146,7 @@ class InputCalculator
             if (isset($params['segment_id'])) {
                 $this->customer['segment'] = (int) $params['segment_id'];
             }
+            $this->customerBonusAmount = 0;
         }
 
         $this->payment = [
@@ -236,8 +240,8 @@ class InputCalculator
             ->unique()
             ->filter(function ($categoryId) {
                 return $categoryId > 0;
-            });
-            //->flip();
+            })
+            ->flip();
 
         $this->ticketTypeIds = $this->offers->pluck('ticket_type_id')
             ->unique()
@@ -444,6 +448,13 @@ class InputCalculator
         $ordersCount  = $orderService->ordersCount($query);
 
         return $ordersCount['total'];
+    }
+
+    protected function loadCustomerBonusAmount(int $customerId) {
+        $customerService = resolve(CustomerService::class);
+        $query = $customerService->newQuery()->setFilter('id', $customerId);
+        $customer = $customerService->customers($query)->first();
+        return $customer['bonus'] ?? 0;
     }
 
     /**
