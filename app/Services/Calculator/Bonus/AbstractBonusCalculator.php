@@ -108,7 +108,7 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
             $maxSpendForOffer = (!$item['has_discount'])
                 ? $this->maxBonusPriceForOffer($item)
                 : $this->maxBonusPriceForDiscountOffer($item);
-            $bonusRemains -= $maxSpendForOffer * $item['qty'];
+            $bonusRemains -= $maxSpendForOffer;
             if ($bonusRemains < 0 && $sortedItems->count() == 1) {
                 $callback($item, $this->input->bonus);
                 continue;
