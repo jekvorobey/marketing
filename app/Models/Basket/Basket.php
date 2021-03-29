@@ -178,8 +178,8 @@ class Basket implements \JsonSerializable
                 $discount = $offer['discount'] ?? 0;
                 $discounts = $offer['discounts'] ?? [];
                 $price = $offer['price'];
-                $bonusSpent = ($offer['bonusSpent'] ?? 0) * $qty;
-                $bonusDiscount = ($offer['bonusDiscount'] ?? 0) * $qty;
+                $bonusSpent = ($offer['bonusSpent'] ?? 0);// * $qty;
+                $bonusDiscount = ($offer['bonusDiscount'] ?? 0);// * $qty;
             }
 
             $offer['cost'] = $offer['cost'] ?? $price;
