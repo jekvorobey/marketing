@@ -553,18 +553,19 @@ class Discount extends AbstractModel
                 }
             })();
 
-
             if($discount->status == static::STATUS_CREATED) {
                 $serviceNotificationService->sendToAdmin('aozskidkaskidka_sozdana');
             } else {
                 $serviceNotificationService->sendToAdmin('aozskidkaskidka_izmenena');
             }
 
-            if($discount->value != $discount->getOriginal('value') || $discount->wasRecentlyCreated) {
+            if($discount->status != $discount->getOriginal('status')) {
                 foreach($operators as $operator) {
                     $serviceNotificationService->send($operator->user_id, $type, $data);
                 }
-                
+            }
+
+            if($discount->value != $discount->getOriginal('value') || $discount->wasRecentlyCreated) {
                 $sentIds = [];
 
                 $discount
