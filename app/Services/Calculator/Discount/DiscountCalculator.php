@@ -1005,7 +1005,9 @@ class DiscountCalculator extends AbstractCalculator
      */
     public function checkRegion($regions)
     {
-        return in_array($this->input->userRegion['id'], $regions);
+        return !empty($this->input->userRegion)
+            ? in_array($this->input->userRegion['id'], $regions)
+            : false;
     }
 
     /**
