@@ -97,6 +97,7 @@ class PromoCodeCalculator extends AbstractCalculator
                         $this->input->deliveries['items'][$k] = $delivery;
                     }
                 }
+                $isApply = true; // нужно, чтобы промокод применялся в корзине
                 break;
             case PromoCode::TYPE_GIFT:
                 // todo
