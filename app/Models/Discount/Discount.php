@@ -658,6 +658,10 @@ class Discount extends AbstractModel
             $serviceNotificationService = app(ServiceNotificationService::class);
             $serviceNotificationService->sendToAdmin('aozskidkaskidka_udalena');
         });
+
+        self::updated(function (self $discount) {
+            $discount->updatePimContents();
+        });
     }
 
     public function updatePimContents()
