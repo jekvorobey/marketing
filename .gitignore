@@ -79,3 +79,6 @@ sftp-config.json
 .php_cs.cache
 storage/debugbar
 auth.json
+
+# CI/CD #
+!.gitlab-ci.yml
