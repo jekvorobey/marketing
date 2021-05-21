@@ -21,7 +21,7 @@ class BonusSpentCalculator extends AbstractBonusCalculator
         $this->setBonusToEachOffer($price, function ($affectedItem, $changePriceValue) {
             @([
                 'offer_id' => $offerId,
-                'bundle_id'   => $bundleId
+                'bundle_id' => $bundleId,
             ] = $affectedItem);
 
             if ($bundleId) {

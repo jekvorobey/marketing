@@ -42,8 +42,10 @@ class DiscountHelper
             throw new HttpException(400, 'Discount status error');
         }
 
-        if (isset($data['start_date']) && isset($data['end_date'])
-            && Carbon::parse($data['start_date'])->gt(Carbon::parse($data['end_date']))) {
+        if (
+            isset($data['start_date']) && isset($data['end_date'])
+            && Carbon::parse($data['start_date'])->gt(Carbon::parse($data['end_date']))
+        ) {
             throw new HttpException(400, 'Discount period error');
         }
 
@@ -51,7 +53,6 @@ class DiscountHelper
     }
 
     /**
-     * @param Discount $discount
      * @param array $relations
      * @return bool
      */
@@ -72,16 +73,26 @@ class DiscountHelper
                     && $brands->isEmpty()
                     && $categories->isEmpty()
                     && $publicEvents->isEmpty()
-                    && $offers->filter(function (DiscountOffer $offer) { return $offer->except; })->isEmpty();
+                    && $offers->filter(function (DiscountOffer $offer) {
+                        return $offer->except;
+                    })->isEmpty();
             case Discount::DISCOUNT_TYPE_BRAND:
-                return $offers->filter(function (DiscountOffer $offer) { return !$offer->except; })->isEmpty()
+                return $offers->filter(function (DiscountOffer $offer) {
+                    return !$offer->except;
+                })->isEmpty()
                     && $brands->isNotEmpty()
                     && $categories->isEmpty()
                     && $publicEvents->isEmpty()
-                    && $brands->filter(function (DiscountBrand $brand) { return $brand->except; })->isEmpty();
+                    && $brands->filter(function (DiscountBrand $brand) {
+                        return $brand->except;
+                    })->isEmpty();
             case Discount::DISCOUNT_TYPE_CATEGORY:
-                return $offers->filter(function (DiscountOffer $offer) { return !$offer->except; })->isEmpty()
-                    && $brands->filter(function (DiscountBrand $brand) { return !$brand->except; })->isEmpty()
+                return $offers->filter(function (DiscountOffer $offer) {
+                    return !$offer->except;
+                })->isEmpty()
+                    && $brands->filter(function (DiscountBrand $brand) {
+                        return !$brand->except;
+                    })->isEmpty()
                     && $publicEvents->isEmpty()
                     && $categories->isNotEmpty();
             case Discount::DISCOUNT_TYPE_MASTERCLASS:
@@ -147,7 +158,6 @@ class DiscountHelper
     }
 
     /**
-     * @param Discount $discount
      * @param array $relations
      * @return bool
      */
@@ -168,14 +178,22 @@ class DiscountHelper
             ));
         }
 
-        $diffs->map(function ($item) { return $item['removed']; })
+        $diffs->map(function ($item) {
+            return $item['removed'];
+        })
               ->map(function (Collection $items) {
-                  $items->each(function (Model $model) { $model->delete(); });
-               });
+                  $items->each(function (Model $model) {
+                    $model->delete();
+                  });
+              });
 
-        $diffs->map(function ($item) { return $item['added']; })
+        $diffs->map(function ($item) {
+            return $item['added'];
+        })
             ->map(function (Collection $items) {
-                $items->each(function (Model $model) { $model->save(); });
+                $items->each(function (Model $model) {
+                    $model->save();
+                });
             });
 
         if (!self::validateRelations($discount, $relations)) {

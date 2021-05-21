@@ -28,8 +28,6 @@ class PromoCodeCalculator extends AbstractCalculator
         parent::__construct($inputCalculator, $outputCalculator);
     }
 
-    /**
-     */
     public function calculate()
     {
         $this->output->appliedPromoCode = $this->fetchPromoCode()->apply();
@@ -45,7 +43,7 @@ class PromoCodeCalculator extends AbstractCalculator
             return null;
         }
 
-        $change  = null;
+        $change = null;
         $isApply = false;
         switch ($this->promoCode->type) {
             case PromoCode::TYPE_DISCOUNT:
@@ -82,11 +80,11 @@ class PromoCodeCalculator extends AbstractCalculator
                     );
 
                     if ($changeForDelivery > 0) {
-                        $isApply                              = $changeForDelivery > 0;
+                        $isApply = $changeForDelivery > 0;
                         if ($delivery['selected']) {
                             $change += $changeForDelivery;
                         }
-                        $this->input->freeDelivery            = true;
+                        $this->input->freeDelivery = true;
                         $this->input->deliveries['items'][$k] = $delivery;
                     }
                 }
@@ -113,23 +111,22 @@ class PromoCodeCalculator extends AbstractCalculator
 
         return $isApply
             ? [
-                'id'          => $this->promoCode->id,
-                'type'        => $this->promoCode->type,
-                'status'      => $this->promoCode->status,
-                'name'        => $this->promoCode->name,
-                'code'        => $this->promoCode->code,
+                'id' => $this->promoCode->id,
+                'type' => $this->promoCode->type,
+                'status' => $this->promoCode->status,
+                'name' => $this->promoCode->name,
+                'code' => $this->promoCode->code,
                 'discount_id' => $this->promoCode->discount_id,
-                'gift_id'     => $this->promoCode->gift_id,
-                'bonus_id'    => $this->promoCode->bonus_id,
-                'owner_id'    => $this->promoCode->owner_id,
-                'change'      => $change
+                'gift_id' => $this->promoCode->gift_id,
+                'bonus_id' => $this->promoCode->bonus_id,
+                'owner_id' => $this->promoCode->owner_id,
+                'change' => $change,
             ] : null;
     }
 
     /**
      * Проверяет ограничения заданные в conditions
      *
-     * @param PromoCode $promoCode
      *
      * @return bool
      */
@@ -150,17 +147,12 @@ class PromoCodeCalculator extends AbstractCalculator
         }
 
         $segmentIds = $promoCode->getSegmentIds();
-        if (!empty($segmentIds) && !in_array($this->input->customer['segment'], $segmentIds)) {
-            return false;
-        }
-
-        return true;
+        return empty($segmentIds) || in_array($this->input->customer['segment'], $segmentIds);
     }
 
     /**
      * Проверяет ограничение на количество применений одного промокода
      *
-     * @param PromoCode $promoCode
      *
      * @return bool
      */

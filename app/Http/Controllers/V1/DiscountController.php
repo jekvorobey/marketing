@@ -8,7 +8,6 @@ use App\Models\Discount\DiscountCondition;
 use App\Services\Discount\DiscountHelper;
 use App\Services\Calculator\Checkout\CheckoutCalculatorBuilder;
 use Carbon\Carbon;
-use Exception;
 use Greensight\CommonMsa\Rest\RestQuery;
 use Greensight\CommonMsa\Services\RequestInitiator\RequestInitiator;
 use Illuminate\Database\Eloquent\Builder;
@@ -44,8 +43,6 @@ class DiscountController extends Controller
     }
 
     /**
-     * @param Request $request
-     * @param RequestInitiator $client
      * @return JsonResponse
      */
     public function count(Request $request, RequestInitiator $client)
@@ -70,7 +67,7 @@ class DiscountController extends Controller
                 'categories',
                 'segments',
                 'roles',
-                'conditions'
+                'conditions',
             ])
             ->where('id', (int) $id)
             ->first();
@@ -83,7 +80,6 @@ class DiscountController extends Controller
     }
 
     /**
-     * @param Request $request
      * @return JsonResponse
      */
     public function read(Request $request)
@@ -96,13 +92,11 @@ class DiscountController extends Controller
         return response()->json([
             'items' => $this->modifyQuery($request, Discount::query())
                 ->orderBy('id', $request->get('sortDirection') === 'asc' ? 'asc' : 'desc')
-                ->get()
+                ->get(),
         ]);
     }
 
     /**
-     * @param Request $request
-     *
      * @return Response
      */
     public function updateStatus(Request $request)
@@ -135,8 +129,6 @@ class DiscountController extends Controller
     }
 
     /**
-     * @param Request $request
-     *
      * @return Response
      */
     public function delete(Request $request)
@@ -163,8 +155,6 @@ class DiscountController extends Controller
     }
 
     /**
-     * @param int $id
-     * @param Request $request
      * @return Response
      */
     public function update(int $id, Request $request)
@@ -198,7 +188,7 @@ class DiscountController extends Controller
             DiscountHelper::validate($discount->toArray());
         } catch (HttpException $ex) {
             return response($ex->getMessage(), $ex->getStatusCode());
-        } catch (Exception $ex) {
+        } catch (\Throwable $ex) {
             return response($ex->getMessage(), 500);
         }
 
@@ -211,7 +201,7 @@ class DiscountController extends Controller
             }
             $discount->save();
             DB::commit();
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
             throw new HttpException(400, $e->getMessage());
         }
@@ -220,14 +210,11 @@ class DiscountController extends Controller
     }
 
     /**
-     * @param Request $request
-     * @param RequestInitiator $client
      * @return JsonResponse
      */
     public function create(Request $request, RequestInitiator $client)
     {
         try {
-
             $data = $request->validate([
                 'name' => 'string|required',
                 'type' => 'numeric|required',
@@ -242,8 +229,8 @@ class DiscountController extends Controller
             ]);
 
             $data['user_id'] = $client->userId();
-            $data['relations'] = $data['relations'] ?? [];
-        } catch (Exception $ex) {
+            $data['relations'] ??= [];
+        } catch (\Throwable $ex) {
             return response()->json(['error' => $ex->getMessage()], 400);
         }
 
@@ -251,7 +238,7 @@ class DiscountController extends Controller
             DiscountHelper::validate($data);
         } catch (HttpException $ex) {
             return response()->json(['error' => $ex->getMessage()], $ex->getStatusCode());
-        } catch (Exception $ex) {
+        } catch (\Throwable $ex) {
             return response()->json(['error' => $ex->getMessage()], 500);
         }
 
@@ -259,7 +246,7 @@ class DiscountController extends Controller
             DB::beginTransaction();
             $discountId = DiscountHelper::create($data);
             DB::commit();
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
             return response()->json([
                 'error' => $e->getMessage(),
@@ -273,7 +260,6 @@ class DiscountController extends Controller
 
     /**
      * Возвращаент IDs авторов создания скидок
-     * @param Request $request
      *
      * @return JsonResponse
      */
@@ -284,7 +270,6 @@ class DiscountController extends Controller
 
     /**
      * Возвращаент IDs инициаторов (спонсоров) скидок
-     * @param Request $request
      *
      * @return array
      */
@@ -295,7 +280,6 @@ class DiscountController extends Controller
 
     /**
      * Возвращаент IDs авторов и инициаторов скидок
-     * @param Request $request
      *
      * @return JsonResponse
      */
@@ -310,8 +294,6 @@ class DiscountController extends Controller
     /**
      * Возвращает данные о примененных скидках
      *
-     * @param Request $request
-     * @param RequestInitiator $client
      * @return JsonResponse
      */
     public function calculate(Request $request, RequestInitiator $client)
@@ -336,8 +318,6 @@ class DiscountController extends Controller
     }
 
     /**
-     * @param Request $request
-     *
      * @return array
      */
     protected function initiators(Request $request)
@@ -351,8 +331,6 @@ class DiscountController extends Controller
     }
 
     /**
-     * @param Request $request
-     *
      * @return array
      */
     protected function authors(Request $request)
@@ -378,7 +356,6 @@ class DiscountController extends Controller
     /**
      * Получить класс модели в виде строки
      * Пример: return MyModel::class;
-     * @return string
      */
     public function modelClass(): string
     {
@@ -386,8 +363,6 @@ class DiscountController extends Controller
     }
 
     /**
-     * @param Request $request
-     * @param Builder $query
      * @return Builder
      */
     protected function modifyQuery(Request $request, Builder $query)
@@ -427,7 +402,7 @@ class DiscountController extends Controller
 
         if ($params['page'] > 0 && $params['perPage'] > 0) {
             $offset = ($params['page'] - 1) * $params['perPage'];
-            $query->offset($offset)->limit((int)$params['perPage']);
+            $query->offset($offset)->limit((int) $params['perPage']);
         }
 
         foreach ($filter as $key => $value) {
@@ -438,8 +413,12 @@ class DiscountController extends Controller
                 case 'promo_code_only':
                     if (is_array($value)) {
                         $values = collect($value);
-                        $includeNull = $values->filter(function ($v) { return $v <= 0; })->isNotEmpty();
-                        $ids = $values->filter(function ($v) { return $v > 0; });
+                        $includeNull = $values->filter(function ($v) {
+                            return $v <= 0;
+                        })->isNotEmpty();
+                        $ids = $values->filter(function ($v) {
+                            return $v > 0;
+                        });
                         if ($ids->isNotEmpty()) {
                             $query->whereIn($key, $ids);
                         }
@@ -448,7 +427,7 @@ class DiscountController extends Controller
                             $query->orWhereNull($key);
                         }
                     } else {
-                        $query->where($key, (int)$value);
+                        $query->where($key, (int) $value);
                     }
                     break;
                 case 'type':
@@ -488,7 +467,7 @@ class DiscountController extends Controller
                     if (isset($filter['fix_' . $key]) && $filter['fix_' . $key]) {
                         $query->where($key, $value);
                     } else {
-                        $op = ($key === 'start_date') ? '>=' : '<=';
+                        $op = $key === 'start_date' ? '>=' : '<=';
                         $query->where(function ($query) use ($key, $op, $value) {
                             $query->where($key, $op, $value)->orWhereNull($key);
                         });
@@ -522,7 +501,6 @@ class DiscountController extends Controller
 
     /**
      * Добавить условие на принадрежность скидки к мерчанту
-     * @param Builder $query
      * @param $value
      */
     protected function modifyQueryRelateToMerchant(Builder $query, $value)
@@ -566,7 +544,7 @@ class DiscountController extends Controller
         $query->where(function (Builder $query) use ($value, $offerIds, $brandIds, $categoryIds) {
             $query
                 ->orWhere('merchant_id', $value)
-                ->orWhere(function (Builder $query) use ($value, $offerIds, $brandIds, $categoryIds) {
+                ->orWhere(function (Builder $query) use ($offerIds, $brandIds, $categoryIds) {
                     $query->orWhereNull('merchant_id');
                     if ($offerIds) {
                         $query->orWhereHas('offers', function (Builder $query) use ($offerIds) {
@@ -614,8 +592,6 @@ class DiscountController extends Controller
 
     /**
      * Вычисление скидки на бандлы
-     * @param Request $request
-     * @param RequestInitiator $client
      * @return JsonResponse
      */
     public function bundleDiscountValues(Request $request, RequestInitiator $client)
@@ -647,18 +623,17 @@ class DiscountController extends Controller
             ->get()
             ->filter(function (Discount $discount) use ($userId, $segmentIds, $roleIds) {
                 $customerCondition = $discount->conditions->every(function (DiscountCondition $condition) use ($userId) {
-                    if (($condition->type === DiscountCondition::CUSTOMER) &&
-                        (!in_array($userId, $condition->condition[DiscountCondition::FIELD_CUSTOMER_IDS]))) {
-                        return false;
-                    }
-                    return true;
+                    return
+                        ($condition->type !== DiscountCondition::CUSTOMER) ||
+                        (in_array($userId, $condition->condition[DiscountCondition::FIELD_CUSTOMER_IDS]))
+                    ;
                 });
 
-                $segmentCondition = ($segmentIds && !($discount->segments->isEmpty())) ?
+                $segmentCondition = $segmentIds && !$discount->segments->isEmpty() ?
                     !($discount->segments->pluck('segment_id')->intersect($segmentIds)->isEmpty()) :
                     true;
 
-                $roleCondition = ($roleIds && !($discount->roles->isEmpty())) ?
+                $roleCondition = $roleIds && !$discount->roles->isEmpty() ?
                     !($discount->roles->pluck('role_id')->intersect($roleIds)->isEmpty()) :
                     true;
 

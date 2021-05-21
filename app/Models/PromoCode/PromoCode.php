@@ -12,8 +12,6 @@ use Greensight\Customer\Services\CustomerService\CustomerService;
 use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use MerchantManagement\Services\MerchantService\MerchantService;
-use MerchantManagement\Services\OperatorService\OperatorService;
 
 /**
  * Class PromoCode
@@ -44,48 +42,60 @@ class PromoCode extends AbstractModel
      * Статус промокода
      */
     /** Создана */
-    const STATUS_CREATED = 1;
+    public const STATUS_CREATED = 1;
+
     /** Отправлена на согласование */
-    const STATUS_SENT = 2;
+    public const STATUS_SENT = 2;
+
     /** На согласовании */
-    const STATUS_ON_CHECKING = 3;
+    public const STATUS_ON_CHECKING = 3;
+
     /** Активна */
-    const STATUS_ACTIVE = 4;
+    public const STATUS_ACTIVE = 4;
+
     /** Отклонена */
-    const STATUS_REJECTED = 5;
+    public const STATUS_REJECTED = 5;
+
     /** Приостановлена */
-    const STATUS_PAUSED = 6;
+    public const STATUS_PAUSED = 6;
+
     /** Завершена */
-    const STATUS_EXPIRED = 7;
+    public const STATUS_EXPIRED = 7;
+
     /** Тестовый */
-    const STATUS_TEST = 8;
+    public const STATUS_TEST = 8;
 
     /**
      * Тип промокода (на что промокод)
      */
     /** Промокод на скидку */
-    const TYPE_DISCOUNT = 1;
+    public const TYPE_DISCOUNT = 1;
+
     /** Промокод на бесплатную доставку */
-    const TYPE_DELIVERY = 2;
+    public const TYPE_DELIVERY = 2;
+
     /** Промокод на подарок */
-    const TYPE_GIFT = 3;
+    public const TYPE_GIFT = 3;
+
     /** Промокод на бонусы */
-    const TYPE_BONUS = 4;
+    public const TYPE_BONUS = 4;
 
     /**
      * Тип условия для применения промокода
      */
     /** Для определенного(ых) пользователя(ей) */
-    const CONDITION_TYPE_CUSTOMER_IDS = 'customers';
+    public const CONDITION_TYPE_CUSTOMER_IDS = 'customers';
+
     /** Для определенного(ых) сегмента(ов) */
-    const CONDITION_TYPE_SEGMENT_IDS = 'segments';
+    public const CONDITION_TYPE_SEGMENT_IDS = 'segments';
+
     /** Для определенной(ых) роли(ей) */
-    const CONDITION_TYPE_ROLE_IDS = 'roles';
+    public const CONDITION_TYPE_ROLE_IDS = 'roles';
 
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = [
+    public const FILLABLE = [
         'creator_id',
         'merchant_id',
         'owner_id',
@@ -102,14 +112,10 @@ class PromoCode extends AbstractModel
         'conditions',
     ];
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $fillable = self::FILLABLE;
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $casts = [
         'conditions' => 'array',
     ];
@@ -142,7 +148,7 @@ class PromoCode extends AbstractModel
             self::TYPE_DISCOUNT,
             self::TYPE_DELIVERY,
             self::TYPE_GIFT,
-            self::TYPE_BONUS
+            self::TYPE_BONUS,
         ];
     }
 
@@ -154,7 +160,7 @@ class PromoCode extends AbstractModel
         return [
             self::TYPE_DISCOUNT,
             self::TYPE_GIFT,
-            self::TYPE_BONUS
+            self::TYPE_BONUS,
         ];
     }
 
@@ -166,17 +172,11 @@ class PromoCode extends AbstractModel
         return Factory::create('ru_RU')->regexify('[A-Z0-9]{10}');
     }
 
-    /**
-     * @return BelongsTo
-     */
     public function discount(): BelongsTo
     {
         return $this->belongsTo(Discount::class);
     }
 
-    /**
-     * @return BelongsTo
-     */
     public function bonus(): BelongsTo
     {
         return $this->belongsTo(Bonus::class);
@@ -254,14 +254,10 @@ class PromoCode extends AbstractModel
 
     /**
      * Активные и доступные на заданную дату скидки
-     *
-     * @param Builder $query
-     * @param Carbon|null $date
-     * @return Builder
      */
     public function scopeActive(Builder $query, ?Carbon $date = null): Builder
     {
-        $date = $date ?? Carbon::now();
+        $date ??= Carbon::now();
         return $query
             ->whereIn('status', [self::STATUS_ACTIVE, self::STATUS_TEST])
             ->where(function ($query) use ($date) {
@@ -288,7 +284,7 @@ class PromoCode extends AbstractModel
                 }
             }
 
-            if($item->owner_id) {
+            if ($item->owner_id) {
                 $serviceNotificationService = app(ServiceNotificationService::class);
 
                 /** @var UserService */
@@ -315,7 +311,7 @@ class PromoCode extends AbstractModel
                         $serviceNotificationService->send($customer->user_id, 'marketingovye_instrumentyvypushchen_novyy_promo_kod', [
                             'NAME_PROMOKEY' => $item->name,
                             'LINK_NAME_PROMOKEY' => sprintf('%s/profile/promocodes', config('app.showcase_host')),
-                            'CUSTOMER_NAME' => $user->first_name
+                            'CUSTOMER_NAME' => $user->first_name,
                         ]);
                         break;
                 }

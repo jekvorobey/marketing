@@ -18,34 +18,30 @@ class Price extends AbstractModel
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = ['offer_id', 'price'];
-    
-    /**
-     * @var array
-     */
+    public const FILLABLE = ['offer_id', 'price'];
+
+    /** @var array */
     protected $fillable = self::FILLABLE;
-    
-    /**
-     * @var string
-     */
+
+    /** @var string */
     protected $table = 'prices';
-    
+
     protected static function boot()
     {
         parent::boot();
-        
+
         self::created(function (self $price) {
             /** @var SearchService $searchService */
             $searchService = resolve(SearchService::class);
             $searchService->markProductForIndexViaOffer($price->offer_id);
         });
-        
+
         self::updated(function (self $price) {
             /** @var SearchService $searchService */
             $searchService = resolve(SearchService::class);
             $searchService->markProductForIndexViaOffer($price->offer_id);
         });
-        
+
         self::deleted(function (self $price) {
             /** @var SearchService $searchService */
             $searchService = resolve(SearchService::class);

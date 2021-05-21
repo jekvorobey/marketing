@@ -30,7 +30,7 @@ use Pim\Services\SearchService\SearchService;
  * @property int $status
  * @property Carbon $start_date
  * @property Carbon $end_date
- * @property boolean $promo_code_only
+ * @property bool $promo_code_only
  * @mixin Eloquent
  *
  * @property-read Collection|DiscountOffer[] $offers
@@ -48,86 +48,109 @@ class Discount extends AbstractModel
      * Статус скидки
      */
     /** Создана */
-    const STATUS_CREATED = 1;
+    public const STATUS_CREATED = 1;
+
     /** Отправлена на согласование */
-    const STATUS_SENT = 2;
+    public const STATUS_SENT = 2;
+
     /** На согласовании */
-    const STATUS_ON_CHECKING = 3;
+    public const STATUS_ON_CHECKING = 3;
+
     /** Активна */
-    const STATUS_ACTIVE = 4;
+    public const STATUS_ACTIVE = 4;
+
     /** Отклонена */
-    const STATUS_REJECTED = 5;
+    public const STATUS_REJECTED = 5;
+
     /** Приостановлена */
-    const STATUS_PAUSED = 6;
+    public const STATUS_PAUSED = 6;
+
     /** Завершена */
-    const STATUS_EXPIRED = 7;
+    public const STATUS_EXPIRED = 7;
 
     /**
      * Тип скидки (назначается на)
      */
     /** Скидка на оффер */
-    const DISCOUNT_TYPE_OFFER = 1;
+    public const DISCOUNT_TYPE_OFFER = 1;
+
     /** Скидка на бандл из товаров */
-    const DISCOUNT_TYPE_BUNDLE_OFFER = 21;
+    public const DISCOUNT_TYPE_BUNDLE_OFFER = 21;
+
     /** Скидка на бандл из мастер-классов */
-    const DISCOUNT_TYPE_BUNDLE_MASTERCLASS = 22;
+    public const DISCOUNT_TYPE_BUNDLE_MASTERCLASS = 22;
+
     /** Скидка на бренд */
-    const DISCOUNT_TYPE_BRAND = 3;
+    public const DISCOUNT_TYPE_BRAND = 3;
+
     /** Скидка на категорию */
-    const DISCOUNT_TYPE_CATEGORY = 4;
+    public const DISCOUNT_TYPE_CATEGORY = 4;
+
     /** Скидка на доставку */
-    const DISCOUNT_TYPE_DELIVERY = 5;
+    public const DISCOUNT_TYPE_DELIVERY = 5;
+
     /** Скидка на сумму корзины */
-    const DISCOUNT_TYPE_CART_TOTAL = 6;
+    public const DISCOUNT_TYPE_CART_TOTAL = 6;
+
     /** Скидка на все офферы */
-    const DISCOUNT_TYPE_ANY_OFFER = 7;
+    public const DISCOUNT_TYPE_ANY_OFFER = 7;
+
     /** Скидка на все бандлы */
-    const DISCOUNT_TYPE_ANY_BUNDLE = 8;
+    public const DISCOUNT_TYPE_ANY_BUNDLE = 8;
+
     /** Скидка на все бренды */
-    const DISCOUNT_TYPE_ANY_BRAND = 9;
+    public const DISCOUNT_TYPE_ANY_BRAND = 9;
+
     /** Скидка на все категории */
-    const DISCOUNT_TYPE_ANY_CATEGORY = 10;
+    public const DISCOUNT_TYPE_ANY_CATEGORY = 10;
+
     /** Скидка на мастер-класс по ID типа билета */
-    const DISCOUNT_TYPE_MASTERCLASS = 11;
+    public const DISCOUNT_TYPE_MASTERCLASS = 11;
+
     /** Скидка на все мастер-классы */
-    const DISCOUNT_TYPE_ANY_MASTERCLASS = 12;
+    public const DISCOUNT_TYPE_ANY_MASTERCLASS = 12;
 
     /**
      * Тип скидки для вывода в корзину/чекаут
      */
     /** Скидка "На товар" */
-    const EXT_TYPE_OFFER = 1;
+    public const EXT_TYPE_OFFER = 1;
+
     /** Скидка "На доставку" */
-    const EXT_TYPE_DELIVERY = 2;
+    public const EXT_TYPE_DELIVERY = 2;
+
     /** Скидка "На корзину" */
-    const EXT_TYPE_CART = 3;
+    public const EXT_TYPE_CART = 3;
+
     /** Скидка "Для Вас" */
-    const EXT_TYPE_PERSONAL = 4;
+    public const EXT_TYPE_PERSONAL = 4;
+
     /** Скидка "По промокоду" */
-    const EXT_TYPE_PROMO = 5;
+    public const EXT_TYPE_PROMO = 5;
 
     /** Спонсор скидки */
-    const DISCOUNT_MERCHANT_SPONSOR = 1;
-    const DISCOUNT_ADMIN_SPONSOR = 2;
+    public const DISCOUNT_MERCHANT_SPONSOR = 1;
+    public const DISCOUNT_ADMIN_SPONSOR = 2;
 
     /** Тип значения – Проценты */
-    const DISCOUNT_VALUE_TYPE_PERCENT = 1;
-    /** Тип значения – Рубли */
-    const DISCOUNT_VALUE_TYPE_RUB = 2;
+    public const DISCOUNT_VALUE_TYPE_PERCENT = 1;
 
-    const DISCOUNT_OFFER_RELATION = 1;
-    const DISCOUNT_BRAND_RELATION = 2;
-    const DISCOUNT_CATEGORY_RELATION = 3;
-    const DISCOUNT_SEGMENT_RELATION = 4;
-    const DISCOUNT_USER_ROLE_RELATION = 5;
-    const DISCOUNT_CONDITION_RELATION = 6;
-    const DISCOUNT_BUNDLE_RELATION = 7;
-    const DISCOUNT_PUBLIC_EVENT_RELATION = 8;
+    /** Тип значения – Рубли */
+    public const DISCOUNT_VALUE_TYPE_RUB = 2;
+
+    public const DISCOUNT_OFFER_RELATION = 1;
+    public const DISCOUNT_BRAND_RELATION = 2;
+    public const DISCOUNT_CATEGORY_RELATION = 3;
+    public const DISCOUNT_SEGMENT_RELATION = 4;
+    public const DISCOUNT_USER_ROLE_RELATION = 5;
+    public const DISCOUNT_CONDITION_RELATION = 6;
+    public const DISCOUNT_BUNDLE_RELATION = 7;
+    public const DISCOUNT_PUBLIC_EVENT_RELATION = 8;
 
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = [
+    public const FILLABLE = [
         'user_id',
         'merchant_id',
         'type',
@@ -140,14 +163,10 @@ class Discount extends AbstractModel
         'promo_code_only',
     ];
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $fillable = self::FILLABLE;
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $casts = [
         'promo_code_only' => 'bool',
     ];
@@ -171,7 +190,7 @@ class Discount extends AbstractModel
             self::DISCOUNT_TYPE_DELIVERY,
             self::DISCOUNT_TYPE_CART_TOTAL,
             self::DISCOUNT_TYPE_MASTERCLASS,
-            self::DISCOUNT_TYPE_ANY_MASTERCLASS
+            self::DISCOUNT_TYPE_ANY_MASTERCLASS,
         ];
     }
 
@@ -210,9 +229,7 @@ class Discount extends AbstractModel
     }
 
     /**
-     * @param int $discountType
      * @param array $discountConditions
-     * @param bool $isPromo
      * @return int|null
      */
     public static function getExternalType(int $discountType, array $discountConditions, bool $isPromo)
@@ -350,11 +367,6 @@ class Discount extends AbstractModel
             || (isset($this->end_date) && $now->gt($this->end_date));
     }
 
-    /**
-     * @param Builder $query
-     * @param $roleId
-     * @return Builder
-     */
     public function scopeForRoleId(Builder $query, int $roleId): Builder
     {
         return $query->whereHas('roles', function (Builder $query) use ($roleId) {
@@ -364,14 +376,10 @@ class Discount extends AbstractModel
 
     /**
      * Активные и доступные на заданную дату скидки
-     *
-     * @param Builder $query
-     * @param Carbon|null $date
-     * @return Builder
      */
     public function scopeActive(Builder $query, ?Carbon $date = null): Builder
     {
-        $date = $date ?? Carbon::now();
+        $date ??= Carbon::now();
         return $query
             ->where('status', self::STATUS_ACTIVE)
             ->where(function ($query) use ($date) {
@@ -383,8 +391,6 @@ class Discount extends AbstractModel
 
     /**
      * Скидки, которые могут быть показаны (рассчитаны) в каталоге
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeShowInCatalog(Builder $query): Builder
     {
@@ -399,7 +405,7 @@ class Discount extends AbstractModel
                 self::DISCOUNT_TYPE_CATEGORY,
                 self::DISCOUNT_TYPE_ANY_CATEGORY,
                 self::DISCOUNT_TYPE_MASTERCLASS,
-                self::DISCOUNT_TYPE_ANY_MASTERCLASS
+                self::DISCOUNT_TYPE_ANY_MASTERCLASS,
             ]);
     }
 
@@ -447,19 +453,19 @@ class Discount extends AbstractModel
                 DiscountCondition::create([
                     'discount_id' => $this->id,
                     'type' => DiscountCondition::DISCOUNT_SYNERGY,
-                    'condition' => [DiscountCondition::FIELD_SYNERGY => $thisSynergy]
+                    'condition' => [DiscountCondition::FIELD_SYNERGY => $thisSynergy],
                 ]);
             } else {
                 DiscountCondition::create([
                     'discount_id' => $otherId,
                     'type' => DiscountCondition::DISCOUNT_SYNERGY,
-                    'condition' => [DiscountCondition::FIELD_SYNERGY => $otherSynergy]
+                    'condition' => [DiscountCondition::FIELD_SYNERGY => $otherSynergy],
                 ]);
             }
 
             DB::commit();
             return true;
-        } catch (\Exception $ex) {
+        } catch (\Throwable $ex) {
             DB::rollBack();
             return false;
         }
@@ -468,7 +474,6 @@ class Discount extends AbstractModel
     /**
      * Проверяет корректные ли данные хранятся в сущности Discount
      * (не проверяет корректность связанных сущностей)
-     * @return bool
      */
     public function validate(): bool
     {
@@ -486,10 +491,10 @@ class Discount extends AbstractModel
                 self::DISCOUNT_TYPE_DELIVERY,
                 self::DISCOUNT_TYPE_CART_TOTAL,
                 self::DISCOUNT_TYPE_MASTERCLASS,
-                self::DISCOUNT_TYPE_ANY_MASTERCLASS
+                self::DISCOUNT_TYPE_ANY_MASTERCLASS,
             ]) && in_array($this->value_type, [
                 self::DISCOUNT_VALUE_TYPE_PERCENT,
-                self::DISCOUNT_VALUE_TYPE_RUB
+                self::DISCOUNT_VALUE_TYPE_RUB,
             ]) && (
                 $this->value_type == self::DISCOUNT_VALUE_TYPE_RUB || $this->value <= 100
             ) && in_array($this->status, [
@@ -498,7 +503,7 @@ class Discount extends AbstractModel
                 self::STATUS_ON_CHECKING,
                 self::STATUS_REJECTED,
                 self::STATUS_PAUSED,
-                self::STATUS_EXPIRED
+                self::STATUS_EXPIRED,
             ]) && (
                 !isset($this->start_date)
                 || !isset($this->end_date)
@@ -522,50 +527,54 @@ class Discount extends AbstractModel
             /** @var CustomerService */
             $customerService = app(CustomerService::class);
 
-            $operators = $operatorService->operators((new RestQuery)->setFilter('merchant_id', '=', $discount->merchant_id));
+            $operators = $operatorService->operators((new RestQuery())->setFilter('merchant_id', '=', $discount->merchant_id));
 
             [$type, $data] = (function () use ($discount) {
                 switch ($discount->status) {
-                    case static::STATUS_CREATED:
+                    case self::STATUS_CREATED:
                         return ['marketingskidka_sozdana', []];
-                    case static::STATUS_SENT:
+                    case self::STATUS_SENT:
                         return ['marketingskidka_otpravlena_na_soglasovanie', []];
-                    case static::STATUS_ON_CHECKING:
+                    case self::STATUS_ON_CHECKING:
                         return ['marketingskidka_na_soglasovanii', []];
-                    case static::STATUS_ACTIVE:
+                    case self::STATUS_ACTIVE:
                         return ['marketingskidka_aktivna', [
-                            'NAME_DISCOUNT' => $discount->name
-                        ]];
-                    case static::STATUS_REJECTED:
+                            'NAME_DISCOUNT' => $discount->name,
+                        ],
+                        ];
+                    case self::STATUS_REJECTED:
                         return ['marketingskidka_otklonena', [
-                            'NAME_DISCOUNT' => $discount->name
-                        ]];
-                    case static::STATUS_PAUSED:
+                            'NAME_DISCOUNT' => $discount->name,
+                        ],
+                        ];
+                    case self::STATUS_PAUSED:
                         return ['marketingskidka_priostanovlena', [
-                            'NAME_DISCOUNT' => $discount->name
-                        ]];
-                    case static::STATUS_EXPIRED:
+                            'NAME_DISCOUNT' => $discount->name,
+                        ],
+                        ];
+                    case self::STATUS_EXPIRED:
                         return ['marketingskidka_zavershena', [
-                            'NAME_DISCOUNT' => $discount->name
-                        ]];
+                            'NAME_DISCOUNT' => $discount->name,
+                        ],
+                        ];
                     default:
                         return ['', []];
                 }
             })();
 
-            if($discount->status == static::STATUS_CREATED) {
+            if ($discount->status == self::STATUS_CREATED) {
                 $serviceNotificationService->sendToAdmin('aozskidkaskidka_sozdana');
             } else {
                 $serviceNotificationService->sendToAdmin('aozskidkaskidka_izmenena');
             }
 
-            if($discount->status != $discount->getOriginal('status')) {
-                foreach($operators as $operator) {
+            if ($discount->status != $discount->getOriginal('status')) {
+                foreach ($operators as $operator) {
                     $serviceNotificationService->send($operator->user_id, $type, $data);
                 }
             }
 
-            if($discount->value != $discount->getOriginal('value') || $discount->wasRecentlyCreated) {
+            if ($discount->value != $discount->getOriginal('value') || $discount->wasRecentlyCreated) {
                 $sentIds = [];
 
                 $discount
@@ -581,15 +590,15 @@ class Discount extends AbstractModel
                         $role->each(function ($user) use ($serviceNotificationService, $discount, &$sentIds) {
                             $sentIds[] = $user->id;
 
-                            if($discount->value_type == Discount::DISCOUNT_VALUE_TYPE_PERCENT) {
+                            if ($discount->value_type == Discount::DISCOUNT_VALUE_TYPE_PERCENT) {
                                 $type = '%';
                             } else {
                                 $type = ' руб.';
                             }
 
                             $serviceNotificationService->send($user->id, 'sotrudnichestvouroven_personalnoy_skidki_izmenen', [
-                                'LVL_DISCOUNT' => sprintf("%s%s", $discount->value, $type),
-                                'CUSTOMER_NAME' => $user->first_name
+                                'LVL_DISCOUNT' => sprintf('%s%s', $discount->value, $type),
+                                'CUSTOMER_NAME' => $user->first_name,
                             ]);
                         });
                     });
@@ -624,15 +633,15 @@ class Discount extends AbstractModel
                         return !in_array($userDto->id, $sentIds);
                     })
                     ->each(function (UserDto $userDto) use ($serviceNotificationService, $discount) {
-                        if($discount->value_type == Discount::DISCOUNT_VALUE_TYPE_PERCENT) {
+                        if ($discount->value_type == Discount::DISCOUNT_VALUE_TYPE_PERCENT) {
                             $type = '%';
                         } else {
                             $type = ' руб.';
                         }
 
                         $serviceNotificationService->send($userDto->id, 'sotrudnichestvouroven_personalnoy_skidki_izmenen', [
-                            'LVL_DISCOUNT' => sprintf("%s%s", $discount->value, $type),
-                            'CUSTOMER_NAME' => $userDto->first_name
+                            'LVL_DISCOUNT' => sprintf('%s%s', $discount->value, $type),
+                            'CUSTOMER_NAME' => $userDto->first_name,
                         ]);
                     });
             }
@@ -706,7 +715,6 @@ class Discount extends AbstractModel
                 default:
                     break;
             }
-
         }
     }
 }

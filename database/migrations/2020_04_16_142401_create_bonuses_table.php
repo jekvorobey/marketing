@@ -16,13 +16,13 @@ class CreateBonusesTable extends Migration
         Schema::create('bonuses', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('name', 255); /** Название скидки */
-            $table->tinyInteger('status')->unsigned();  /** Статус скидки */
+            $table->tinyInteger('status')->unsigned(); /** Статус скидки */
             $table->tinyInteger('type')->unsigned(); /** Тип бонуса */
             $table->integer('value')->unsigned(); /** Размер бонуса */
             $table->tinyInteger('value_type')->unsigned(); /** Тип значения: проценты или рубли */
             $table->integer('valid_period')->unsigned()->nullable(); /** Срок жизни бонусов (в днях) */
-            $table->date('start_date')->nullable();  /** Срок действия от */
-            $table->date('end_date')->nullable();  /** Срок действия до */
+            $table->date('start_date')->nullable(); /** Срок действия от */
+            $table->date('end_date')->nullable(); /** Срок действия до */
             $table->boolean('promo_code_only'); /** Доступны только по промокоду */
             $table->timestamps();
         });
@@ -50,7 +50,7 @@ class CreateBonusesTable extends Migration
             $table->foreign('bonus_id')
                 ->references('id')
                 ->on('bonuses')
-                ->onDelete('cascade');;
+                ->onDelete('cascade');
         });
 
         Schema::create('bonus_categories', function (Blueprint $table) {

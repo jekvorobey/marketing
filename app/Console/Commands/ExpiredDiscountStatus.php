@@ -16,7 +16,6 @@ class ExpiredDiscountStatus extends Command
     /** @var string */
     protected $description = 'Приостановить скидки, у которых истёк период действия';
 
-
     /**
      * Вместо массового обновления меняем статус в цикле (нужно для логирования изменений)
      */

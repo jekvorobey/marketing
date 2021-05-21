@@ -27,9 +27,9 @@ use Pim\Core\PimException;
  */
 class DiscountsTableSeeder extends Seeder
 {
-    const FAKER_SEED = 123456;
+    public const FAKER_SEED = 123456;
 
-    const DISCOUNT_SIZE = 200;
+    public const DISCOUNT_SIZE = 200;
 
     /** @var \Faker\Generator */
     protected $faker;
@@ -59,7 +59,7 @@ class DiscountsTableSeeder extends Seeder
     protected $regions;
 
     /** @var array */
-    protected  $customerIds;
+    protected $customerIds;
 
     /** @var array */
     protected $discountIds;
@@ -137,7 +137,7 @@ class DiscountsTableSeeder extends Seeder
                 Discount::DISCOUNT_VALUE_TYPE_RUB,
             ]);
 
-            $discount->value = ($discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB)
+            $discount->value = $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB
                 ? $discount->value = $this->faker->numberBetween(10, 1000)
                 : $discount->value = $this->faker->numberBetween(5, 20);
 
@@ -164,9 +164,6 @@ class DiscountsTableSeeder extends Seeder
         }
     }
 
-    /**
-     * @param Discount $discount
-     */
     protected function seedRelations(Discount $discount)
     {
         $this->seedForTypes($discount);
@@ -174,9 +171,6 @@ class DiscountsTableSeeder extends Seeder
         $this->seedForCondition($discount);
     }
 
-    /**
-     * @param Discount $discount
-     */
     protected function seedForTypes(Discount $discount)
     {
         switch ($discount->type) {
@@ -243,15 +237,12 @@ class DiscountsTableSeeder extends Seeder
         }
     }
 
-    /**
-     * @param Discount $discount
-     */
     protected function seedForUser(Discount $discount)
     {
         if ($this->faker->boolean(10)) {
             $userRole = $this->faker->randomElement([
                 UserDto::SHOWCASE__PROFESSIONAL,
-                UserDto::SHOWCASE__REFERRAL_PARTNER
+                UserDto::SHOWCASE__REFERRAL_PARTNER,
             ]);
             $this->createDiscountUserRole($discount->id, $userRole);
         }
@@ -263,7 +254,6 @@ class DiscountsTableSeeder extends Seeder
     }
 
     /**
-     * @param Discount $discount
      * @todo
      */
     protected function seedForCondition(Discount $discount)
@@ -302,7 +292,7 @@ class DiscountsTableSeeder extends Seeder
                 DiscountCondition::MIN_PRICE_BRAND,
                 [
                     DiscountCondition::FIELD_MIN_PRICE => $this->faker->numberBetween(1000, 10000),
-                    DiscountCondition::FIELD_BRANDS => $brands
+                    DiscountCondition::FIELD_BRANDS => $brands,
                 ]
             );
         }
@@ -316,7 +306,7 @@ class DiscountsTableSeeder extends Seeder
                 DiscountCondition::MIN_PRICE_CATEGORY,
                 [
                     DiscountCondition::FIELD_MIN_PRICE => $this->faker->numberBetween(1000, 10000),
-                    DiscountCondition::FIELD_CATEGORIES => $categoryIds
+                    DiscountCondition::FIELD_CATEGORIES => $categoryIds,
                 ]
             );
         }
@@ -328,7 +318,7 @@ class DiscountsTableSeeder extends Seeder
                 DiscountCondition::EVERY_UNIT_PRODUCT,
                 [
                     DiscountCondition::FIELD_OFFER => $this->faker->randomElement($this->offerIds),
-                    DiscountCondition::FIELD_COUNT => $this->faker->numberBetween(1, 10)
+                    DiscountCondition::FIELD_COUNT => $this->faker->numberBetween(1, 10),
                 ]
             );
         }
@@ -382,8 +372,10 @@ class DiscountsTableSeeder extends Seeder
         }
 
         /** Взаимодействия с другими маркетинговыми инструментами */
-        if ($discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER ||
-            $discount->type === Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS) {
+        if (
+            $discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER ||
+            $discount->type === Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS
+        ) {
             # todo отсутсвует реализация бандлов
             $count = $this->faker->numberBetween(1, 10);
             $this->createDiscountCondition(
@@ -406,8 +398,6 @@ class DiscountsTableSeeder extends Seeder
     }
 
     /**
-     * @param int $discountId
-     * @param int $type
      * @param array|null $condition
      * @return bool
      */
@@ -421,8 +411,6 @@ class DiscountsTableSeeder extends Seeder
     }
 
     /**
-     * @param int $discountId
-     * @param int $roleId
      * @return bool
      */
     protected function createDiscountUserRole(int $discountId, int $roleId)
@@ -434,8 +422,6 @@ class DiscountsTableSeeder extends Seeder
     }
 
     /**
-     * @param int $discountId
-     * @param int $segmentId
      * @return bool
      */
     protected function createDiscountSegment(int $discountId, int $segmentId)
@@ -462,7 +448,6 @@ class DiscountsTableSeeder extends Seeder
     }
 
     /**
-     * @param int $discountId
      * @param int $itemId - id оффера или мастеркласса
      * @return bool
      */
@@ -503,4 +488,3 @@ class DiscountsTableSeeder extends Seeder
         return $discountCategory->save();
     }
 }
-

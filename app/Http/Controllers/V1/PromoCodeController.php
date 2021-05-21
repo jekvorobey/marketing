@@ -39,7 +39,7 @@ class PromoCodeController extends Controller
         return response()->json([
             'items' => $this->modifyQuery($request, PromoCode::query())
                 ->orderBy('id', $request->get('sortDirection') === 'asc' ? 'asc' : 'desc')
-                ->get()
+                ->get(),
         ]);
     }
 
@@ -104,7 +104,7 @@ class PromoCodeController extends Controller
 
         try {
             $data = $this->validate(request(), $rules);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             throw new HttpException(400, $e->getMessage());
         }
 
@@ -118,7 +118,7 @@ class PromoCodeController extends Controller
         } catch (HttpException $e) {
             DB::rollBack();
             throw $e;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
             throw new HttpException(500, $e->getMessage());
         }
@@ -152,19 +152,17 @@ class PromoCodeController extends Controller
     public function check()
     {
         $data = $this->validate(request(), [
-            'code' => 'required|string|max:32'
+            'code' => 'required|string|max:32',
         ]);
         $item = PromoCode::query()->where('code', $data['code'])->first();
         $item ? $status = 'error' : $status = 'ok';
 
         return response()->json([
-            'status' => $status
+            'status' => $status,
         ], 200);
     }
 
     /**
-     * @param Request $request
-     * @param Builder $query
      * @return Builder
      */
     protected function modifyQuery(Request $request, Builder $query)
@@ -175,7 +173,7 @@ class PromoCodeController extends Controller
         $filter = $request->get('filter', []);
         if ($params['page'] > 0 && $params['perPage'] > 0) {
             $offset = ($params['page'] - 1) * $params['perPage'];
-            $query->offset($offset)->limit((int)$params['perPage']);
+            $query->offset($offset)->limit((int) $params['perPage']);
         }
 
         foreach ($filter as $key => $value) {
@@ -188,8 +186,12 @@ class PromoCodeController extends Controller
                 case 'status':
                     if (is_array($value)) {
                         $values = collect($value);
-                        $includeNull = $values->filter(function ($v) { return $v <= 0; })->isNotEmpty();
-                        $ids = $values->filter(function ($v) { return $v > 0; });
+                        $includeNull = $values->filter(function ($v) {
+                            return $v <= 0;
+                        })->isNotEmpty();
+                        $ids = $values->filter(function ($v) {
+                            return $v > 0;
+                        });
                         $query->where(function (Builder $query) use ($ids, $key, $includeNull) {
                             if ($ids->isNotEmpty()) {
                                 $query->whereIn($key, $ids);
@@ -200,7 +202,7 @@ class PromoCodeController extends Controller
                             }
                         });
                     } else {
-                        $query->where($key, (int)$value);
+                        $query->where($key, (int) $value);
                     }
                     break;
             }

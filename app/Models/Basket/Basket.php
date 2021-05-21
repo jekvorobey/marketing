@@ -71,14 +71,14 @@ class Basket implements \JsonSerializable
 
         @([
             'referal_code' => $basket->referalCode,
-            'deliveries'   => $basket->deliveries,
-            'pay_method'   => $basket->payMethod,
-            'marketing'    => $marketing,
-            'items'        => $items
+            'deliveries' => $basket->deliveries,
+            'pay_method' => $basket->payMethod,
+            'marketing' => $marketing,
+            'items' => $items,
         ] = $data);
 
-        $basket->promoCode    = $marketing['promoCode'] ?? '';
-        $basket->bonus        = $marketing['bonus'] ?? 0;
+        $basket->promoCode = $marketing['promoCode'] ?? '';
+        $basket->bonus = $marketing['bonus'] ?? 0;
         $basket->certificates = $marketing['certificates'] ?? [];
 
         if (!$items) {
@@ -88,12 +88,12 @@ class Basket implements \JsonSerializable
 
         foreach ($items as $itemData) {
             [
-                'id'          => $id,
-                'qty'         => $qty,
-                'offer_id'    => $offerId,
+                'id' => $id,
+                'qty' => $qty,
+                'offer_id' => $offerId,
                 'category_id' => $categoryId,
-                'brand_id'    => $brandId,
-                'bundle_id'    => $bundleId,
+                'brand_id' => $brandId,
+                'bundle_id' => $bundleId,
             ] = $itemData;
             $basket->items[] = new BasketItem($id, $qty, $offerId, $categoryId, $brandId, $bundleId);
         }
@@ -101,9 +101,9 @@ class Basket implements \JsonSerializable
         return $basket;
     }
 
-    public function __construct(int $userId, $userRegionFiasId=null)
+    public function __construct(int $userId, $userRegionFiasId = null)
     {
-        $this->user             = $userId;
+        $this->user = $userId;
         $this->userRegionFiasId = $userRegionFiasId;
 
         $option = Option::query()->where('key', Option::KEY_BONUS_PER_RUBLES)->first();
@@ -132,7 +132,7 @@ class Basket implements \JsonSerializable
                     'qty' => $qty,
                     'bundles' => $bundleQty,
                 ];
-        });
+            });
 
         $calculation = (new CheckoutCalculatorBuilder())
             ->customer(['id' => $this->user])
@@ -145,9 +145,9 @@ class Basket implements \JsonSerializable
             ->calculate();
 
         $this->appliedPromoCodes = $calculation['promoCodes'];
-        $this->appliedDiscounts  = $calculation['discounts'];
-        $this->appliedBonuses    = $calculation['bonuses'];
-        $this->deliveries        = $calculation['deliveries'];
+        $this->appliedDiscounts = $calculation['discounts'];
+        $this->appliedBonuses = $calculation['bonuses'];
+        $this->deliveries = $calculation['deliveries'];
         $this->maxSpendableBonus = $calculation['maxSpendableBonus'];
 
         $totalCost = 0;
@@ -182,7 +182,7 @@ class Basket implements \JsonSerializable
                 $bonusDiscount = ($offer['bonusDiscount'] ?? 0);// * $qty;
             }
 
-            $offer['cost'] = $offer['cost'] ?? $price;
+            $offer['cost'] ??= $price;
             $item->cost = $offer['cost'];
             $item->totalCost = $offer['cost'] * $qty;
             $item->discount = $discount * $qty;
@@ -233,7 +233,7 @@ class Basket implements \JsonSerializable
         // Если общая цена получилась с копейками
         // => уменьшаем общую возможную оплату сертификатами на кол-во оплачиваемых элементов корзины
         // т.е. по рублю за штуку
-        $this->maxSpendableCertificates = (boolval(($totalCost * 100) % 100))
+        $this->maxSpendableCertificates = boolval(($totalCost * 100) % 100)
             ? (int) $totalCost - $paidItemsAmount
             : (int) $totalCost;
 
@@ -260,11 +260,11 @@ class Basket implements \JsonSerializable
         return $this->discountByCertificates;
     }
 
-    private function getAppliedCertificates(array $certificates, int $maxDiscount) : array
+    private function getAppliedCertificates(array $certificates, int $maxDiscount): array
     {
         $response = [
             'certificates' => [],
-            'discount' => 0
+            'discount' => 0,
         ];
 
         foreach ($certificates as $certificate) {
