@@ -194,7 +194,7 @@ class InputCalculator
         }
 
         $this->bundles = $this->offers->pluck('bundles')
-            ->map(function ($bundles, $key) {
+            ->map(function ($bundles) {
                 return $bundles->keys();
             })
             ->collapse()

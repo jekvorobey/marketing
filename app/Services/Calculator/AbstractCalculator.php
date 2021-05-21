@@ -15,18 +15,25 @@ abstract class AbstractCalculator
 
     /** Цена для бесплатной доставки */
     public const FREE_DELIVERY_PRICE = 0;
+
     /** Самая низкая возможная цена (1 рубль) */
     public const LOWEST_POSSIBLE_PRICE = 1;
+
     /** Наименьшая возможная цена на мастер-класс */
     public const LOWEST_MASTERCLASS_PRICE = 0;
+
     /** Максимально возможная скидка в процентах */
     public const HIGHEST_POSSIBLE_PRICE_PERCENT = 100;
+
     /** отношение бонуса к рублю */
     public const DEFAULT_BONUS_PER_RUBLES = 1;
+
     /** сколько процентов стоимости товара можно оплатить бонусами */
     public const DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT = 100;
+
     /** сколько процентов стоимости товара со скидкой можно оплатить бонусами */
     public const DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_DISCOUNT_PRODUCT = 100;
+
     /** сколько процентов стоимости заказа можно оплатить бонусами */
     public const DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_ORDER = 100;
 

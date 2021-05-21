@@ -45,7 +45,7 @@ class DiscountController extends Controller
     /**
      * @return JsonResponse
      */
-    public function count(Request $request, RequestInitiator $client)
+    public function count(Request $request)
     {
         $query = Discount::query();
         $total = $this->modifyQuery($request, $query)->count();
@@ -296,7 +296,7 @@ class DiscountController extends Controller
      *
      * @return JsonResponse
      */
-    public function calculate(Request $request, RequestInitiator $client)
+    public function calculate(Request $request)
     {
         $customer = collect($request->post('customer', []));
         $offers = collect($request->post('offers', []));

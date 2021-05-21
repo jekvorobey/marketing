@@ -30,5 +30,6 @@ class RemoveCertificateTables extends Migration
      */
     public function down()
     {
+        //
     }
 }

@@ -258,7 +258,7 @@ class DiscountCalculator extends AbstractCalculator
             case Discount::DISCOUNT_TYPE_ANY_BUNDLE:
                 # Скидка на бандлы
                 # Определяем id офферов по бандлам
-                /** @var Collection $bundleIds */
+                /** @phpcsSuppress SlevomatCodingStandard.Functions.UnusedParameter */
                 $offerIds = $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER ||
                     $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS
                     ? $this->relations['bundleItems'][$discount->id]->pluck('item_id')

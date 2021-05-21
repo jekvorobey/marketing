@@ -7,7 +7,6 @@ use App\Models\Discount\DiscountSegment;
 use App\Models\Discount\DiscountUserRole;
 use App\Models\Price\Price;
 use App\Services\Calculator\Catalog\CatalogCalculator;
-use Greensight\CommonMsa\Services\RequestInitiator\RequestInitiator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -22,7 +21,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  */
 class PriceController extends Controller
 {
-    protected function read(Request $request, RequestInitiator $client)
+    protected function read(Request $request)
     {
         try {
             $params = $request->validate([
@@ -276,7 +275,7 @@ class PriceController extends Controller
             $prices = $discountPriceCalculator->calculate();
 
             $prices = collect($prices)->keyBy('offer_id')
-                ->map(function ($item, $key) {
+                ->map(function ($item) {
                     return $item['price'];
                 })
                 ->all();

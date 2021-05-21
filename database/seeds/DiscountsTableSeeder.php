@@ -477,10 +477,9 @@ class DiscountsTableSeeder extends Seeder
     /**
      * @param $discountId
      * @param $categoryId
-     * @param int $except
      * @return bool
      */
-    protected function createDiscountCategory($discountId, $categoryId, $except = 0)
+    protected function createDiscountCategory($discountId, $categoryId)
     {
         $discountCategory = new DiscountCategory();
         $discountCategory->discount_id = $discountId;

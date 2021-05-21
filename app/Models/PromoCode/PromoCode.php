@@ -287,10 +287,10 @@ class PromoCode extends AbstractModel
             if ($item->owner_id) {
                 $serviceNotificationService = app(ServiceNotificationService::class);
 
-                /** @var UserService */
+                /** @var UserService $userService */
                 $userService = app(UserService::class);
 
-                /** @var CustomerService */
+                /** @var CustomerService $customerService */
                 $customerService = app(CustomerService::class);
 
                 $customer = $customerService->customers(

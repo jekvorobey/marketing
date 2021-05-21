@@ -521,10 +521,10 @@ class Discount extends AbstractModel
             $operatorService = app(OperatorService::class);
             $serviceNotificationService = app(ServiceNotificationService::class);
 
-            /** @var UserService */
+            /** @var UserService $userService */
             $userService = app(UserService::class);
 
-            /** @var CustomerService */
+            /** @var CustomerService $customerService */
             $customerService = app(CustomerService::class);
 
             $operators = $operatorService->operators((new RestQuery())->setFilter('merchant_id', '=', $discount->merchant_id));

@@ -220,10 +220,10 @@ class DiscountCondition extends AbstractModel
             if ($item->type == self::CUSTOMER) {
                 $serviceNotificationService = app(ServiceNotificationService::class);
 
-                /** @var UserService */
+                /** @var UserService $userService */
                 $userService = app(UserService::class);
 
-                /** @var CustomerService */
+                /** @var CustomerService $customerService */
                 $customerService = app(CustomerService::class);
 
                 collect($item->getCustomerIds())
