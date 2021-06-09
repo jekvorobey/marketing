@@ -55,13 +55,20 @@ class PromoCodeCalculator extends AbstractCalculator
                 $this->input->promoCodeDiscount = $discount;
                 $discountCalculator = new DiscountCalculator($this->input, $this->output);
                 $discountCalculator->calculate();
-                $outputDiscount = $this->output->appliedDiscounts->filter(function ($item) use ($discount) {
-                    return $item['id'] === $discount->id;
-                })->first();
+                if ($this->output->appliedDiscounts->count() != 0) {
+                    $outputDiscount = $this->output->appliedDiscounts->filter(function ($item) use ($discount) {
+                        return $item['id'] === $discount->id;
+                    })->first();
 
-                $isApply = !empty($outputDiscount);
-                $change = $isApply ? $outputDiscount['change'] : 0;
-                $discountCalculator->forceRollback();
+                    $isApply = !empty($outputDiscount);
+                    $change = $isApply ? $outputDiscount['change'] : 0;
+                    $discountCalculator->forceRollback();
+                } else {
+                    $isApply = true;
+                    $change = ($discount->value_type == Discount::DISCOUNT_VALUE_TYPE_RUB)
+                        ? $discount->value
+                        : self::round($this->input->offers->sum('price') / 100 * $discount->value);
+                }
                 break;
             case PromoCode::TYPE_DELIVERY:
                 // Мерчант не может изменять стоимость доставки
@@ -88,6 +95,7 @@ class PromoCodeCalculator extends AbstractCalculator
                         $this->input->deliveries['items'][$k] = $delivery;
                     }
                 }
+                $isApply = true; // нужно, чтобы промокод применялся в корзине
                 break;
             case PromoCode::TYPE_GIFT:
                 // todo

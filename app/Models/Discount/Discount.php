@@ -15,6 +15,7 @@ use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\Customer\Services\CustomerService\CustomerService;
 use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationService;
 use MerchantManagement\Services\OperatorService\OperatorService;
+use MerchantManagement\Dto\OperatorDto;
 use Pim\Services\SearchService\SearchService;
 
 /**
@@ -516,7 +517,7 @@ class Discount extends AbstractModel
         parent::boot();
 
         self::saved(function (self $discount) {
-            $discount->updatePimContents();
+            // $discount->updatePimContents();
 
             $operatorService = app(OperatorService::class);
             $serviceNotificationService = app(ServiceNotificationService::class);
@@ -527,7 +528,11 @@ class Discount extends AbstractModel
             /** @var CustomerService $customerService */
             $customerService = app(CustomerService::class);
 
-            $operators = $operatorService->operators((new RestQuery())->setFilter('merchant_id', '=', $discount->merchant_id));
+            $operators = $operatorService->operators((new RestQuery)->setFilter('merchant_id', '=', $discount->merchant_id))->filter(function (OperatorDto $operator) use ($userService) {
+                return $userService->userRoles($operator->user_id)
+                    ->where('id', 202)
+                    ->isNotEmpty();
+            });
 
             [$type, $data] = (function () use ($discount) {
                 switch ($discount->status) {
@@ -661,6 +666,10 @@ class Discount extends AbstractModel
 
             $serviceNotificationService = app(ServiceNotificationService::class);
             $serviceNotificationService->sendToAdmin('aozskidkaskidka_udalena');
+        });
+
+        self::updated(function (self $discount) {
+            $discount->updatePimContents();
         });
     }
 
