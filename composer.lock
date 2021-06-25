@@ -4,8 +4,61 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9c77f5c19f9c6ce1d9395bf9702216a6",
+    "content-hash": "10b6267e2638b228e1c63a94588fa570",
     "packages": [
+        {
+            "name": "cubesystems/laravel-health-check",
+            "version": "1.2.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/cubesystems/laravel-health-check.git",
+                "reference": "504735e52eff72c818a398825f10c54c24d0970e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/cubesystems/laravel-health-check/zipball/504735e52eff72c818a398825f10c54c24d0970e",
+                "reference": "504735e52eff72c818a398825f10c54c24d0970e",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/bus": "~5.0|~6.0|~7.0|~8.0",
+                "illuminate/console": "~5.0|~6.0|~7.0|~8.0",
+                "illuminate/database": "~5.0|~6.0|~7.0|~8.0",
+                "illuminate/queue": "~5.0|~6.0|~7.0|~8.0",
+                "illuminate/routing": "~5.0|~6.0|~7.0|~8.0",
+                "illuminate/support": "~5.0|~6.0|~7.0|~8.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "CubeSystems\\HealthCheck\\HealthCheckServiceProvider"
+                    ],
+                    "aliases": []
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "CubeSystems\\HealthCheck\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Miks Mikelsons",
+                    "email": "miks@cubesystems.lv"
+                }
+            ],
+            "description": "Adds Liveness and Readiness Probes in the Laravel application",
+            "support": {
+                "issues": "https://github.com/cubesystems/laravel-health-check/issues",
+                "source": "https://github.com/cubesystems/laravel-health-check/tree/1.2.1"
+            },
+            "time": "2021-03-24T12:15:46+00:00"
+        },
         {
             "name": "dnoegel/php-xdg-base-dir",
             "version": "v0.1.1",
@@ -6751,11 +6804,11 @@
     "minimum-stability": "dev",
     "stability-flags": {
         "iwengo/ibt-cm-lib": 20,
-        "iwengo/ibt-oms-lib": 20,
-        "iwengo/ibt-logistics-lib": 20,
         "iwengo/ibt-common-lib": 20,
+        "iwengo/ibt-logistics-lib": 20,
         "iwengo/ibt-merchant-management-lib": 20,
         "iwengo/ibt-message-lib": 20,
+        "iwengo/ibt-oms-lib": 20,
         "iwengo/ibt-pim-lib": 20
     },
     "prefer-stable": true,
