@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "48e97f3734af18e98f5513f4a02029e5",
+    "content-hash": "a028b5dd5188add5f0fd6711cb7c280a",
     "packages": [
         {
             "name": "clue/stream-filter",
@@ -1550,7 +1550,7 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "git@git.yiilab.com:ibt.studio/laravel-health-check.git",
+                "url": "git@git.yiilab.com:maxim.kyprov/laravel-health-check.git",
                 "reference": "e3aec2e50a58542bc405ac81c2b36cf2f75842ab"
             },
             "require": {
