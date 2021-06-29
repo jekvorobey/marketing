@@ -183,7 +183,6 @@ return [
         \Greensight\Oms\OmsLibServiceProvider::class,
         \MerchantManagement\MerchantLibServiceProvider::class,
         \Pim\PimLibServiceProvider::class,
-        App\Providers\SentryServiceProvider::class,
     ],
 
     /*
