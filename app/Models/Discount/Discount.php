@@ -528,11 +528,15 @@ class Discount extends AbstractModel
             /** @var CustomerService $customerService */
             $customerService = app(CustomerService::class);
 
-            $operators = $operatorService->operators((new RestQuery)->setFilter('merchant_id', '=', $discount->merchant_id))->filter(function (OperatorDto $operator) use ($userService) {
-                return $userService->userRoles($operator->user_id)
-                    ->where('id', 202)
-                    ->isNotEmpty();
-            });
+            $operators = $operatorService->operators(
+                (new RestQuery())->setFilter('merchant_id', '=', $discount->merchant_id)
+            )->filter(
+                function (OperatorDto $operator) use ($userService) {
+                    return $userService->userRoles($operator->user_id)
+                        ->where('id', 202)
+                        ->isNotEmpty();
+                }
+            );
 
             [$type, $data] = (function () use ($discount) {
                 switch ($discount->status) {

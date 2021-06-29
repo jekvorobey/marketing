@@ -65,7 +65,7 @@ class PromoCodeCalculator extends AbstractCalculator
                     $discountCalculator->forceRollback();
                 } else {
                     $isApply = true;
-                    $change = ($discount->value_type == Discount::DISCOUNT_VALUE_TYPE_RUB)
+                    $change = $discount->value_type == Discount::DISCOUNT_VALUE_TYPE_RUB
                         ? $discount->value
                         : self::round($this->input->offers->sum('price') / 100 * $discount->value);
                 }
