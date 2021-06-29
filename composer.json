@@ -10,6 +10,10 @@
     "repositories": [
         {
             "type": "vcs",
+            "url": "git@git.yiilab.com:maxim.kyprov/laravel-health-check.git"
+        },
+        {
+            "type": "vcs",
             "url": "git@git.yiilab.com:ibt.studio/ibt-common-ms-code.git"
         },
         {
@@ -42,14 +46,16 @@
         "ext-json": "*",
         "fideloper/proxy": "^4.0",
         "iwengo/ibt-cm-lib": "dev-master-ylab as dev-master",
-        "iwengo/ibt-oms-lib": "dev-master-ylab as dev-master",
-        "iwengo/ibt-logistics-lib": "dev-master-ylab as dev-master",
         "iwengo/ibt-common-lib": "dev-master-ylab as dev-master",
+        "iwengo/ibt-logistics-lib": "dev-master-ylab as dev-master",
         "iwengo/ibt-merchant-management-lib": "dev-master-ylab as dev-master",
         "iwengo/ibt-message-lib": "dev-master-ylab as dev-master",
+        "iwengo/ibt-oms-lib": "dev-master-ylab as dev-master",
         "iwengo/ibt-pim-lib": "dev-master-ylab as dev-master",
         "laravel/framework": "5.8.*",
-        "laravel/tinker": "^1.0"
+        "laravel/tinker": "^1.0",
+        "letsgoi/laravel-health-check": "dev-master",
+        "sentry/sentry-laravel": "^2.7"
     },
     "require-dev": {
         "beyondcode/laravel-dump-server": "^1.0",
