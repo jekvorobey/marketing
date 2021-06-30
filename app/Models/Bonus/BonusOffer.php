@@ -22,11 +22,9 @@ class BonusOffer extends AbstractModel
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = ['bonus_id', 'offer_id', 'except'];
+    public const FILLABLE = ['bonus_id', 'offer_id', 'except'];
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $fillable = self::FILLABLE;
 
     public function bonus(): BelongsTo

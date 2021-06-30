@@ -7,13 +7,13 @@ use Pim\Services\OfferService\OfferService;
 
 class PricesSeeder extends Seeder
 {
-    const FAKER_SEED = 123456;
-    
+    public const FAKER_SEED = 123456;
+
     public function run()
     {
         $faker = Faker\Factory::create('ru_RU');
         $faker->seed(self::FAKER_SEED);
-        
+
         /** @var OfferService $offerService */
         $offerService = resolve(OfferService::class);
         $offers = $offerService->offers(new RestQuery());

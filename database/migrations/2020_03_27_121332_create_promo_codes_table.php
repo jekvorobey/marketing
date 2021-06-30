@@ -19,10 +19,11 @@ class CreatePromoCodesTable extends Migration
             $table->bigInteger('owner_id')->nullable(); /** РП, который промоутирует промокод */
             $table->string('name', 255); /** Название промокода */
             $table->string('code', 255)->unique(); /** Код */
-            $table->integer('counter')->nullable(); /** Ограничение на количество применений, null – ограничений нет */
-            $table->date('start_date')->nullable();  /** Срок действия от */
-            $table->date('end_date')->nullable();  /** Срок действия до */
-            $table->tinyInteger('status')->unsigned();  /** Статус промокода */
+            /** Ограничение на количество применений, null – ограничений нет */
+            $table->integer('counter')->nullable();
+            $table->date('start_date')->nullable(); /** Срок действия от */
+            $table->date('end_date')->nullable(); /** Срок действия до */
+            $table->tinyInteger('status')->unsigned(); /** Статус промокода */
             $table->tinyInteger('type')->unsigned(); /** Тип промокода */
             $table->bigInteger('discount_id')->unsigned()->nullable(); /** ID скидки */
             $table->bigInteger('gift_id')->unsigned()->nullable(); /** ID подарка */

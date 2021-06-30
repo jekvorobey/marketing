@@ -22,9 +22,9 @@ class CreateDiscountsTable extends Migration
             $table->tinyInteger('value_type')->unsigned(); /** Тип значения: проценты или рубли */
             $table->integer('value')->unsigned(); /** Значение */
             $table->tinyInteger('approval_status')->unsigned(); /** Статус заявки мерчанта на скидку */
-            $table->tinyInteger('status')->unsigned();  /** Статус скидки */
-            $table->date('start_date')->nullable();  /** Срок действия от */
-            $table->date('end_date')->nullable();  /** Срок действия до */
+            $table->tinyInteger('status')->unsigned(); /** Статус скидки */
+            $table->date('start_date')->nullable(); /** Срок действия от */
+            $table->date('end_date')->nullable(); /** Срок действия до */
             $table->boolean('promo_code_only'); /** Доступен только по промокоду */
             $table->timestamps();
         });
@@ -52,7 +52,7 @@ class CreateDiscountsTable extends Migration
             $table->foreign('discount_id')
                 ->references('id')
                 ->on('discounts')
-                ->onDelete('cascade');;
+                ->onDelete('cascade');
         });
 
         Schema::create('discount_categories', function (Blueprint $table) {
@@ -97,9 +97,9 @@ class CreateDiscountsTable extends Migration
         /** Условия возникновения скидки */
         Schema::create('discount_conditions', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->bigInteger('discount_id')->unsigned();  /** Скидка */
-            $table->bigInteger('type')->unsigned();         /** Тип условия */
-            $table->json('condition')->nullable();                      /** Услвоие */
+            $table->bigInteger('discount_id')->unsigned(); /** Скидка */
+            $table->bigInteger('type')->unsigned(); /** Тип условия */
+            $table->json('condition')->nullable(); /** Услвоие */
             $table->timestamps();
 
             $table->foreign('discount_id')

@@ -1,15 +1,13 @@
 <?php
 
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 use App\Models\Option\Option;
 
 class InsertDebitPercentageToOptionsTable extends Migration
 {
-    const MAX_DEBIT_PERCENTAGE_FOR_PRODUCT = 100;
-    const MAX_DEBIT_PERCENTAGE_FOR_ORDER = 100;
+    public const MAX_DEBIT_PERCENTAGE_FOR_PRODUCT = 100;
+    public const MAX_DEBIT_PERCENTAGE_FOR_ORDER = 100;
 
     /**
      * Run the migrations.

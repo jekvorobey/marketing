@@ -7,7 +7,6 @@ use App\Services\Calculator\Bonus\BonusCatalogCalculator;
 use App\Services\Calculator\Discount\DiscountCatalogCalculator;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
-use Illuminate\Support\Collection;
 use Pim\Core\PimException;
 
 /**
@@ -38,13 +37,13 @@ class CatalogCalculator extends AbstractCalculator
             unset($params['offer_ids']);
         }
 
-        $input  = new InputCalculator($params);
+        $input = new InputCalculator($params);
         $output = new OutputCalculator();
+
         parent::__construct($input, $output);
     }
 
     /**
-     * @param  bool  $checkPermissions
      * @return array
      */
     public function calculate(bool $checkPermissions = true)

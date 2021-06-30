@@ -23,8 +23,10 @@ class PromoCodeHelper
             throw new HttpException(400, 'PromoCode status error');
         }
 
-        if (isset($data['start_date']) && isset($data['end_date'])
-            && Carbon::parse($data['start_date'])->gt(Carbon::parse($data['end_date']))) {
+        if (
+            isset($data['start_date']) && isset($data['end_date'])
+            && Carbon::parse($data['start_date'])->gt(Carbon::parse($data['end_date']))
+        ) {
             throw new HttpException(400, 'PromoCode period error');
         }
 

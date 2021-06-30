@@ -11,7 +11,7 @@ use MerchantManagement\Services\MerchantService\MerchantService;
 
 class PromoCodesTableSeeder extends Seeder
 {
-    const FAKER_SEED = 123456;
+    public const FAKER_SEED = 123456;
 
     /** @var \Faker\Generator */
     protected $faker;
@@ -63,7 +63,7 @@ class PromoCodesTableSeeder extends Seeder
                 ? $this->faker->randomElement($this->merchantsIds)
                 : null;
 
-            $promo->owner_id = ($this->faker->boolean() && !empty($this->ownerIds) )
+            $promo->owner_id = $this->faker->boolean() && !empty($this->ownerIds)
                 ? $this->faker->randomElement($this->ownerIds)
                 : null;
 
@@ -131,7 +131,7 @@ class PromoCodesTableSeeder extends Seeder
         $this->customerIds = $customers->pluck('id')->values()->toArray();
         $this->ownerIds = $customers->filter(function ($customer) {
                 return isset($customer['referral_code']);
-            })->pluck('id')
+        })->pluck('id')
             ->values()
             ->toArray();
 

@@ -58,8 +58,6 @@ class CheckoutCalculatorBuilder
     }
 
     /**
-     * @param string|null $promoCode
-     *
      * @return CheckoutCalculatorBuilder
      */
     public function promoCode(?string $promoCode)
@@ -101,9 +99,6 @@ class CheckoutCalculatorBuilder
         return $this;
     }
 
-    /**
-     * @param int|null $bonus
-     */
     public function bonus(?int $bonus)
     {
         $this->params['bonus'] = $bonus ?? 0;

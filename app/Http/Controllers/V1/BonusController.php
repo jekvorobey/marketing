@@ -13,7 +13,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class BonusController extends Controller
 {
-    const FAILED_DEPENDENCY_CODE = 424;
+    public const FAILED_DEPENDENCY_CODE = 424;
 
     /**
      * @param $id
@@ -31,8 +31,6 @@ class BonusController extends Controller
     }
 
     /**
-     * @param Request $request
-     *
      * @return JsonResponse
      */
     public function read(Request $request)
@@ -45,7 +43,7 @@ class BonusController extends Controller
         return response()->json([
             'items' => Bonus::query()
                 ->orderBy('id', $request->get('sortDirection') === 'asc' ? 'asc' : 'desc')
-                ->get()
+                ->get(),
         ]);
     }
 
@@ -59,7 +57,7 @@ class BonusController extends Controller
             'type' => "numeric|{$required_rule}",
             'value' => "numeric|{$required_rule}",
             'value_type' => "numeric|{$required_rule}",
-            'valid_period' => "numeric|nullable",
+            'valid_period' => 'numeric|nullable',
             'start_date' => 'date|nullable',
             'end_date' => 'date|nullable',
             'promo_code_only' => "boolean|{$required_rule}",
@@ -76,8 +74,7 @@ class BonusController extends Controller
 
         try {
             $data = $this->validate(request(), $rules);
-
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             throw new HttpException(400, $e->getMessage());
         }
 
@@ -97,7 +94,7 @@ class BonusController extends Controller
         } catch (HttpException $e) {
             DB::rollBack();
             throw $e;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
             throw new HttpException(500, $e->getMessage());
         }

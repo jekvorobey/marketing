@@ -14,21 +14,19 @@ use App\Models\Hash;
  * @property int $ticket_type_id - ID типа билета на мастер-класс
  * @property-read Discount $discount
  * @mixin \Eloquent
- *
  */
 class DiscountPublicEvent extends AbstractModel
 {
     use Hash;
 
     protected $table = 'discount_public_events';
+
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = ['discount_id', 'ticket_type_id'];
+    public const FILLABLE = ['discount_id', 'ticket_type_id'];
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $fillable = self::FILLABLE;
 
     public function discount(): BelongsTo

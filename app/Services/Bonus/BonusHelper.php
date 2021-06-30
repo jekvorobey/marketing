@@ -37,8 +37,10 @@ class BonusHelper
             throw new HttpException(400, 'Bonus valid_period error');
         }
 
-        if (isset($data['start_date']) && isset($data['end_date'])
-            && Carbon::parse($data['start_date'])->gt(Carbon::parse($data['end_date']))) {
+        if (
+            isset($data['start_date']) && isset($data['end_date'])
+            && Carbon::parse($data['start_date'])->gt(Carbon::parse($data['end_date']))
+        ) {
             throw new HttpException(400, 'Bonus period error');
         }
 
@@ -46,8 +48,6 @@ class BonusHelper
     }
 
     /**
-     * @param Bonus $bonus
-     *
      * @return bool
      */
     public static function validateRelations(Bonus $bonus)
@@ -69,7 +69,7 @@ class BonusHelper
             case Bonus::TYPE_BRAND:
                 return $data['offers']->filter(function ($offer) {
                         return !$offer['except'];
-                    })->isEmpty()
+                })->isEmpty()
                     && $data['brands']->isNotEmpty()
                     && $data['categories']->isEmpty()
                     && $data['brands']->filter(function ($brand) {
@@ -78,7 +78,7 @@ class BonusHelper
             case Bonus::TYPE_CATEGORY:
                 return $data['offers']->filter(function ($offer) {
                         return !$offer['except'];
-                    })->isEmpty()
+                })->isEmpty()
                     && $data['brands']->filter(function ($brand) {
                         return !$brand['except'];
                     })->isEmpty()
@@ -98,7 +98,6 @@ class BonusHelper
     }
 
     /**
-     * @param Bonus $bonus
      * @param array $relations
      * @return bool
      */
@@ -115,14 +114,22 @@ class BonusHelper
             ));
         }
 
-        $diffs->map(function ($item) { return $item['removed']; })
+        $diffs->map(function ($item) {
+            return $item['removed'];
+        })
             ->map(function (Collection $items) {
-                $items->each(function (Model $model) { $model->delete(); });
+                $items->each(function (Model $model) {
+                    $model->delete();
+                });
             });
 
-        $diffs->map(function ($item) { return $item['added']; })
+        $diffs->map(function ($item) {
+            return $item['added'];
+        })
             ->map(function (Collection $items) {
-                $items->each(function (Model $model) { $model->save(); });
+                $items->each(function (Model $model) {
+                    $model->save();
+                });
             });
 
         return true;

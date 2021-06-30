@@ -14,7 +14,6 @@ use App\Models\Hash;
  * @property int $category_id
  * @property-read Discount $discount
  * @mixin \Eloquent
- *
  */
 class DiscountCategory extends AbstractModel
 {
@@ -23,11 +22,9 @@ class DiscountCategory extends AbstractModel
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = ['discount_id', 'category_id'];
+    public const FILLABLE = ['discount_id', 'category_id'];
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $fillable = self::FILLABLE;
 
     public function discount(): BelongsTo

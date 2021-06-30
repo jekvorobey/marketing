@@ -12,7 +12,7 @@ class OutputCalculator
     public $appliedDiscounts;
     public $appliedBonuses;
     public $maxSpendableBonus;
-    
+
     /**
      * OutputCalculator constructor.
      */

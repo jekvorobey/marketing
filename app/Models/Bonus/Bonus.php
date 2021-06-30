@@ -22,7 +22,7 @@ use Pim\Services\SearchService\SearchService;
  * @property int $valid_period # Срок жизни бонусов (в днях)
  * @property Carbon $start_date
  * @property Carbon $end_date
- * @property boolean $promo_code_only
+ * @property bool $promo_code_only
  *
  * @property-read Collection|BonusOffer[] $offers
  * @property-read Collection|BonusBrand[] $brands
@@ -34,49 +34,61 @@ class Bonus extends AbstractModel
      * Статус бонуса
      */
     /** Создана */
-    const STATUS_CREATED = 1;
+    public const STATUS_CREATED = 1;
+
     /** Активна */
-    const STATUS_ACTIVE = 2;
+    public const STATUS_ACTIVE = 2;
+
     /** Приостановлена */
-    const STATUS_PAUSED = 3;
+    public const STATUS_PAUSED = 3;
+
     /** Завершена */
-    const STATUS_EXPIRED = 4;
+    public const STATUS_EXPIRED = 4;
 
     /**
      * Тип бонуса
      */
     /** Бонус на оффер */
-    const TYPE_OFFER = 1;
+    public const TYPE_OFFER = 1;
+
     /** Бонус на бренд */
-    const TYPE_BRAND = 2;
+    public const TYPE_BRAND = 2;
+
     /** Бонус на категорию */
-    const TYPE_CATEGORY = 3;
+    public const TYPE_CATEGORY = 3;
+
     /** Бонус на услугу */
-    const TYPE_SERVICE = 4;
+    public const TYPE_SERVICE = 4;
+
     /** Бонус на сумму корзины */
-    const TYPE_CART_TOTAL = 5;
+    public const TYPE_CART_TOTAL = 5;
+
     /** Бонус на все офферы */
-    const TYPE_ANY_OFFER = 6;
+    public const TYPE_ANY_OFFER = 6;
+
     /** Бонус на все бренды */
-    const TYPE_ANY_BRAND = 7;
+    public const TYPE_ANY_BRAND = 7;
+
     /** Бонус на все категории */
-    const TYPE_ANY_CATEGORY = 8;
+    public const TYPE_ANY_CATEGORY = 8;
+
     /** Бонус на все услуги */
-    const TYPE_ANY_SERVICE = 9;
+    public const TYPE_ANY_SERVICE = 9;
 
     /** Тип значения – Проценты */
-    const VALUE_TYPE_PERCENT = 1;
-    /** Тип значения – Абсолютное значение (в бонусах) */
-    const VALUE_TYPE_ABSOLUTE = 2;
+    public const VALUE_TYPE_PERCENT = 1;
 
-    const BONUS_OFFER_RELATION = 'offers';
-    const BONUS_BRAND_RELATION = 'brands';
-    const BONUS_CATEGORY_RELATION = 'categories';
+    /** Тип значения – Абсолютное значение (в бонусах) */
+    public const VALUE_TYPE_ABSOLUTE = 2;
+
+    public const BONUS_OFFER_RELATION = 'offers';
+    public const BONUS_BRAND_RELATION = 'brands';
+    public const BONUS_CATEGORY_RELATION = 'categories';
 
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = [
+    public const FILLABLE = [
         'name',
         'status',
         'type',
@@ -88,14 +100,10 @@ class Bonus extends AbstractModel
         'promo_code_only',
     ];
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $fillable = self::FILLABLE;
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $casts = [
         'promo_code_only' => 'bool',
     ];
@@ -201,14 +209,10 @@ class Bonus extends AbstractModel
 
     /**
      * Активные и доступные на заданную дату скидки
-     *
-     * @param Builder $query
-     * @param Carbon|null $date
-     * @return Builder
      */
     public function scopeActive(Builder $query, ?Carbon $date = null): Builder
     {
-        $date = $date ?? Carbon::now();
+        $date ??= Carbon::now();
         return $query
             ->where('status', self::STATUS_ACTIVE)
             ->where(function ($query) use ($date) {
@@ -217,7 +221,6 @@ class Bonus extends AbstractModel
                 $query->where('end_date', '>=', $date)->orWhereNull('end_date');
             });
     }
-
 
     public static function boot()
     {

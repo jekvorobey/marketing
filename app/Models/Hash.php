@@ -8,9 +8,6 @@ trait Hash
 {
     abstract public function getFillable();
 
-    /**
-     * @return string
-     */
     public function getHash(): string
     {
         $key = [];
@@ -20,7 +17,7 @@ trait Hash
                 continue;
             }
 
-            $key[$prop] = (is_array($this->$prop) || is_object($this->$prop))
+            $key[$prop] = is_array($this->$prop) || is_object($this->$prop)
                 ? json_encode(static::deepSort($this->$prop), JSON_NUMERIC_CHECK)
                 : $this->$prop;
         }
@@ -56,7 +53,7 @@ trait Hash
             $hash = $item->getHash();
             return $b->filter(function (self $item) use ($hash) {
                     return $item->getHash() == $hash;
-                })->count() === 0;
+            })->count() === 0;
         });
     }
 

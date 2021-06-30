@@ -30,7 +30,6 @@ Route::namespace('V1')->prefix('v1')->group(function () {
             Route::get('', 'DiscountController@read');
             Route::put('', 'DiscountController@update');
         });
-
     });
 
     Route::prefix('promoCodes')->group(function () {
