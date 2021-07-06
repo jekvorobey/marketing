@@ -1,8 +1,6 @@
 <?php
 
-
 namespace App\Http\Controllers\V1;
-
 
 use App\Http\Controllers\Controller;
 use App\Models\Discount\Discount;
@@ -29,7 +27,7 @@ class AggregateController extends Controller
             ->whereJsonContains('conditions->' . PromoCode::CONDITION_TYPE_CUSTOMER_IDS, $customer_id)
             ->whereJsonLength('conditions', 1)
             ->whereJsonLength('conditions->' . PromoCode::CONDITION_TYPE_CUSTOMER_IDS, 1)
-            ->whereHas('discount', function(Builder $query) {
+            ->whereHas('discount', function (Builder $query) {
                 $query
                     ->where('value_type', Discount::DISCOUNT_VALUE_TYPE_PERCENT)
                     ->where('type', Discount::DISCOUNT_TYPE_CART_TOTAL)
@@ -54,13 +52,13 @@ class AggregateController extends Controller
             ->where('type', Discount::DISCOUNT_TYPE_CART_TOTAL)
             ->whereDoesntHave('segments')
             ->whereDoesntHave('roles')
-            ->whereHas('conditions', function(Builder $query) use ($customer_id) {
+            ->whereHas('conditions', function (Builder $query) use ($customer_id) {
                 $query
                     ->where('type', DiscountCondition::CUSTOMER)
                     ->whereJsonContains('condition->' . DiscountCondition::FIELD_CUSTOMER_IDS, $customer_id)
                     ->whereJsonLength('condition', 1);
             })
-            ->whereDoesntHave('conditions', function(Builder $query) {
+            ->whereDoesntHave('conditions', function (Builder $query) {
                 $query->where('type', '!=', DiscountCondition::CUSTOMER);
             })
             ->with('conditions')

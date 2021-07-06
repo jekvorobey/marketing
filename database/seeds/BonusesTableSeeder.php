@@ -12,7 +12,7 @@ use Pim\Services\CategoryService\CategoryService;
 
 class BonusesTableSeeder extends Seeder
 {
-    const FAKER_SEED = 123456;
+    public const FAKER_SEED = 123456;
 
     /** @var \Faker\Generator */
     protected $faker;
@@ -51,7 +51,7 @@ class BonusesTableSeeder extends Seeder
                 Bonus::VALUE_TYPE_ABSOLUTE,
             ]);
 
-            $bonus->value = ($bonus->value_type === Bonus::VALUE_TYPE_ABSOLUTE)
+            $bonus->value = $bonus->value_type === Bonus::VALUE_TYPE_ABSOLUTE
                 ? $bonus->value = $this->faker->numberBetween(10, 1000)
                 : $bonus->value = $this->faker->numberBetween(1, 20);
 

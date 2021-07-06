@@ -87,7 +87,6 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
     }
 
     /**
-     * @param Collection $items
      * @return Collection
      */
     protected function sortItems(Collection $items)
@@ -97,7 +96,8 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
         });
     }
 
-    protected function setBonusToEachOffer($bonusPrice, $callback) {
+    protected function setBonusToEachOffer($bonusPrice, $callback)
+    {
         $items = $this->prepareItems();
         $sortedItems = $this->sortItems($items);
 
@@ -105,7 +105,7 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
         $lastBonusRemains = $bonusRemains;
 
         foreach ($sortedItems as $item) {
-            $maxSpendForOffer = (!$item['has_discount'])
+            $maxSpendForOffer = !$item['has_discount']
                 ? $this->maxBonusPriceForOffer($item)
                 : $this->maxBonusPriceForDiscountOffer($item);
             $bonusRemains -= $maxSpendForOffer;
@@ -160,6 +160,7 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
         }
     }
 */
+
     /**
      * Загрузить опции бонусов всех товаров для текущего input (не грузит повторно)
      */
@@ -175,9 +176,6 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
             ->pluck('value', 'product_id');
     }
 
-    /**
-     * @return Collection
-     */
     private function prepareItems(): Collection
     {
         $items = collect();

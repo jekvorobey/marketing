@@ -13,21 +13,28 @@ abstract class AbstractCalculator
     public const CEIL = 2;
     public const ROUND = 3;
 
-    /** @var int Цена для бесплатной доставки */
+    /** Цена для бесплатной доставки */
     public const FREE_DELIVERY_PRICE = 0;
-    /** @var int Самая низкая возможная цена (1 рубль) */
+
+    /** Самая низкая возможная цена (1 рубль) */
     public const LOWEST_POSSIBLE_PRICE = 1;
-    /** @var int Наименьшая возможная цена на мастер-класс */
+
+    /** Наименьшая возможная цена на мастер-класс */
     public const LOWEST_MASTERCLASS_PRICE = 0;
-    /** @var int Максимально возможная скидка в процентах */
+
+    /** Максимально возможная скидка в процентах */
     public const HIGHEST_POSSIBLE_PRICE_PERCENT = 100;
-    /** @var int отношение бонуса к рублю */
+
+    /** отношение бонуса к рублю */
     public const DEFAULT_BONUS_PER_RUBLES = 1;
-    /** @var int сколько процентов стоимости товара можно оплатить бонусами */
+
+    /** сколько процентов стоимости товара можно оплатить бонусами */
     public const DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT = 100;
-    /** @var int сколько процентов стоимости товара со скидкой можно оплатить бонусами */
+
+    /** сколько процентов стоимости товара со скидкой можно оплатить бонусами */
     public const DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_DISCOUNT_PRODUCT = 100;
-    /** @var int сколько процентов стоимости заказа можно оплатить бонусами */
+
+    /** сколько процентов стоимости заказа можно оплатить бонусами */
     public const DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_ORDER = 100;
 
     /**
@@ -46,7 +53,7 @@ abstract class AbstractCalculator
 
     public function __construct(InputCalculator $inputCalculator, OutputCalculator $outputCalculator)
     {
-        $this->input  = $inputCalculator;
+        $this->input = $inputCalculator;
         $this->output = $outputCalculator;
     }
 
@@ -74,23 +81,22 @@ abstract class AbstractCalculator
     {
         switch ($method) {
             case self::FLOOR:
-                return (int)floor($value);
+                return (int) floor($value);
             case self::CEIL:
-                return (int)ceil($value);
+                return (int) ceil($value);
             default:
-                return (int)round($value);
+                return (int) round($value);
         }
     }
 
     /**
      * Возвращает размер скидки (без учета предыдущих скидок)
      *
-     * @param      OfferDto|array $item - оффер или доставка (если array)
-     * @param      $value
-     * @param int  $valueType
-     * @param bool $apply               нужно ли применять скидку
-     * @param int  $lowestPossiblePrice Самая низкая возможная цена (по умолчанию = 1 рубль)
-     * @param Discount  $discount
+     * @param OfferDto|array $item - оффер или доставка (если array)
+     * @param $value
+     * @param int $valueType
+     * @param bool $apply нужно ли применять скидку
+     * @param int $lowestPossiblePrice Самая низкая возможная цена (по умолчанию = 1 рубль)
      *
      * @return float
      */
@@ -100,7 +106,7 @@ abstract class AbstractCalculator
         $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB,
         $apply = true,
         int $lowestPossiblePrice = self::LOWEST_POSSIBLE_PRICE,
-        Discount $discount = null
+        ?Discount $discount = null
     ) {
         if (!isset($item['price']) || $value <= 0) {
             return 0;
@@ -117,13 +123,11 @@ abstract class AbstractCalculator
                 return 0;
             }
 
-            $offerInBundle['price'] = isset($offerInBundle['price']) ?
-                $offerInBundle['price'] :
-                $item['price'];
+            $offerInBundle['price'] ??= $item['price'];
 
             $currentDiscount = $item['discount'] ?? 0;
-            $currentCost     = $item['cost'] ?? $item['price'];
-            $discountValue   = min($offerInBundle['price'], $this->calculateDiscountByType($currentCost, $value, $valueType));
+            $currentCost = $item['cost'] ?? $item['price'];
+            $discountValue = min($offerInBundle['price'], $this->calculateDiscountByType($currentCost, $value, $valueType));
 
             /** Цена не может быть меньше $lowestPossiblePrice */
             if ($offerInBundle['price'] - $discountValue < $lowestPossiblePrice) {
@@ -133,14 +137,14 @@ abstract class AbstractCalculator
             # Конечная цена товара в бандле всегда округляется до целого
             if ($apply) {
                 $offerInBundle['discount'] = $currentDiscount + $discountValue;
-                $offerInBundle['price']    = self::round($currentCost - $offerInBundle['discount'], self::ROUND);
+                $offerInBundle['price'] = self::round($currentCost - $offerInBundle['discount'], self::ROUND);
                 $offerInBundle['cost'] = $currentCost;
                 $item['cost'] = $currentCost;
             }
         } else {
             $currentDiscount = $item['discount'] ?? 0;
-            $currentCost     = $item['cost'] ?? $item['price'];
-            $discountValue   = min($item['price'], $this->calculateDiscountByType($currentCost, $value, $valueType));
+            $currentCost = $item['cost'] ?? $item['price'];
+            $discountValue = min($item['price'], $this->calculateDiscountByType($currentCost, $value, $valueType));
 
             /** Цена не может быть меньше $lowestPossiblePrice */
             if ($item['price'] - $discountValue < $lowestPossiblePrice) {
@@ -149,8 +153,8 @@ abstract class AbstractCalculator
 
             if ($apply) {
                 $item['discount'] = $currentDiscount + $discountValue;
-                $item['price']    = round($currentCost - $item['discount'], 2);
-                $item['cost']     = $currentCost;
+                $item['price'] = round($currentCost - $item['discount'], 2);
+                $item['cost'] = $currentCost;
             }
         }
 
@@ -168,7 +172,7 @@ abstract class AbstractCalculator
     {
         switch ($valueType) {
             case Discount::DISCOUNT_VALUE_TYPE_PERCENT:
-                return round($cost * $value / 100,2);
+                return round($cost * $value / 100, 2);
             case Discount::DISCOUNT_VALUE_TYPE_RUB:
                 return $value;
             default:
@@ -208,7 +212,7 @@ abstract class AbstractCalculator
             $exceptOfferIds,
             $merchantId
         ) {
-            $categories    = InputCalculator::getAllCategories();
+            $categories = InputCalculator::getAllCategories();
             $offerCategory = $categories->has($offer['category_id'])
                 ? $categories[$offer['category_id']]
                 : null;
@@ -252,15 +256,10 @@ abstract class AbstractCalculator
         foreach ($rawOptions as $option) {
             $options[$option->key] = $option->value['value'];
         }
-        $options[Option::KEY_BONUS_PER_RUBLES] = $options[Option::KEY_BONUS_PER_RUBLES]
-            ?? self::DEFAULT_BONUS_PER_RUBLES;
-        $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT] = $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT]
-            ?? self::DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT;
-        $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_DISCOUNT_PRODUCT] = $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_DISCOUNT_PRODUCT]
-            ?? self::DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_DISCOUNT_PRODUCT;
-        $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER] = $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER]
-            ?? self::DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_ORDER;
+        $options[Option::KEY_BONUS_PER_RUBLES] ??= self::DEFAULT_BONUS_PER_RUBLES;
+        $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT] ??= self::DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT;
+        $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_DISCOUNT_PRODUCT] ??= self::DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_DISCOUNT_PRODUCT;
+        $options[Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_ORDER] ??= self::DEFAULT_MAX_DEBIT_PERCENTAGE_FOR_ORDER;
         $this->options = $options;
     }
-
 }

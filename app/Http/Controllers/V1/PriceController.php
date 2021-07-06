@@ -7,7 +7,6 @@ use App\Models\Discount\DiscountSegment;
 use App\Models\Discount\DiscountUserRole;
 use App\Models\Price\Price;
 use App\Services\Calculator\Catalog\CatalogCalculator;
-use Greensight\CommonMsa\Services\RequestInitiator\RequestInitiator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -22,7 +21,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  */
 class PriceController extends Controller
 {
-    protected function read(Request $request, RequestInitiator $client)
+    protected function read(Request $request)
     {
         try {
             $params = $request->validate([
@@ -34,9 +33,9 @@ class PriceController extends Controller
 
             $discountPriceCalculator = new CatalogCalculator($params);
             return response()->json([
-                'items' => $discountPriceCalculator->calculate()
+                'items' => $discountPriceCalculator->calculate(),
             ]);
-        } catch (\Exception $ex) {
+        } catch (\Throwable $ex) {
             return response()->json(['error' => $ex->getMessage()], 400);
         }
     }
@@ -54,7 +53,6 @@ class PriceController extends Controller
     /**
      * Получить класс модели в виде строки
      * Пример: return MyModel::class;
-     * @return string
      */
     public function modelClass(): string
     {
@@ -76,17 +74,15 @@ class PriceController extends Controller
     /**
      * Получить цену на предложение мерчанта
      * @param int $offerId - id предложения
-     * @param Request $request
-     * @return JsonResponse
      */
     public function price(int $offerId, Request $request): JsonResponse
     {
         try {
             $params = $request->validate([
-                'role_ids'    => 'array',
-                'segment_id'  => 'integer',
+                'role_ids' => 'array',
+                'segment_id' => 'integer',
             ]);
-        } catch (\Exception $ex) {
+        } catch (\Throwable $ex) {
             return response()->json(['error' => $ex->getMessage()], 400);
         }
 
@@ -107,7 +103,7 @@ class PriceController extends Controller
                 'price' => $items[0]['price'],
                 'discounts' => $items[0]['discounts'] ?? null,
                 'bonus' => $items[0]['bonus'] ?? 0,
-            ]
+            ],
         ]);
     }
 
@@ -126,8 +122,8 @@ class PriceController extends Controller
         $prices = [];
         foreach ($segments as $segment) {
             foreach ($roles as $role) {
-                $segmentKey = $segment ?? "0";
-                $roleKey = $role ?? "0";
+                $segmentKey = $segment ?? '0';
+                $roleKey = $role ?? '0';
 
                 $items = (new CatalogCalculator([
                     'offer_ids' => $offerIds,
@@ -165,9 +161,6 @@ class PriceController extends Controller
 
     /**
      * Установить цену для предложения мерчанта
-     * @param  int  $offerId
-     * @param Request $request
-     * @return Response
      */
     public function setPrice(int $offerId, Request $request): Response
     {
@@ -181,7 +174,7 @@ class PriceController extends Controller
             //Удаляем цену на предложение
             try {
                 $ok = $priceModel->delete();
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 $ok = false;
             }
         } else {
@@ -208,8 +201,6 @@ class PriceController extends Controller
      *      ],
      *      ...
      * ]
-     * @param  Request  $request
-     * @return Response
      */
     public function setPrices(Request $request): Response
     {
@@ -233,15 +224,16 @@ class PriceController extends Controller
                     if (!is_null($price) && !$newPrices[$offerId]) {
                         $price->delete();
                     } else {
-                        if (is_null($price)) $price = new Price();
+                        if (is_null($price)) {
+                            $price = new Price();
+                        }
                         $price->offer_id = $offerId;
                         $price->price = $newPrices[$price->offer_id];
                         $price->save();
                     }
                 }
             });
-        }
-        catch (\Exception $e) {
+        } catch (\Throwable $e) {
             throw new HttpException(500, $e->getMessage());
         }
 
@@ -250,14 +242,13 @@ class PriceController extends Controller
 
     /**
      * Удалить цену при удалении самого оффера, не цепляя хуки индексации товара
-     * @param int $offerId
      * @return mixed
      */
     public function deletePriceByOffer(int $offerId)
     {
         try {
             $ok = Price::query()->where('offer_id', $offerId)->delete();
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $ok = false;
         }
 
@@ -284,7 +275,7 @@ class PriceController extends Controller
             $prices = $discountPriceCalculator->calculate();
 
             $prices = collect($prices)->keyBy('offer_id')
-                ->map(function ($item, $key) {
+                ->map(function ($item) {
                     return $item['price'];
                 })
                 ->all();
@@ -305,7 +296,7 @@ class PriceController extends Controller
             return response()->json([
                 'offer_ids' => array_keys($prices),
             ]);
-        } catch (\Exception $ex) {
+        } catch (\Throwable $ex) {
             return response()->json(['error' => $ex->getMessage()], 400);
         }
     }

@@ -85,12 +85,6 @@ class BasketItem implements \JsonSerializable
 
     /**
      * BasketItem constructor.
-     * @param int $id
-     * @param int $qty
-     * @param int $offerId
-     * @param int $categoryId
-     * @param int $brandId
-     * @param int $bundleId
      */
     public function __construct(int $id, int $qty, int $offerId, int $categoryId, int $brandId, ?int $bundleId)
     {

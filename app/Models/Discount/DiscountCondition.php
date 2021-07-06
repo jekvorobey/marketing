@@ -19,7 +19,6 @@ use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationSe
  * @property array $condition
  * @property-read Discount $discount
  * @mixin \Eloquent
- *
  */
 class DiscountCondition extends AbstractModel
 {
@@ -29,64 +28,71 @@ class DiscountCondition extends AbstractModel
      * Тип условия возникновения права на скидку
      */
     /** На первый заказ */
-    const FIRST_ORDER = 1;
+    public const FIRST_ORDER = 1;
+
     /** На заказ от определенной суммы */
-    const MIN_PRICE_ORDER = 2;
+    public const MIN_PRICE_ORDER = 2;
+
     /** На заказ от определенной суммы товаров заданного бренда */
-    const MIN_PRICE_BRAND = 3;
+    public const MIN_PRICE_BRAND = 3;
+
     /** На заказ от определенной суммы товаров заданной категории */
-    const MIN_PRICE_CATEGORY = 4;
+    public const MIN_PRICE_CATEGORY = 4;
+
     /** На количество единиц одного товара */
-    const EVERY_UNIT_PRODUCT = 5;
+    public const EVERY_UNIT_PRODUCT = 5;
+
     /** На способ доставки */
-    const DELIVERY_METHOD = 6;
+    public const DELIVERY_METHOD = 6;
+
     /** На способ оплаты */
-    const PAY_METHOD = 7;
+    public const PAY_METHOD = 7;
+
     /** Территория действия (регион с точки зрения адреса доставки заказа) */
-    const REGION = 8;
+    public const REGION = 8;
+
     /** Для определенных покупателей */
-    const CUSTOMER = 9;
+    public const CUSTOMER = 9;
+
     /** Порядковый номер заказа */
-    const ORDER_SEQUENCE_NUMBER = 10;
+    public const ORDER_SEQUENCE_NUMBER = 10;
+
     /** Взаимодействия с другими маркетинговыми инструментами */
-    const DISCOUNT_SYNERGY = 11;
+    public const DISCOUNT_SYNERGY = 11;
+
     /**
      * Скидка на определенные бандлы.
      * Не показывается в списке условий.
      */
-    const BUNDLE = 12;
+    public const BUNDLE = 12;
 
     /** Свойства условий скидки (для поля condition) */
-    const FIELD_MIN_PRICE = 'minPrice';
-    const FIELD_BRANDS = 'brands';
-    const FIELD_CATEGORIES = 'categories';
-    const FIELD_OFFER = 'offer';
-    const FIELD_COUNT = 'count';
-    const FIELD_DELIVERY_METHODS = 'deliveryMethods';
-    const FIELD_PAYMENT_METHODS = 'paymentMethods';
-    const FIELD_REGIONS = 'regions';
-    const FIELD_ORDER_SEQUENCE_NUMBER = 'orderSequenceNumber';
-    const FIELD_BUNDLES = 'bundles';
-    const FIELD_CUSTOMER_IDS = 'customerIds';
-    const FIELD_SYNERGY = 'synergy';
-    const FIELD_MAX_VALUE_TYPE = 'maxValueType';
-    const FIELD_MAX_VALUE = 'maxValue';
+    public const FIELD_MIN_PRICE = 'minPrice';
+    public const FIELD_BRANDS = 'brands';
+    public const FIELD_CATEGORIES = 'categories';
+    public const FIELD_OFFER = 'offer';
+    public const FIELD_COUNT = 'count';
+    public const FIELD_DELIVERY_METHODS = 'deliveryMethods';
+    public const FIELD_PAYMENT_METHODS = 'paymentMethods';
+    public const FIELD_REGIONS = 'regions';
+    public const FIELD_ORDER_SEQUENCE_NUMBER = 'orderSequenceNumber';
+    public const FIELD_BUNDLES = 'bundles';
+    public const FIELD_CUSTOMER_IDS = 'customerIds';
+    public const FIELD_SYNERGY = 'synergy';
+    public const FIELD_MAX_VALUE_TYPE = 'maxValueType';
+    public const FIELD_MAX_VALUE = 'maxValue';
 
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = ['discount_id', 'type', 'condition'];
+    public const FILLABLE = ['discount_id', 'type', 'condition'];
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $casts = [
         'condition' => 'array',
     ];
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $fillable = self::FILLABLE;
 
     /**
@@ -211,13 +217,13 @@ class DiscountCondition extends AbstractModel
         parent::boot();
 
         self::created(function (DiscountCondition $item) {
-            if($item->type == self::CUSTOMER) {
+            if ($item->type == self::CUSTOMER) {
                 $serviceNotificationService = app(ServiceNotificationService::class);
 
-                /** @var UserService */
+                /** @var UserService $userService */
                 $userService = app(UserService::class);
 
-                /** @var CustomerService */
+                /** @var CustomerService $customerService */
                 $customerService = app(CustomerService::class);
 
                 collect($item->getCustomerIds())
@@ -240,15 +246,15 @@ class DiscountCondition extends AbstractModel
                         return array_key_exists(UserDto::SHOWCASE__REFERRAL_PARTNER, $userDto->roles);
                     })
                     ->each(function (UserDto $userDto) use ($serviceNotificationService, $item) {
-                        if($item->discount->value_type == Discount::DISCOUNT_VALUE_TYPE_PERCENT) {
+                        if ($item->discount->value_type == Discount::DISCOUNT_VALUE_TYPE_PERCENT) {
                             $type = '%';
                         } else {
                             $type = ' руб.';
                         }
 
                         $serviceNotificationService->send($userDto->id, 'sotrudnichestvouroven_personalnoy_skidki_izmenen', [
-                            'LVL_DISCOUNT' => sprintf("%s%s", $item->discount->value, $type),
-                            'CUSTOMER_NAME' => $userDto->first_name
+                            'LVL_DISCOUNT' => sprintf('%s%s', $item->discount->value, $type),
+                            'CUSTOMER_NAME' => $userDto->first_name,
                         ]);
                     });
             }
@@ -285,7 +291,7 @@ class DiscountCondition extends AbstractModel
                 $condition = new DiscountCondition();
                 $condition->type = self::DISCOUNT_SYNERGY;
                 $condition->condition = array_merge($item->condition, [
-                    DiscountCondition::FIELD_SYNERGY => [$item->discount_id]
+                    DiscountCondition::FIELD_SYNERGY => [$item->discount_id],
                 ]);
                 $condition->discount_id = $discountId;
                 $condition->save();

@@ -13,7 +13,6 @@ use App\Models\Hash;
  * @property int $discount_id
  * @property int $item_id
  * @property-read Discount $discount
- *
  */
 class BundleItem extends AbstractModel
 {
@@ -22,11 +21,9 @@ class BundleItem extends AbstractModel
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = ['discount_id', 'item_id'];
+    public const FILLABLE = ['discount_id', 'item_id'];
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $fillable = self::FILLABLE;
 
     public function discount(): BelongsTo

@@ -45,7 +45,6 @@ class DiscountCatalogCalculator extends DiscountCalculator
 
     /**
      * Получаем все возможные скидки и условия из DiscountCondition
-     * @param Collection $discountIds
      * @return $this
      */
     protected function fetchDiscountConditions(Collection $discountIds)
@@ -60,9 +59,6 @@ class DiscountCatalogCalculator extends DiscountCalculator
 
     /**
      * Можно ли применить данную скидку (независимо от других скидок)
-     *
-     * @param Discount $discount
-     * @return bool
      */
     protected function checkDiscount(Discount $discount): bool
     {
@@ -74,8 +70,6 @@ class DiscountCatalogCalculator extends DiscountCalculator
     /**
      * Проверяет доступность применения скидки на все соответствующие условия
      *
-     * @param Collection $conditions
-     * @return bool
      * @todo
      */
     protected function checkConditions(Collection $conditions): bool
@@ -87,7 +81,7 @@ class DiscountCatalogCalculator extends DiscountCalculator
                  * Оставляем только скидки, у которых отсутсвуют доп. условия (считаются в корзине или чекауте).
                  */
                 case DiscountCondition::DISCOUNT_SYNERGY:
-                    continue(2);
+                    break 2;
                 default:
                     return false;
             }

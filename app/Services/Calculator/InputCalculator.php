@@ -27,51 +27,29 @@ use Pim\Services\ProductService\ProductService;
  */
 class InputCalculator
 {
-    /**
-     * @var Collection
-     */
+    /** @var Collection */
     public $bundles;
-    /**
-     * @var Collection
-     */
+    /** @var Collection */
     public $offers;
-    /**
-     * @var Collection
-     */
+    /** @var Collection */
     public $brands;
-    /**
-     * @var Collection
-     */
+    /** @var Collection */
     public $categories;
     /** @var Collection */
     public $ticketTypeIds;
-    /**
-     * @var string|null
-     */
+    /** @var string|null */
     public $promoCode;
-    /**
-     * @var Discount|null
-     */
+    /** @var Discount|null */
     public $promoCodeDiscount;
-    /**
-     * @var Bonus|null
-     */
+    /** @var Bonus|null */
     public $promoCodeBonus;
-    /**
-     * @var array
-     */
+    /** @var array */
     public $customer;
-    /**
-     * @var array
-     */
+    /** @var array */
     public $payment;
-    /**
-     * @var int
-     */
+    /** @var int */
     public $bonus;
-    /**
-     * @var Collection
-     */
+    /** @var Collection */
     public $deliveries;
     /** @var bool */
     public $freeDelivery;
@@ -80,9 +58,7 @@ class InputCalculator
     public $userRegion;
     /** @var int */
     public $customerBonusAmount;
-    /**
-     * @var Collection|CategoryDto[]
-     */
+    /** @var Collection|CategoryDto[] */
     private static $allCategories;
 
     /**
@@ -114,9 +90,6 @@ class InputCalculator
         return static::$allCategories;
     }
 
-    /**
-     * @param $params
-     */
     protected function parse($params)
     {
         $this->offers = isset($params['offers']) ? collect($params['offers']) : collect();
@@ -141,7 +114,9 @@ class InputCalculator
             $this->customerBonusAmount = $this->loadCustomerBonusAmount($this->customer['id']) ?? 0;
         } else {
             if (isset($params['role_ids']) && is_array($params['role_ids'])) {
-                $this->customer['roles'] = array_map(function ($roleId) { return (int)$roleId; }, $params['role_ids']);
+                $this->customer['roles'] = array_map(function ($roleId) {
+                    return (int) $roleId;
+                }, $params['role_ids']);
             }
             if (isset($params['segment_id'])) {
                 $this->customer['segment'] = (int) $params['segment_id'];
@@ -150,9 +125,9 @@ class InputCalculator
         }
 
         $this->payment = [
-            'method' => isset($params['payment']['method']) ? intval($params['payment']['method']) : null
+            'method' => isset($params['payment']['method']) ? intval($params['payment']['method']) : null,
         ];
-        $this->bonus = isset($params['bonus']) ? (int)$params['bonus'] : 0;
+        $this->bonus = isset($params['bonus']) ? (int) $params['bonus'] : 0;
 
         /** Все возможные типы доставки */
         $this->deliveries = collect();
@@ -219,7 +194,7 @@ class InputCalculator
         }
 
         $this->bundles = $this->offers->pluck('bundles')
-            ->map(function ($bundles, $key) {
+            ->map(function ($bundles) {
                 return $bundles->keys();
             })
             ->collapse()
@@ -251,7 +226,7 @@ class InputCalculator
             ->flip();
 
         if (isset($this->customer['id'])) {
-            $this->customer = $this->getCustomerInfo((int)$this->customer['id']);
+            $this->customer = $this->getCustomerInfo((int) $this->customer['id']);
         }
 
         return $this;
@@ -277,13 +252,13 @@ class InputCalculator
                 ->setFilter('id', $offerIds)
                 ->addFields(OfferDto::entity(), 'id', 'merchant_id', 'ticket_type_id')
         )->keyBy('id');
-        $offers    = collect();
+        $offers = collect();
         foreach ($this->offers as $offer) {
             if (!isset($offer['id'])) {
                 continue;
             }
 
-            $offerId = (int)$offer['id'];
+            $offerId = (int) $offer['id'];
             if (!$offersDto->has($offerId)) {
                 continue;
             }
@@ -291,10 +266,10 @@ class InputCalculator
             $offerDto = $offersDto->get($offerId);
 
             $offers->put($offerId, collect([
-                'id'          => $offerId,
-                'price'       => $offer['price'] ?? null,
-                'qty'         => $offer['qty'] ?? 1,
-                'brand_id'    => $offer['brand_id'] ?? null,
+                'id' => $offerId,
+                'price' => $offer['price'] ?? null,
+                'qty' => $offer['qty'] ?? 1,
+                'brand_id' => $offer['brand_id'] ?? null,
                 'category_id' => $offer['category_id'] ?? null,
                 'merchant_id' => $offerDto->merchant_id,
                 'bundles' => $offer['bundles'] ?? collect(),
@@ -325,20 +300,20 @@ class InputCalculator
                 continue;
             }
 
-            $offerId = (int)$offer['id'];
+            $offerId = (int) $offer['id'];
             if (!$prices->has($offerId)) {
                 continue;
             }
 
             $offers->put($offerId, collect([
-                'id'          => $offerId,
-                'price'       => $prices[$offerId],
-                'qty'         => $offer['qty'] ?? 1,
-                'brand_id'    => $offer['brand_id'] ?? null,
+                'id' => $offerId,
+                'price' => $prices[$offerId],
+                'qty' => $offer['qty'] ?? 1,
+                'brand_id' => $offer['brand_id'] ?? null,
                 'category_id' => $offer['category_id'] ?? null,
                 'merchant_id' => $offer['merchant_id'] ?? null,
                 'bundles' => $offer['bundles'] ?? [],
-                'ticket_type_id' => $offer['ticket_type_id'] ?? null
+                'ticket_type_id' => $offer['ticket_type_id'] ?? null,
             ]));
         }
         $this->offers = $offers;
@@ -355,7 +330,7 @@ class InputCalculator
         $offerIds = $this->offers->pluck('id')->toArray();
         /** @var ProductService $productService */
         $productService = resolve(ProductService::class);
-        $productQuery   = $productService
+        $productQuery = $productService
             ->newQuery()
             ->addFields(
                 ProductDto::entity(),
@@ -364,22 +339,22 @@ class InputCalculator
                 'brand_id'
             );
 
-        $offers           = collect();
+        $offers = collect();
         $productsByOffers = $productService->productsByOffers($productQuery, $offerIds);
         foreach ($this->offers as $offer) {
             $offerId = $offer['id'];
             /** @var ProductByOfferDto $product */
             $product = $productsByOffers->get($offerId);
             $offers->put($offerId, collect([
-                'id'          => $offerId,
-                'price'       => $offer['price'] ?? null,
-                'qty'         => $offer['qty'] ?? 1,
-                'brand_id'    => isset($product->product) ? $product->product->brand_id : null,
+                'id' => $offerId,
+                'price' => $offer['price'] ?? null,
+                'qty' => $offer['qty'] ?? 1,
+                'brand_id' => isset($product->product) ? $product->product->brand_id : null,
                 'category_id' => isset($product->product) ? $product->product->category_id : null,
-                'product_id'  => isset($product->product) ? $product->product->id : null,
+                'product_id' => isset($product->product) ? $product->product->id : null,
                 'merchant_id' => $offer['merchant_id'] ?? null,
                 'bundles' => $offer['bundles'] ?? [],
-                'ticket_type_id' => $offer['ticket_type_id'] ?? null
+                'ticket_type_id' => $offer['ticket_type_id'] ?? null,
             ]));
         }
         $this->offers = $offers;
@@ -388,21 +363,19 @@ class InputCalculator
     }
 
     /**
-     * @param int $customerId
-     *
      * @return array
      */
     protected function getCustomerInfo(int $customerId)
     {
         $customer = [
-            'id'      => $customerId,
-            'roles'   => [],
+            'id' => $customerId,
+            'roles' => [],
             'segment' => 1, // todo
-            'orders'  => []
+            'orders' => [],
         ];
 
         $this->customer['id'] = $customerId;
-        $customer['roles']           = $this->loadRoleForCustomer($customerId);
+        $customer['roles'] = $this->loadRoleForCustomer($customerId);
         if (!$customer['roles']) {
             return [];
         }
@@ -413,18 +386,16 @@ class InputCalculator
     }
 
     /**
-     * @param int $customerId
-     *
      * @return array|null
      */
     protected function loadRoleForCustomer(int $customerId)
     {
         /** @var CustomerService $customerService */
         $customerService = resolve(CustomerService::class);
-        $query           = $customerService->newQuery()
+        $query = $customerService->newQuery()
             ->addFields(CustomerDto::entity(), 'user_id')
             ->setFilter('id', $customerId);
-        $customer        = $customerService->customers($query)->first();
+        $customer = $customerService->customers($query)->first();
         if (!isset($customer['user_id'])) {
             return null;
         }
@@ -436,21 +407,20 @@ class InputCalculator
     }
 
     /**
-     * @param int $customerId
-     *
      * @return int
      */
     protected function loadCustomerOrdersCount(int $customerId)
     {
         /** @var OrderService $orderService */
         $orderService = resolve(OrderService::class);
-        $query        = $orderService->newQuery()->setFilter('customer_id', $customerId);
-        $ordersCount  = $orderService->ordersCount($query);
+        $query = $orderService->newQuery()->setFilter('customer_id', $customerId);
+        $ordersCount = $orderService->ordersCount($query);
 
         return $ordersCount['total'];
     }
 
-    protected function loadCustomerBonusAmount(int $customerId) {
+    protected function loadCustomerBonusAmount(int $customerId)
+    {
         $customerService = resolve(CustomerService::class);
         $query = $customerService->newQuery()->setFilter('id', $customerId);
         $customer = $customerService->customers($query)->first();
@@ -527,7 +497,7 @@ class InputCalculator
         $max = 0;
         foreach ($brands as $brandId) {
             $sum = $this->offers->filter(function ($offer) use ($brandId) {
-                return (int)$offer['brand_id'] === (int)$brandId;
+                return (int) $offer['brand_id'] === (int) $brandId;
             })->map(function ($offer) {
                 return $offer['price'] * $offer['qty'];
             })->sum();

@@ -22,11 +22,9 @@ class BonusCategory extends AbstractModel
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = ['bonus_id', 'category_id', 'except'];
+    public const FILLABLE = ['bonus_id', 'category_id', 'except'];
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $fillable = self::FILLABLE;
 
     public function bonus(): BelongsTo

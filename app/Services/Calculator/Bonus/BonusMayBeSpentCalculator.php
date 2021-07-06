@@ -15,7 +15,7 @@ class BonusMayBeSpentCalculator extends AbstractBonusCalculator
         $this->setBonusToEachOffer(null, function ($affectedItem, $changePriceValue) use (&$totalBonusPrice) {
             @([
                 'offer_id' => $offerId,
-                'bundle_id'   => $bundleId
+                'bundle_id' => $bundleId,
             ] = $affectedItem);
 
             if ($bundleId) {
@@ -55,7 +55,7 @@ class BonusMayBeSpentCalculator extends AbstractBonusCalculator
         });
         $totalBonusPrice = 0;
         foreach ($items as $item) {
-            $maxSpendForOffer = (!$item['has_discount'])
+            $maxSpendForOffer = !$item['has_discount']
                 ? $this->maxBonusPriceForOffer($item)
                 : $this->maxBonusPriceForDiscountOffer($item);
             $totalBonusPrice += $maxSpendForOffer;

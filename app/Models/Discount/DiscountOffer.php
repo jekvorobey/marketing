@@ -12,10 +12,9 @@ use App\Models\Hash;
  *
  * @property int $discount_id
  * @property int $offer_id
- * @property boolean $except
+ * @property bool $except
  * @property-read Discount $discount
  * @mixin \Eloquent
- *
  */
 class DiscountOffer extends AbstractModel
 {
@@ -24,11 +23,9 @@ class DiscountOffer extends AbstractModel
     /**
      * Заполняемые поля модели
      */
-    const FILLABLE = ['discount_id', 'offer_id', 'except'];
+    public const FILLABLE = ['discount_id', 'offer_id', 'except'];
 
-    /**
-     * @var array
-     */
+    /** @var array */
     protected $fillable = self::FILLABLE;
 
     public function discount(): BelongsTo
