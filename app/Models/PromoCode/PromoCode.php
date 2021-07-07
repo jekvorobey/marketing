@@ -2,10 +2,10 @@
 
 namespace App\Models\PromoCode;
 
+use Str;
 use App\Models\Bonus\Bonus;
 use App\Models\Discount\Discount;
 use Carbon\Carbon;
-use Faker\Factory;
 use Greensight\CommonMsa\Models\AbstractModel;
 use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\Customer\Services\CustomerService\CustomerService;
@@ -167,9 +167,9 @@ class PromoCode extends AbstractModel
     /**
      * Генерация нового промокода
      */
-    public static function generate()
+    public static function generate(): string
     {
-        return Factory::create('ru_RU')->regexify('[A-Z0-9]{10}');
+        return mb_strtoupper(Str::random(10));
     }
 
     public function discount(): BelongsTo
