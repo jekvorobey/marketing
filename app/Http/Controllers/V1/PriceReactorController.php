@@ -12,6 +12,7 @@ class PriceReactorController extends Controller
     {
         $basket = Basket::fromRequestData($request->all());
         $basket->addPricesAndBonuses();
+
         return response()->json($basket);
     }
 }

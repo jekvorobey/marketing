@@ -211,6 +211,7 @@ class Basket implements \JsonSerializable
         $this->price = $totalCost - $this->discount;
         $this->bonusSpent = $totalBonusSpent;
         $this->bonusDiscount = $totalBonusDiscount;
+        $this->bonus = $totalBonusSpent;
     }
 
     private function applyCertificates($totalCost, $totalItemsAmount): int
