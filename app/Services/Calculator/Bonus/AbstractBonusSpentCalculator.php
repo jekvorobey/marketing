@@ -10,7 +10,7 @@ use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
 use Illuminate\Support\Collection;
 
-abstract class AbstractBonusCalculator extends AbstractCalculator
+abstract class AbstractBonusSpentCalculator extends AbstractCalculator
 {
     private Collection $productBonusOptions;
 
@@ -121,13 +121,16 @@ abstract class AbstractBonusCalculator extends AbstractCalculator
     }
 
     /**
-     * Сортировать данные по оферам от макс. возможной стоимости ед.товара, которую можно погасить бонусом
+     * Сортировать данные по оферам:
+     * - сначала с меньшим кол-во, чтобы бонусы лучше делились
+     * - потом с большей стоимости ед.товара, чтобы распределять бонусы по меньшему кол-во позиций в заказе
      */
     protected function sortOffers(Collection $offers): Collection
     {
-        return $offers->sortBy(function ($offer) {
-            return $this->maxBonusPriceForOfferItem($offer);
-        });
+        // @see https://gist.github.com/matt-allan/4ce3ba62396c3d71241f0da39ddb88e6
+        return $offers
+            ->sort(fn(array $a, array $b) => [$a['qty'], $b['price']] <=> [$b['qty'], $a['price']])
+            ->values();
     }
 
     /**

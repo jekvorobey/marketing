@@ -2,7 +2,7 @@
 
 namespace App\Services\Calculator\Bonus;
 
-class BonusSpentCalculator extends AbstractBonusCalculator
+class BonusSpentCalculator extends AbstractBonusSpentCalculator
 {
     protected function needCalculateBonus(): bool
     {

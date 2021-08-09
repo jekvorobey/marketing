@@ -2,7 +2,7 @@
 
 namespace App\Services\Calculator\Bonus;
 
-class BonusMayBeSpentCalculator extends AbstractBonusCalculator
+class BonusMayBeSpentCalculator extends AbstractBonusSpentCalculator
 {
     private int $totalSpentBonusPrice = 0;
 
