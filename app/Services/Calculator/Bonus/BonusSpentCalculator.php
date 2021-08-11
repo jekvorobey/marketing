@@ -2,46 +2,25 @@
 
 namespace App\Services\Calculator\Bonus;
 
-use App\Models\Discount\Discount;
-
-/**
- * Class BonusSpentCalculator
- * @package App\Services\Calculator\Bonus
- */
-class BonusSpentCalculator extends AbstractBonusCalculator
+class BonusSpentCalculator extends AbstractBonusSpentCalculator
 {
-    public function calculate()
+    protected function needCalculateBonus(): bool
     {
-        if (!$this->needCalculateBonus()) {
-            return;
-        }
+        return $this->bonusSettingsIsSet() && $this->input->bonus > 0;
+    }
 
-        $price = $this->bonusToPrice($this->input->bonus);
+    protected function getBonusesForSpend(): int
+    {
+        return $this->input->bonus;
+    }
 
-        $this->setBonusToEachOffer($price, function ($affectedItem, $changePriceValue) {
-            @([
-                'offer_id' => $offerId,
-                'bundle_id' => $bundleId,
-            ] = $affectedItem);
+    protected function spentBonusForOffer(&$offer, int $spendForOfferItem, int $qty): int
+    {
+        $spentForOffer = $this->applyDiscountForOffer($offer, $spendForOfferItem, $qty);
 
-            if ($bundleId) {
-                $item = &$this->input->offers[$offerId]['bundles'][$bundleId];
-            } else {
-                $item = &$this->input->offers[$offerId];
-            }
+        $offer['bonusSpent'] = $this->priceToBonus($spentForOffer);
+        $offer['bonusDiscount'] = $spentForOffer;
 
-            $discount = $this->changePrice(
-                $item,
-                $changePriceValue,
-                Discount::DISCOUNT_VALUE_TYPE_RUB,
-                true,
-                self::LOWEST_POSSIBLE_PRICE
-            );
-
-            $item['bonusSpent'] = self::priceToBonus($discount);
-            $item['bonusDiscount'] = $discount;
-
-            return $discount;
-        });
+        return $spentForOffer;
     }
 }
