@@ -37,8 +37,12 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
      * Получить опцию бонусов для указанного товара
      * @return mixed
      */
-    protected function getBonusProductOption(int $productId, string $key)
+    protected function getBonusProductOption(?int $productId, string $key)
     {
+        if (!$productId) {
+            return null;
+        }
+
         return $this->productBonusOptions[$productId][$key] ?? null;
     }
 
