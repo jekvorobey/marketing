@@ -174,6 +174,7 @@ class DiscountController extends Controller
             'end_date' => 'date|nullable',
             'promo_code_only' => 'boolean',
             'status' => 'numeric',
+            'limit' => 'numeric|nullable',
             'merchant_id' => 'numeric|nullable',
             'relations' => 'array',
         ]);
@@ -224,6 +225,7 @@ class DiscountController extends Controller
                 'end_date' => 'string|nullable',
                 'promo_code_only' => 'boolean|required',
                 'status' => 'numeric|required',
+                'limit' => 'numeric|nullable',
                 'merchant_id' => 'numeric|nullable',
                 'relations' => 'array',
             ]);
