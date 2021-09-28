@@ -29,7 +29,7 @@ use Pim\Services\SearchService\SearchService;
  * @property int $value_type
  * @property int $value
  * @property int $status
- * @property int $limit
+ * @property int $product_qty_limit
  * @property Carbon $start_date
  * @property Carbon $end_date
  * @property bool $promo_code_only

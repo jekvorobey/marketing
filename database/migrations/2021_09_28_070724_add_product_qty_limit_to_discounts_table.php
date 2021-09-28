@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class AddLimitToDiscountsTable extends Migration
+class AddProductQtyLimitToDiscountsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,7 +14,7 @@ class AddLimitToDiscountsTable extends Migration
     public function up()
     {
         Schema::table('discounts', function (Blueprint $table) {
-            $table->integer('limit')->after('status')->nullable();
+            $table->integer('product_qty_limit')->after('status')->nullable();
         });
     }
 
@@ -26,7 +26,7 @@ class AddLimitToDiscountsTable extends Migration
     public function down()
     {
         Schema::table('discounts', function (Blueprint $table) {
-            $table->dropColumn('limit');
+            $table->dropColumn('product_qty_limit');
         });
     }
 }
