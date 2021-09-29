@@ -552,6 +552,8 @@ class DiscountCalculator extends AbstractCalculator
         foreach ($offerIds as $offerId) {
             $offer = &$this->input->offers[$offerId];
             $lowestPossiblePrice = $offer['product_id'] ? self::LOWEST_POSSIBLE_PRICE : self::LOWEST_MASTERCLASS_PRICE;
+            $value = $discount->value;
+            $valueType = $discount->value_type;
 
             // Если в условии на суммирование скидки было "не более x%", то переопределяем минимально возможную цену товара
             if (isset($this->maxValueByDiscount[$discount->id])) {
@@ -570,8 +572,6 @@ class DiscountCalculator extends AbstractCalculator
                 if ($restProductQtyLimit <= 0) {
                     break;
                 }
-                $value = $discount->value;
-                $valueType = $discount->value_type;
                 $maxDiscountValue = $this->calculateDiscountByType($offer['price'], $value, $valueType);
                 $value = ceil($maxDiscountValue * min($offer['qty'], $restProductQtyLimit) / $offer['qty']);
                 $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB;
