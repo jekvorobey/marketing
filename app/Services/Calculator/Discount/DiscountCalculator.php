@@ -568,7 +568,6 @@ class DiscountCalculator extends AbstractCalculator
 
             if ($hasProductQtyLimit) {
                 if ($restProductQtyLimit <= 0) {
-                    unset($valueOfLimitDiscount);
                     break;
                 }
 
