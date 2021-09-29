@@ -546,6 +546,8 @@ class DiscountCalculator extends AbstractCalculator
             }
         }
 
+        $hasProductQtyLimit = $discount->product_qty_limit > 0;
+        $restProductQtyLimit = $discount->product_qty_limit;
         $changed = 0;
         foreach ($offerIds as $offerId) {
             $offer = &$this->input->offers[$offerId];
@@ -564,7 +566,19 @@ class DiscountCalculator extends AbstractCalculator
                 $lowestPossiblePrice = max($lowestPossiblePrice, $offer['cost'] - $maxDiscountValue);
             }
 
-            $change = $this->changePrice($offer, $value, $valueType, true, $lowestPossiblePrice, $discount);
+            if ($hasProductQtyLimit) {
+                if ($restProductQtyLimit <= 0) {
+                    break;
+                }
+
+                $valueType = $discount->value_type;
+                $maxDiscountValue = $this->calculateDiscountByType($offer['price'], $value, $valueType);
+                $valueOfLimitDiscount = ceil($maxDiscountValue * min($offer['qty'], $restProductQtyLimit) / $offer['qty']);
+                $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB;
+                $restProductQtyLimit -= $offer['qty'];
+            }
+
+            $change = $this->changePrice($offer, $valueOfLimitDiscount ?? $value, $valueType, true, $lowestPossiblePrice, $discount);
 
             if ($change <= 0) {
                 continue;
@@ -1230,6 +1244,7 @@ class DiscountCalculator extends AbstractCalculator
             'value_type',
             'promo_code_only',
             'merchant_id',
+            'product_qty_limit',
         ])
             ->where(function ($query) {
                 $query->where('promo_code_only', false);
