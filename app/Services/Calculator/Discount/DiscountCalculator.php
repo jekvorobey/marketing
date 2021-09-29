@@ -570,7 +570,8 @@ class DiscountCalculator extends AbstractCalculator
                 if ($restProductQtyLimit <= 0) {
                     break;
                 }
-
+                $value = $discount->value;
+                $valueType = $discount->value_type;
                 $maxDiscountValue = $this->calculateDiscountByType($offer['price'], $value, $valueType);
                 $value = ceil($maxDiscountValue * min($offer['qty'], $restProductQtyLimit) / $offer['qty']);
                 $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB;
