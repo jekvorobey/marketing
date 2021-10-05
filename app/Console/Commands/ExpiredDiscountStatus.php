@@ -21,13 +21,12 @@ class ExpiredDiscountStatus extends Command
      */
     public function handle()
     {
-        $discounts = Discount::query()->where('status', Discount::STATUS_ACTIVE)->get();
-        /** @var Discount $discount */
-        foreach ($discounts as $discount) {
-            if ($discount->isExpired()) {
+        Discount::query()
+            ->where('status', Discount::STATUS_ACTIVE)
+            ->expired()
+            ->each(function (Discount $discount) {
                 $discount->status = Discount::STATUS_EXPIRED;
                 $discount->save();
-            }
-        }
+            });
     }
 }

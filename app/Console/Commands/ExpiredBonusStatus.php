@@ -21,13 +21,12 @@ class ExpiredBonusStatus extends Command
      */
     public function handle()
     {
-        $bonuses = Bonus::query()->where('status', Bonus::STATUS_ACTIVE)->get();
-        /** @var Bonus $bonus */
-        foreach ($bonuses as $bonus) {
-            if ($bonus->isExpired()) {
+        Bonus::query()
+            ->where('status', Bonus::STATUS_ACTIVE)
+            ->expired()
+            ->each(function (Bonus $bonus) {
                 $bonus->status = Bonus::STATUS_EXPIRED;
                 $bonus->save();
-            }
-        }
+            });
     }
 }
