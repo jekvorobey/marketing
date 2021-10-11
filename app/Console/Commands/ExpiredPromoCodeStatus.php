@@ -21,13 +21,12 @@ class ExpiredPromoCodeStatus extends Command
      */
     public function handle()
     {
-        $promoCodes = PromoCode::query()->where('status', PromoCode::STATUS_ACTIVE)->get();
-        /** @var PromoCode $promoCode */
-        foreach ($promoCodes as $promoCode) {
-            if ($promoCode->isExpired()) {
+        PromoCode::query()
+            ->where('status', PromoCode::STATUS_ACTIVE)
+            ->expired()
+            ->each(function (PromoCode $promoCode) {
                 $promoCode->status = PromoCode::STATUS_EXPIRED;
                 $promoCode->save();
-            }
-        }
+            });
     }
 }

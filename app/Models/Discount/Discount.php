@@ -359,14 +359,9 @@ class Discount extends AbstractModel
         return $this->hasMany(DiscountPublicEvent::class, 'discount_id');
     }
 
-    /**
-     * @return bool
-     */
-    public function isExpired()
+    public function scopeExpired(Builder $query): void
     {
-        $now = Carbon::now();
-        return (isset($this->start_date) && $now->lt($this->start_date))
-            || (isset($this->end_date) && $now->gt($this->end_date));
+        $query->where('end_date', '<', now())->whereNotNull('end_date');
     }
 
     public function scopeForRoleId(Builder $query, int $roleId): Builder
