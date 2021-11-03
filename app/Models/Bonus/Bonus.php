@@ -197,14 +197,14 @@ class Bonus extends AbstractModel
         return $this->hasMany(PromoCode::class, 'bonus_id');
     }
 
-    /**
-     * @return bool
-     */
-    public function isExpired()
+    public function isExpired(): bool
     {
-        $now = Carbon::now();
-        return (isset($this->start_date) && $now->lt($this->start_date))
-            || (isset($this->end_date) && $now->gt($this->end_date));
+        return $this->end_date && Carbon::parse($this->end_date)->isPast();
+    }
+
+    public function scopeExpired(Builder $query): void
+    {
+        $query->where('end_date', '<', now())->whereNotNull('end_date');
     }
 
     /**
