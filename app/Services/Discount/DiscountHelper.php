@@ -201,6 +201,10 @@ class DiscountHelper
             throw new HttpException(400, 'The discount relations are corrupted');
         }
 
+        if ($diffs->flatten(2)->isNotEmpty()) {
+            $discount->relationsWasRecentlyUpdated = true;
+        }
+
         return true;
     }
 }
