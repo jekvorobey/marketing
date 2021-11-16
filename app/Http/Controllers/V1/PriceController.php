@@ -165,12 +165,14 @@ class PriceController extends Controller
     public function setPrice(int $offerId, Request $request): Response
     {
         $price = (float) $request->input('price');
+        $nullable = (bool) $request->input('nullable');
 
         $ok = true;
         $priceModel = Price::query()
             ->where('offer_id', $offerId)
             ->first();
-        if (!$price && !is_null($priceModel)) {
+
+        if (!$nullable && !$price && !is_null($priceModel)) {
             //Удаляем цену на предложение
             try {
                 $ok = $priceModel->delete();
