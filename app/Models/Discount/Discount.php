@@ -173,6 +173,9 @@ class Discount extends AbstractModel
         'promo_code_only' => 'bool',
     ];
 
+    /** @var bool Индикатор, обозначающий что связи были обновлены. Нужен для вызова переиндесации в pim */
+    public bool $relationsWasRecentlyUpdated = false;
+
     /**
      * Доступные типы скидок
      * @return array
@@ -513,7 +516,9 @@ class Discount extends AbstractModel
         parent::boot();
 
         self::saved(function (self $discount) {
-            // $discount->updatePimContents();
+            if ($discount->isDirty() || $discount->relationsWasRecentlyUpdated) {
+                $discount->updatePimContents();
+            }
 
             $operatorService = app(OperatorService::class);
             $serviceNotificationService = app(ServiceNotificationService::class);
@@ -667,13 +672,9 @@ class Discount extends AbstractModel
             $serviceNotificationService = app(ServiceNotificationService::class);
             $serviceNotificationService->sendToAdmin('aozskidkaskidka_udalena');
         });
-
-        self::updated(function (self $discount) {
-            $discount->updatePimContents();
-        });
     }
 
-    public function updatePimContents()
+    public function updatePimContents(): void
     {
         static $actionPerformed = false;
 
@@ -683,13 +684,11 @@ class Discount extends AbstractModel
             $searchService = resolve(SearchService::class);
 
             $reindexRelations = function (string $function, string $relationName, string $column, bool &$actionPerformed) use ($searchService) {
-
                 /** @var Collection $oldRelations */
                 $oldRelations = $this->{$relationName};
 
-                $this->refresh();
                 /** @var Collection $newRelations */
-                $newRelations = $this->{$relationName};
+                $newRelations = $this->fresh()->{$relationName};
 
                 $relations = array_unique(array_merge($oldRelations->pluck($column)->all(), $newRelations->pluck($column)->all()));
                 if (!empty($relations)) {

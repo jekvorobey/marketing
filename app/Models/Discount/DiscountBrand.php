@@ -28,6 +28,10 @@ class DiscountBrand extends AbstractModel
     /** @var array */
     protected $fillable = self::FILLABLE;
 
+    protected $casts = [
+        'except' => 'bool',
+    ];
+
     public function discount(): BelongsTo
     {
         return $this->belongsTo(Discount::class);
