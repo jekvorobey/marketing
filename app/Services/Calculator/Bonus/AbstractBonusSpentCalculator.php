@@ -6,6 +6,7 @@ use App\Models\Bonus\ProductBonusOption\ProductBonusOption;
 use App\Models\Discount\Discount;
 use App\Models\Option\Option;
 use App\Services\Calculator\AbstractCalculator;
+use App\Services\Calculator\CalculatorChangePrice;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
 use Illuminate\Support\Collection;
@@ -196,7 +197,8 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
      */
     protected function applyDiscountForOffer(&$offer, int $value, int $qty, bool $apply = true): int
     {
-        $discount = $this->changePrice(
+        $calculatorChangePrice = new CalculatorChangePrice();
+        $discount = $calculatorChangePrice->changePrice(
             $offer,
             $value,
             Discount::DISCOUNT_VALUE_TYPE_RUB,
@@ -204,7 +206,7 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
             self::LOWEST_POSSIBLE_PRICE
         );
 
-        return self::round($discount) * $qty;
+        return $calculatorChangePrice::round($discount) * $qty;
     }
 
     /**

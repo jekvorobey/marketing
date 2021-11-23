@@ -4,18 +4,14 @@ namespace App\Services\Calculator\Discount;
 
 use App\Models\Discount\BundleItem;
 use App\Models\Discount\Discount;
-use App\Models\Discount\DiscountBrand;
-use App\Models\Discount\DiscountCategory;
 use App\Models\Discount\DiscountCondition;
-use App\Models\Discount\DiscountOffer;
-use App\Models\Discount\DiscountPublicEvent;
-use App\Models\Discount\DiscountSegment;
-use App\Models\Discount\DiscountUserRole;
 use App\Services\Calculator\AbstractCalculator;
+use App\Services\Calculator\Discount\Applier\BasketApplier;
+use App\Services\Calculator\Discount\Applier\DeliveryApplier;
+use App\Services\Calculator\Discount\Applier\OfferApplier;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
 use Illuminate\Support\Collection;
-use Pim\Core\PimException;
 
 /**
  * Class DiscountCalculator
@@ -43,12 +39,6 @@ class DiscountCalculator extends AbstractCalculator
     protected $offersByDiscounts;
 
     /**
-     * Если по какой-то скидке есть ограничение на максимальный итоговый размер скидки по офферу
-     * @var array [discount_id => ['value' => value, 'value_type' => value_type], ...]
-     */
-    protected $maxValueByDiscount = [];
-
-    /**
      * Список активных скидок
      * @var Collection
      */
@@ -74,12 +64,9 @@ class DiscountCalculator extends AbstractCalculator
         $this->offersByDiscounts = collect();
     }
 
-    /**
-     * @throws PimException
-     */
     public function calculate()
     {
-        $this->fetchActiveDiscounts()->fetchRelations();
+        $this->fetchDiscountsAndRelations();
 
         if (!empty($this->input->deliveries['items'])) {
             if (!$this->input->freeDelivery) {
@@ -106,103 +93,21 @@ class DiscountCalculator extends AbstractCalculator
         /** Считаются окончательные скидки + бонусы */
         $this->filter()->sort()->apply();
 
-        $this->input->offers->transform(function ($offer, $offerId) {
+        $this->getDiscountOutput();
+    }
 
-            if (!$this->offersByDiscounts->has($offerId)) {
-                $offer['discount'] = null;
-                $offer['discounts'] = null;
-                return $offer;
-            }
-            # Конечная цена товара после применения скидки всегда округляется до целого
-            $offer['price'] = round($offer['price']);
+    private function fetchDiscountsAndRelations()
+    {
+        $discountFetcher = new DiscountFetcher($this->input);
+        $this->discounts = $discountFetcher->getDiscounts();
+        $this->relations = $discountFetcher->getRelations();
+    }
 
-            $roundOffs = collect();
-            # Погрешность после применения базовых товарных скидок (не бандлов)
-            $basicError = 0;
-            if (isset($offer['discount'])) {
-                # Финальная скидка, в которую входит сама скидка и ошибка округления
-                $finalDiscount = $offer['cost'] - $offer['price'];
-                $basicError = $finalDiscount - $offer['discount'];
-                $basicDiscountsNumber = $this->offersByDiscounts[$offerId]->filter(function ($discount) {
-                        return !$this->input->bundles->contains($discount['id']);
-                })->count();
-                $diffPerDiscount = $basicDiscountsNumber > 0
-                    ? round($basicError / $basicDiscountsNumber, 2)
-                    : 0;
-                $correctionValue = $diffPerDiscount
-                    ? round($basicError - $diffPerDiscount * $basicDiscountsNumber, 3)
-                    : 0;
-
-                $roundOffs->put(0, [
-                    'error' => $diffPerDiscount,
-                    'correction' => $correctionValue,
-                    'affectedQty' => $offer['qty'],
-                ]);
-            }
-
-            $offer['bundles']->each(function ($bundle, $id) use ($roundOffs, $offer, &$basicError) {
-                if ($id == 0 || !isset($bundle['discount'])) {
-                    return;
-                }
-                $finalDiscount = $offer['cost'] - $bundle['price'];
-                $roundOffError = $finalDiscount - $bundle['discount'];
-
-                $roundOffs->put($id, [
-                    'error' => round($roundOffError - $basicError, 2),
-                    'correction' => 0,
-                    'affectedQty' => $bundle['qty'],
-                ]);
-            });
-
-            $this->offersByDiscounts[$offerId]->transform(function ($discount) use ($roundOffs) {
-                $key = $roundOffs->has($discount['id']) ? $discount['id'] : 0;
-                $roundOff = $roundOffs->get($key);
-                if (!$roundOff) {
-                    return $discount;
-                }
-
-                $resultedDiff = $roundOff['error'] + $roundOff['correction'];
-                $roundOff['correction'] = 0;
-                $roundOffs->put($key, $roundOff);
-
-                $discount['change'] = round($discount['change'] + $resultedDiff, 2);
-
-                $appliedDiscount = $this->appliedDiscounts->get($discount['id']);
-                $appliedDiscount['change'] = round($appliedDiscount['change'] + $resultedDiff * $roundOff['affectedQty'], 2);
-                $this->appliedDiscounts->put($discount['id'], $appliedDiscount);
-
-                return $discount;
-            });
-
-            /** @var Collection|null $discountsWithoutBundles */
-            $discountsWithoutBundles = $this->offersByDiscounts[$offerId]->filter(function ($discount) {
-                    return !$this->input->bundles->contains($discount['id']);
-            })->values();
-
-            $sum = round($discountsWithoutBundles->sum('change'), 2);
-            $offer['discount'] = $sum;
-
-            $offer['discounts'] = $discountsWithoutBundles->toArray();
-
-            /** @var Collection|null $discountsWithBundles */
-            $discountsWithBundles = $this->offersByDiscounts[$offerId]->filter(function ($discount) {
-                    return $this->input->bundles->contains($discount['id']);
-            })->keyBy('id');
-
-            if ($discountsWithBundles && !$discountsWithBundles->isEmpty()) {
-                $offer['bundles']->transform(function ($bundle, $bundleId) use ($sum, $discountsWithBundles, $discountsWithoutBundles) {
-                    if ($bundleId && $discountsWithBundles->has($bundleId)) {
-                        $bundle['discount'] = $sum + $discountsWithBundles[$bundleId]['change'];
-                        $bundle['discounts'] = $discountsWithoutBundles->push($discountsWithBundles[$bundleId]);
-                    }
-                    return $bundle;
-                });
-            }
-
-            return $offer;
-        });
-
-        $this->output->appliedDiscounts = $this->getExternalDiscountFormat();
+    private function getDiscountOutput(): void
+    {
+        $discountOutput = new DiscountOutput($this->input, $this->discounts, $this->relations, $this->offersByDiscounts, $this->appliedDiscounts);
+        $this->input->offers = $discountOutput->getOffers();
+        $this->output->appliedDiscounts = $discountOutput->getOutputFormat();
     }
 
     /**
@@ -243,7 +148,9 @@ class DiscountCalculator extends AbstractCalculator
                 # Скидка на определенные офферы
                 $offerIds = $this->relations['offers'][$discount->id]->pluck('offer_id');
 
-                $change = $this->applyDiscountToOffer($discount, $offerIds);
+                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->relations);
+                $offerApplier->setOfferIds($offerIds);
+                $change = $offerApplier->apply($discount);
                 break;
             case Discount::DISCOUNT_TYPE_ANY_OFFER:
                 # Скидка на все товары
@@ -251,7 +158,9 @@ class DiscountCalculator extends AbstractCalculator
                     ->where('product_id', '!=', null)
                     ->pluck('id');
 
-                $change = $this->applyDiscountToOffer($discount, $offerIds);
+                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->relations);
+                $offerApplier->setOfferIds($offerIds);
+                $change = $offerApplier->apply($discount);
                 break;
             case Discount::DISCOUNT_TYPE_BUNDLE_OFFER:
             case Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS:
@@ -274,7 +183,9 @@ class DiscountCalculator extends AbstractCalculator
                         });
 
                 if ($discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
-                    $change = $this->applyDiscountToOffer($discount, $offerIds);
+                    $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->relations);
+                    $offerApplier->setOfferIds($offerIds);
+                    $change = $offerApplier->apply($discount);
                 }
 
                 // todo Рассчет скидки для мастерклассов и для скидки на все бандлы
@@ -292,7 +203,9 @@ class DiscountCalculator extends AbstractCalculator
                 $exceptOfferIds = $this->getExceptOffersForDiscount($discount->id);
                 # Отбираем нужные офферы
                 $offerIds = $this->filterForBrand($brandIds, $exceptOfferIds, $discount->merchant_id);
-                $change = $this->applyDiscountToOffer($discount, $offerIds);
+                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->relations);
+                $offerApplier->setOfferIds($offerIds);
+                $change = $offerApplier->apply($discount);
                 break;
             case Discount::DISCOUNT_TYPE_CATEGORY:
             case Discount::DISCOUNT_TYPE_ANY_CATEGORY:
@@ -312,7 +225,9 @@ class DiscountCalculator extends AbstractCalculator
                     $exceptOfferIds,
                     $discount->merchant_id
                 );
-                $change = $this->applyDiscountToOffer($discount, $offerIds);
+                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->relations);
+                $offerApplier->setOfferIds($offerIds);
+                $change = $offerApplier->apply($discount);
                 break;
             case Discount::DISCOUNT_TYPE_DELIVERY:
                 // Если используется бесплатная доставка (например, по промокоду), то не использовать скидку
@@ -323,20 +238,18 @@ class DiscountCalculator extends AbstractCalculator
                 $deliveryId = $this->input->deliveries['current']['id'] ?? null;
                 if ($this->input->deliveries['items']->has($deliveryId)) {
                     $currentDeliveries = $this->input->deliveries['current'];
-                    $change = $this->changePrice(
-                        $currentDeliveries,
-                        $discount->value,
-                        $discount->value_type,
-                        true,
-                        self::FREE_DELIVERY_PRICE
-                    );
+                    $deliveryApplier = new DeliveryApplier();
+                    $deliveryApplier->setCurrentDeliveries($currentDeliveries);
+                    $change = $deliveryApplier->apply($discount);
+
                     $this->input->deliveries['current'] = $currentDeliveries;
                     $this->input->deliveries['items'][$deliveryId] = $this->input->deliveries['current'];
                 }
 
                 break;
             case Discount::DISCOUNT_TYPE_CART_TOTAL:
-                $change = $this->applyDiscountToBasket($discount);
+                $basketApplier = new BasketApplier($this->input, $this->offersByDiscounts);
+                $change = $basketApplier->apply($discount);
                 break;
             # Скидка на мастер-классы
             case Discount::DISCOUNT_TYPE_MASTERCLASS:
@@ -348,14 +261,18 @@ class DiscountCalculator extends AbstractCalculator
                     ->whereIn('ticket_type_id', $ticketTypeIds)
                     ->pluck('id');
 
-                $change = $this->applyDiscountToOffer($discount, $offerIds);
+                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->relations);
+                $offerApplier->setOfferIds($offerIds);
+                $change = $offerApplier->apply($discount);
                 break;
             case Discount::DISCOUNT_TYPE_ANY_MASTERCLASS:
                 $offerIds = $this->input->offers
                     ->whereStrict('product_id', null)
                     ->pluck('id');
 
-                $change = $this->applyDiscountToOffer($discount, $offerIds);
+                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->relations);
+                $offerApplier->setOfferIds($offerIds);
+                $change = $offerApplier->apply($discount);
                 break;
         }
 
@@ -370,274 +287,6 @@ class DiscountCalculator extends AbstractCalculator
         }
 
         return $change;
-    }
-
-    /**
-     * Применяет скидку ко всей корзине (распределяется равномерно по всем товарам)
-     *
-     * @param $discount
-     * @return int Абсолютный размер скидки (в руб.), который удалось использовать
-     */
-    protected function applyDiscountToBasket($discount)
-    {
-        if ($this->input->offers->isEmpty()) {
-            return false;
-        }
-
-        return $this->applyEvenly($discount, $this->input->offers->pluck('id'));
-    }
-
-    /**
-     * Можно ли применить скидку к офферу
-     *
-     * @param Discount $discount
-     * @param $offerId
-     *
-     * @return bool
-     */
-    protected function applicableToOffer($discount, $offerId)
-    {
-        if (
-            $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER ||
-            $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS ||
-            $discount->type == Discount::DISCOUNT_TYPE_ANY_BUNDLE
-        ) {
-            return true;
-        }
-
-        if ($this->appliedDiscounts->isEmpty() || !$this->offersByDiscounts->has($offerId)) {
-            return true;
-        }
-
-        if (!$this->relations['conditions']->has($discount->id)) {
-            return false;
-        }
-
-        /** @var Collection $discountIdsForOffer */
-        $discountIdsForOffer = $this->offersByDiscounts[$offerId]->pluck('id');
-
-        /** @var DiscountCondition $condition */
-        foreach ($this->relations['conditions'][$discount->id] as $condition) {
-            if ($condition->type === DiscountCondition::DISCOUNT_SYNERGY) {
-                $synergyDiscountIds = $condition->getSynergy();
-                if ($discountIdsForOffer->intersect($synergyDiscountIds)->count() !== $discountIdsForOffer->count()) {
-                    return false;
-                }
-
-                if ($condition->getMaxValueType()) {
-                    $this->maxValueByDiscount[$discount->id] = [
-                        'value_type' => $condition->getMaxValueType(),
-                        'value' => $condition->getMaxValue(),
-                    ];
-                }
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Равномерно распределяет скидку
-     *
-     * @param $discount
-     *
-     * @return int Абсолютный размер скидки (в руб.), который удалось использовать
-     */
-    protected function applyEvenly($discount, Collection $offerIds)
-    {
-        $priceOrders = $this->input->getPriceOrders();
-        if ($priceOrders <= 0) {
-            return 0.;
-        }
-
-        # Текущее значение скидки (в рублях, без учета скидок, которые могли применяться ранее)
-        $currentDiscountValue = 0;
-        # Номинальное значение скидки (в рублях)
-        $discountValue = $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_PERCENT
-            ? round($priceOrders * $discount->value / 100)
-            : $discount->value;
-        # Скидка не может быть больше, чем стоимость всей корзины
-        $discountValue = min($discountValue, $priceOrders);
-
-        /**
-         * Если скидку невозможно распределить равномерно по всем товарам,
-         * то использовать скидку, сверх номинальной
-         */
-        $force = false;
-        $prevCurrentDiscountValue = 0;
-        while ($currentDiscountValue < $discountValue && $priceOrders !== 0) {
-            /**
-             * Сортирует ID офферов.
-             * Сначала применяем скидки на самые дорогие товары (цена * количество)
-             * Если необходимо использовать скидку сверх номинальной ($force), то сортируем в обратном порядке.
-             */
-            $offerIds = $this->sortOrderIdsByTotalPrice($offerIds, $force);
-            $coefficient = ($discountValue - $currentDiscountValue) / $priceOrders;
-            foreach ($offerIds as $offerId) {
-                $offer = &$this->input->offers[$offerId];
-                $valueUp = ceil($offer['price'] * $coefficient);
-                $valueDown = floor($offer['price'] * $coefficient);
-                $changeUp = $this->changePrice($offer, $valueUp, Discount::DISCOUNT_VALUE_TYPE_RUB, false);
-                $changeDown = $this->changePrice($offer, $valueDown, Discount::DISCOUNT_VALUE_TYPE_RUB, false);
-                if ($changeUp * $offer['qty'] <= $discountValue - $currentDiscountValue || $force) {
-                    $change = $this->changePrice($offer, $valueUp, Discount::DISCOUNT_VALUE_TYPE_RUB);
-                } elseif ($changeDown * $offer['qty'] <= $discountValue - $currentDiscountValue || $force) {
-                    $change = $this->changePrice($offer, $valueDown, Discount::DISCOUNT_VALUE_TYPE_RUB);
-                } else {
-                    continue;
-                }
-
-                if (!$this->offersByDiscounts->has($offerId)) {
-                    $this->offersByDiscounts->put($offerId, collect());
-                }
-
-                $this->offersByDiscounts[$offerId]->push([
-                    'id' => $discount->id,
-                    'change' => $change,
-                    'value' => $discount->value,
-                    'value_type' => $discount->value_type,
-                ]);
-
-                $currentDiscountValue += $change * $offer['qty'];
-                if ($currentDiscountValue >= $discountValue) {
-                    break 2;
-                }
-            }
-
-            $priceOrders = $this->input->getPriceOrders();
-            if ($prevCurrentDiscountValue === $currentDiscountValue) {
-                if ($force) {
-                    break;
-                }
-
-                $force = true;
-            }
-
-            $prevCurrentDiscountValue = $currentDiscountValue;
-        }
-
-        return $currentDiscountValue;
-    }
-
-    /**
-     * Вместо равномерного распределения скидки по офферам (applyEvenly), применяет скидку к каждому офферу
-     *
-     * @param Discount $discount
-     *
-     * @return bool Результат применения скидки
-     */
-    protected function applyDiscountToOffer($discount, Collection $offerIds)
-    {
-        $offerIds = $offerIds->filter(function ($offerId) use ($discount) {
-            return $this->applicableToOffer($discount, $offerId);
-        });
-
-        if ($offerIds->isEmpty()) {
-            return false;
-        }
-
-        $value = $discount->value;
-        $valueType = $discount->value_type;
-        if ($discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
-            if ($valueType == Discount::DISCOUNT_VALUE_TYPE_RUB) {
-                $value /= $offerIds->count();
-            }
-        }
-
-        $hasProductQtyLimit = $discount->product_qty_limit > 0;
-        $restProductQtyLimit = $discount->product_qty_limit;
-        $changed = 0;
-        foreach ($offerIds as $offerId) {
-            $offer = &$this->input->offers[$offerId];
-            $lowestPossiblePrice = $offer['product_id'] ? self::LOWEST_POSSIBLE_PRICE : self::LOWEST_MASTERCLASS_PRICE;
-
-            // Если в условии на суммирование скидки было "не более x%", то переопределяем минимально возможную цену товара
-            if (isset($this->maxValueByDiscount[$discount->id])) {
-                // Получаем величину скидки, которая максимально возможна по условию
-                $maxDiscountValue = $this->calculateDiscountByType(
-                    $offer['cost'],
-                    $this->maxValueByDiscount[$discount->id]['value'],
-                    $this->maxValueByDiscount[$discount->id]['value_type']
-                );
-
-                // Чтобы не получить минимально возможную цену меньше 1р, выбираем наибольшее значение
-                $lowestPossiblePrice = max($lowestPossiblePrice, $offer['cost'] - $maxDiscountValue);
-            }
-
-            if ($hasProductQtyLimit) {
-                if ($restProductQtyLimit <= 0) {
-                    break;
-                }
-
-                $valueType = $discount->value_type;
-                $maxDiscountValue = $this->calculateDiscountByType($offer['price'], $value, $valueType);
-                $valueOfLimitDiscount = ceil($maxDiscountValue * min($offer['qty'], $restProductQtyLimit) / $offer['qty']);
-                $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB;
-                $restProductQtyLimit -= $offer['qty'];
-            }
-
-            $change = $this->changePrice($offer, $valueOfLimitDiscount ?? $value, $valueType, true, $lowestPossiblePrice, $discount);
-
-            if ($change <= 0) {
-                continue;
-            }
-
-            if (!$this->offersByDiscounts->has($offerId)) {
-                $this->offersByDiscounts->put($offerId, collect());
-            }
-
-            $this->offersByDiscounts[$offerId]->push([
-                'id' => $discount->id,
-                'change' => $change,
-                'value' => $discount->value,
-                'value_type' => $discount->value_type,
-            ]);
-            if ($discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
-                $qty = $offer['bundles'][$discount->id]['qty'];
-            } else {
-                $qty = $offer['qty'];
-            }
-
-            $changed += $change * $qty;
-        }
-
-        return $changed;
-    }
-
-    /**
-     * @return Collection
-     */
-    public function getExternalDiscountFormat()
-    {
-        $discounts = $this->discounts->filter(function ($discount) {
-            return $this->appliedDiscounts->has($discount->id);
-        })->keyBy('id');
-
-        $items = collect();
-        foreach ($discounts as $discount) {
-            $discountId = $discount->id;
-            $conditions = $this->relations['conditions']->has($discountId)
-                ? $this->relations['conditions'][$discountId]->toArray()
-                : [];
-
-            $extType = Discount::getExternalType($discount['type'], $conditions, $discount->promo_code_only);
-            $isPromoCodeDiscount = $this->input->promoCodeDiscount && $this->input->promoCodeDiscount->id = $discountId;
-            $items->push([
-                'id' => $discountId,
-                'name' => $discount->name,
-                'type' => $discount->type,
-                'external_type' => $extType,
-                'change' => $this->appliedDiscounts[$discountId]['change'],
-                'merchant_id' => $discount->merchant_id,
-                'visible_in_catalog' => $extType === Discount::EXT_TYPE_OFFER,
-                'promo_code_only' => $discount->promo_code_only,
-                'promo_code' => $isPromoCodeDiscount ? $this->input->promoCode : null,
-            ]);
-        }
-
-        return $items;
     }
 
     /**
@@ -738,23 +387,6 @@ class DiscountCalculator extends AbstractCalculator
             ->values();
 
         return $this;
-    }
-
-    /**
-     * @param bool $asc
-     *
-     * @return Collection
-     */
-    protected function sortOrderIdsByTotalPrice(Collection $offerIds, $asc = true)
-    {
-        return $offerIds->sort(function ($offerIdLft, $offerIdRgt) use ($asc) {
-            $offerLft = $this->input->offers[$offerIdLft];
-            $totalPriceLft = $offerLft['price'] * $offerLft['qty'];
-            $offerRgt = $this->input->offers[$offerIdRgt];
-            $totalPriceRgt = $offerRgt['price'] * $offerRgt['qty'];
-
-            return ($asc ? 1 : -1) * ($totalPriceLft - $totalPriceRgt);
-        });
     }
 
     /**
@@ -1037,182 +669,6 @@ class DiscountCalculator extends AbstractCalculator
     }
 
     /**
-     * Загружает необходимые данные о полученных скидках ($this->discount)
-     * @return $this
-     * @throws PimException
-     */
-    protected function fetchRelations()
-    {
-        $this->fetchDiscountOffers()
-            ->fetchDiscountBrands()
-            ->fetchDiscountCategories()
-            ->fetchDiscountPublicEvents()
-            ->fetchDiscountSegments()
-            ->fetchDiscountCustomerRoles()
-            ->fetchBundleItems();
-
-        return $this;
-    }
-
-    /**
-     * Получаем все возможные скидки и офферы из DiscountOffer
-     * @return $this
-     */
-    protected function fetchDiscountOffers()
-    {
-        $validTypes = [Discount::DISCOUNT_TYPE_OFFER, Discount::DISCOUNT_TYPE_BRAND, Discount::DISCOUNT_TYPE_CATEGORY];
-        if ($this->input->offers->isEmpty() || $this->existsAnyTypeInDiscounts($validTypes)) {
-            $this->relations['offers'] = collect();
-
-            return $this;
-        }
-
-        $this->relations['offers'] = DiscountOffer::select(['discount_id', 'offer_id', 'except'])
-            ->whereIn('discount_id', $this->discounts->pluck('id'))
-            ->whereIn('offer_id', $this->input->offers->pluck('id'))
-            ->get()
-            ->groupBy('discount_id');
-
-        return $this;
-    }
-
-    /**
-     * Получаем все возможные скидки и бренды из DiscountBrand
-     * @return $this
-     */
-    protected function fetchDiscountBrands()
-    {
-        /** Если не передали офферы, то пропускаем скидки на бренды */
-        $validTypes = [Discount::DISCOUNT_TYPE_BRAND, Discount::DISCOUNT_TYPE_CATEGORY];
-        if ($this->input->brands->isEmpty() || $this->existsAnyTypeInDiscounts($validTypes)) {
-            $this->relations['brands'] = collect();
-            return $this;
-        }
-
-        $this->relations['brands'] = DiscountBrand::select(['discount_id', 'brand_id', 'except'])
-            ->whereIn('discount_id', $this->discounts->pluck('id'))
-            ->whereIn('brand_id', $this->input->brands->keys())
-            ->get()
-            ->groupBy('discount_id');
-
-        return $this;
-    }
-
-    /**
-     * Получаем все возможные скидки и категории из DiscountCategory
-     * @return $this
-     * @throws PimException
-     */
-    protected function fetchDiscountCategories()
-    {
-        /** Если не передали офферы, то пропускаем скидки на категорию */
-        $validTypes = [Discount::DISCOUNT_TYPE_CATEGORY];
-        if ($this->input->categories->isEmpty() || $this->existsAnyTypeInDiscounts($validTypes)) {
-            $this->relations['categories'] = collect();
-
-            return $this;
-        }
-
-        $categories = InputCalculator::getAllCategories();
-        $this->relations['categories'] = DiscountCategory::select(['discount_id', 'category_id'])
-            ->whereIn('discount_id', $this->discounts->pluck('id'))
-            ->get()
-            ->filter(function ($discountCategory) use ($categories) {
-                $categoryLeaf = $categories[$discountCategory->category_id];
-                foreach ($this->input->categories->keys() as $categoryId) {
-                    if ($categoryLeaf->isSelfOrAncestorOf($categories[$categoryId])) {
-                        return true;
-                    }
-                }
-
-                return false;
-            })
-            ->groupBy('discount_id');
-
-        return $this;
-    }
-
-    /**
-     * Получаем скидки для мастер-классов
-     * @uses \App\Models\Discount\DiscountPublicEvent
-     * @return $this
-     */
-    protected function fetchDiscountPublicEvents()
-    {
-        /** Если не передали ID типов билетов, то пропускаем скидки на мастер-классы */
-        $validTypes = [Discount::DISCOUNT_TYPE_MASTERCLASS, Discount::DISCOUNT_TYPE_ANY_MASTERCLASS];
-        if ($this->input->ticketTypeIds->isEmpty() || $this->existsAnyTypeInDiscounts($validTypes)) {
-            $this->relations['ticketTypeIds'] = collect();
-
-            return $this;
-        }
-
-        $this->relations['ticketTypeIds'] = DiscountPublicEvent::select(['discount_id', 'ticket_type_id'])
-            ->whereIn('discount_id', $this->discounts->pluck('id'))
-            ->whereIn('ticket_type_id', $this->input->ticketTypeIds->keys())
-            ->get()
-            ->groupBy('discount_id');
-
-        return $this;
-    }
-
-    /**
-     * Получаем все возможные скидки и сегменты из DiscountSegment
-     * @return $this
-     */
-    protected function fetchDiscountSegments()
-    {
-        $this->relations['segments'] = DiscountSegment::select(['discount_id', 'segment_id'])
-            ->whereIn('discount_id', $this->discounts->pluck('id'))
-            ->get()
-            ->groupBy('discount_id')
-            ->transform(function ($segments) {
-                return $segments->pluck('segment_id');
-            });
-
-        return $this;
-    }
-
-    /**
-     * Получаем все возможные скидки и роли из DiscountRole
-     * @return $this
-     */
-    protected function fetchDiscountCustomerRoles()
-    {
-        $this->relations['roles'] = DiscountUserRole::select(['discount_id', 'role_id'])
-            ->whereIn('discount_id', $this->discounts->pluck('id'))
-            ->get()
-            ->groupBy('discount_id')
-            ->transform(function ($segments) {
-                return $segments->pluck('role_id');
-            });
-
-        return $this;
-    }
-
-    /**
-     * Получаем все возможные скидки из BundleItems
-     * @return $this
-     */
-    protected function fetchBundleItems()
-    {
-        /** Если не передали офферы, то пропускаем скидки на бренды */
-        $validTypes = [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS];
-        if ($this->input->bundles->isEmpty() || $this->existsAnyTypeInDiscounts($validTypes)) {
-            $this->relations['bundleItems'] = collect();
-            return $this;
-        }
-
-        $this->relations['bundleItems'] = BundleItem::query()
-            ->select(['discount_id', 'item_id'])
-            ->whereIn('discount_id', $this->input->bundles)
-            ->get()
-            ->groupBy('discount_id');
-
-        return $this;
-    }
-
-    /**
      * Получаем все возможные скидки и условия из DiscountCondition
      *
      *
@@ -1224,39 +680,6 @@ class DiscountCalculator extends AbstractCalculator
             ->whereIn('discount_id', $discountIds)
             ->get()
             ->groupBy('discount_id');
-
-        return $this;
-    }
-
-    /**
-     * Получить все активные скидки
-     *
-     * @return $this
-     */
-    protected function fetchActiveDiscounts()
-    {
-        $this->discounts = Discount::select([
-            'id',
-            'type',
-            'name',
-            'merchant_id',
-            'value',
-            'value_type',
-            'promo_code_only',
-            'merchant_id',
-            'product_qty_limit',
-        ])
-            ->where(function ($query) {
-                $query->where('promo_code_only', false);
-                $promoCodeDiscountId = $this->input->promoCodeDiscount->id ?? null;
-                if ($promoCodeDiscountId) {
-                    $query->orWhere('id', $promoCodeDiscountId);
-                }
-            })
-            ->active()
-            ->orderBy('promo_code_only')
-            ->orderBy('type')
-            ->get();
 
         return $this;
     }
