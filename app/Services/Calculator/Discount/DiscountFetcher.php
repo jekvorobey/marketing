@@ -2,28 +2,21 @@
 
 namespace App\Services\Calculator\Discount;
 
-use App\Models\Discount\BundleItem;
 use App\Models\Discount\Discount;
-use App\Models\Discount\DiscountBrand;
-use App\Models\Discount\DiscountCategory;
-use App\Models\Discount\DiscountOffer;
-use App\Models\Discount\DiscountPublicEvent;
-use App\Models\Discount\DiscountSegment;
-use App\Models\Discount\DiscountUserRole;
 use App\Services\Calculator\InputCalculator;
-use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use Pim\Core\PimException;
 
 class DiscountFetcher
 {
     private Collection $discounts;
-    private Collection $relations;
+    private InputCalculator $input;
 
-    public function __construct(private InputCalculator $input)
+    public function __construct(InputCalculator $input)
     {
         $this->discounts = collect();
-        $this->relations = collect();
+        $this->input = $input;
     }
 
     public function getDiscounts(): Collection
@@ -34,31 +27,9 @@ class DiscountFetcher
     }
 
     /**
-     * @throws PimException
+     * Получаем все скидки
      */
-    public function getRelations(): Collection
-    {
-        $this->fetchRelations();
-
-        return $this->relations;
-    }
-
-    /**
-     * Загружает необходимые данные о полученных скидках ($this->discount)
-     * @throws PimException
-     */
-    private function fetchRelations(): void
-    {
-        $this->fetchDiscountOffers()
-            ->fetchDiscountBrands()
-            ->fetchDiscountCategories()
-            ->fetchDiscountPublicEvents()
-            ->fetchDiscountSegments()
-            ->fetchDiscountCustomerRoles()
-            ->fetchBundleItems();
-    }
-
-    private function fetchDiscounts()
+    private function fetchDiscounts(): void
     {
         $this->discounts = Discount::select([
             'id',
@@ -82,15 +53,24 @@ class DiscountFetcher
             ->orderBy('promo_code_only')
             ->orderBy('type')
             ->with($this->withOffers())
-            ->get();
-
-        return $this;
+            ->with($this->withBrands())
+            ->with($this->withCategories())
+            ->with($this->withPublicEvents())
+            ->with($this->withSegments())
+            ->with($this->withRoles())
+            ->with($this->withBundleItems())
+            ->with($this->withConditions())
+            ->get()
+            ->keyBy('id');
     }
 
+    /**
+     * Получаем все возможные офферы из DiscountOffer
+     */
     private function withOffers(): array
     {
         return [
-            'offers' => function (Builder $builder): void {
+            'offers' => function (Relation $builder): void {
                 $builder
                     ->select(['discount_id', 'offer_id', 'except'])
                     ->whereIn('offer_id', $this->input->offers->pluck('id'));
@@ -99,167 +79,111 @@ class DiscountFetcher
     }
 
     /**
-     * Получаем все возможные скидки и офферы из DiscountOffer
+     * Получаем все возможные бренды из DiscountBrand
      */
-    protected function fetchDiscountOffers(): self
+    private function withBrands(): array
     {
-        $validTypes = [Discount::DISCOUNT_TYPE_OFFER, Discount::DISCOUNT_TYPE_BRAND, Discount::DISCOUNT_TYPE_CATEGORY];
-        if ($this->input->offers->isEmpty() || $this->existsAnyTypeInDiscounts($validTypes)) {
-            $this->relations['offers'] = collect();
-
-            return $this;
-        }
-
-        $this->relations['offers'] = DiscountOffer::select(['discount_id', 'offer_id', 'except'])
-            ->whereIn('discount_id', $this->discounts->pluck('id'))
-            ->whereIn('offer_id', $this->input->offers->pluck('id'))
-            ->get()
-            ->groupBy('discount_id');
-
-        return $this;
+        return [
+            'brands' => function (Relation $builder): void {
+                $builder
+                    ->select(['discount_id', 'brand_id', 'except'])
+                    ->whereIn('brand_id', $this->input->brands->keys());
+            },
+        ];
     }
 
     /**
-     * Получаем все возможные скидки и бренды из DiscountBrand
-     */
-    protected function fetchDiscountBrands(): self
-    {
-        /** Если не передали офферы, то пропускаем скидки на бренды */
-        $validTypes = [Discount::DISCOUNT_TYPE_BRAND, Discount::DISCOUNT_TYPE_CATEGORY];
-        if ($this->input->brands->isEmpty() || $this->existsAnyTypeInDiscounts($validTypes)) {
-            $this->relations['brands'] = collect();
-            return $this;
-        }
-
-        $this->relations['brands'] = DiscountBrand::select(['discount_id', 'brand_id', 'except'])
-            ->whereIn('discount_id', $this->discounts->pluck('id'))
-            ->whereIn('brand_id', $this->input->brands->keys())
-            ->get()
-            ->groupBy('discount_id');
-
-        return $this;
-    }
-
-    /**
-     * Получаем все возможные скидки и категории из DiscountCategory
+     * Получаем все возможные категории из DiscountCategory
      * @throws PimException
      */
-    protected function fetchDiscountCategories(): self
+    private function withCategories(): array
     {
-        /** Если не передали офферы, то пропускаем скидки на категорию */
-        $validTypes = [Discount::DISCOUNT_TYPE_CATEGORY];
-        if ($this->input->categories->isEmpty() || $this->existsAnyTypeInDiscounts($validTypes)) {
-            $this->relations['categories'] = collect();
-
-            return $this;
-        }
-
         $categories = InputCalculator::getAllCategories();
-        $this->relations['categories'] = DiscountCategory::select(['discount_id', 'category_id'])
-            ->whereIn('discount_id', $this->discounts->pluck('id'))
-            ->get()
-            ->filter(function ($discountCategory) use ($categories) {
-                $categoryLeaf = $categories[$discountCategory->category_id];
-                foreach ($this->input->categories->keys() as $categoryId) {
-                    if ($categoryLeaf->isSelfOrAncestorOf($categories[$categoryId])) {
-                        return true;
-                    }
-                }
 
-                return false;
-            })
-            ->groupBy('discount_id');
+        return [
+            'categories' => function (Relation $builder) use ($categories): void {
+                $builder
+                    ->select(['discount_id', 'category_id'])
+                    ->whereIn('discount_id', $this->discounts->pluck('id'))
+                    ->get()
+                    ->filter(function ($discountCategory) use ($categories) {
+                        $categoryLeaf = $categories[$discountCategory->category_id];
+                        foreach ($this->input->categories->keys() as $categoryId) {
+                            if ($categoryLeaf->isSelfOrAncestorOf($categories[$categoryId])) {
+                                return true;
+                            }
+                        }
 
-        return $this;
+                        return false;
+                    });
+
+            }
+        ];
     }
 
     /**
      * Получаем скидки для мастер-классов
-     * @uses \App\Models\Discount\DiscountPublicEvent
      */
-    protected function fetchDiscountPublicEvents(): self
+    private function withPublicEvents(): array
     {
-        /** Если не передали ID типов билетов, то пропускаем скидки на мастер-классы */
-        $validTypes = [Discount::DISCOUNT_TYPE_MASTERCLASS, Discount::DISCOUNT_TYPE_ANY_MASTERCLASS];
-        if ($this->input->ticketTypeIds->isEmpty() || $this->existsAnyTypeInDiscounts($validTypes)) {
-            $this->relations['ticketTypeIds'] = collect();
-
-            return $this;
-        }
-
-        $this->relations['ticketTypeIds'] = DiscountPublicEvent::select(['discount_id', 'ticket_type_id'])
-            ->whereIn('discount_id', $this->discounts->pluck('id'))
-            ->whereIn('ticket_type_id', $this->input->ticketTypeIds->keys())
-            ->get()
-            ->groupBy('discount_id');
-
-        return $this;
+        return [
+            'publicEvents' => function (Relation $builder): void {
+                $builder
+                    ->select(['discount_id', 'ticket_type_id'])
+                    ->whereIn('ticket_type_id', $this->input->ticketTypeIds->keys());
+            },
+        ];
     }
 
     /**
-     * Получаем все возможные скидки и сегменты из DiscountSegment
+     * Получаем все возможные сегменты из DiscountSegment
      */
-    protected function fetchDiscountSegments(): self
+    private function withSegments(): array
     {
-        $this->relations['segments'] = DiscountSegment::select(['discount_id', 'segment_id'])
-            ->whereIn('discount_id', $this->discounts->pluck('id'))
-            ->get()
-            ->groupBy('discount_id')
-            ->transform(function ($segments) {
-                return $segments->pluck('segment_id');
-            });
-
-        return $this;
+        return [
+            'segments' => function (Relation $builder): void {
+                $builder
+                    ->select(['discount_id', 'segment_id']);
+            },
+        ];
     }
 
     /**
-     * Получаем все возможные скидки и роли из DiscountRole
+     * Получаем все возможные роли из DiscountRole
      */
-    protected function fetchDiscountCustomerRoles(): self
+    private function withRoles(): array
     {
-        $this->relations['roles'] = DiscountUserRole::select(['discount_id', 'role_id'])
-            ->whereIn('discount_id', $this->discounts->pluck('id'))
-            ->get()
-            ->groupBy('discount_id')
-            ->transform(function ($segments) {
-                return $segments->pluck('role_id');
-            });
-
-        return $this;
+        return [
+            'roles' => function (Relation $builder): void {
+                $builder
+                    ->select(['discount_id', 'role_id']);
+            },
+        ];
     }
 
     /**
-     * Получаем все возможные скидки из BundleItems
+     * Получаем все BundleItems
      */
-    protected function fetchBundleItems(): self
+    private function withBundleItems(): array
     {
-        /** Если не передали офферы, то пропускаем скидки на бренды */
-        $validTypes = [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS];
-        if ($this->input->bundles->isEmpty() || $this->existsAnyTypeInDiscounts($validTypes)) {
-            $this->relations['bundleItems'] = collect();
-            return $this;
-        }
-
-        $this->relations['bundleItems'] = BundleItem::query()
-            ->select(['discount_id', 'item_id'])
-            ->whereIn('discount_id', $this->input->bundles)
-            ->get()
-            ->groupBy('discount_id');
-
-        return $this;
+        return [
+            'bundleItems' => function (Relation $builder): void {
+                $builder
+                    ->select(['discount_id', 'item_id']);
+            },
+        ];
     }
 
     /**
-     * Существует ли хотя бы одна скидка с одним из типов скидки ($types)
-     *
-     * метод не совсем соответсвует названию, в случае если существует скидка с таким типом,
-     * то возвращается false, хотя по названию должно возвращаться true
+     * Получаем все возможные условия из DiscountCondition
      */
-    protected function existsAnyTypeInDiscounts(array $types): bool
+    private function withConditions(): array
     {
-        return $this->discounts->groupBy('type')
-            ->keys()
-            ->intersect($types)
-            ->isEmpty();
+        return [
+            'conditions' => function (Relation $builder): void {
+                $builder
+                    ->select(['discount_id', 'type', 'condition']);
+            },
+        ];
     }
 }

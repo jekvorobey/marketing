@@ -10,20 +10,17 @@ class DiscountOutput
 {
     private InputCalculator $input;
     private Collection $discounts;
-    private Collection $relations;
     private Collection $appliedDiscounts;
     private Collection $offersByDiscounts;
 
     public function __construct(
         InputCalculator $input,
         Collection $discounts,
-        Collection $relations,
         Collection $offersByDiscounts,
         Collection $appliedDiscounts
     ) {
         $this->input = $input;
         $this->discounts = $discounts;
-        $this->relations = $relations;
         $this->appliedDiscounts = $appliedDiscounts;
         $this->offersByDiscounts = $offersByDiscounts;
     }
@@ -136,8 +133,8 @@ class DiscountOutput
         $items = collect();
         foreach ($discounts as $discount) {
             $discountId = $discount->id;
-            $conditions = $this->relations['conditions']->has($discountId)
-                ? $this->relations['conditions'][$discountId]->toArray()
+            $conditions = $this->discounts->get($discountId)->conditions
+                ? $this->discounts->get($discountId)->conditions->toArray()
                 : [];
 
             $extType = Discount::getExternalType($discount['type'], $conditions, $discount->promo_code_only);

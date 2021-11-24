@@ -18,19 +18,19 @@ class OfferApplier implements Applier
     private InputCalculator $input;
     private Collection $offersByDiscounts;
     private Collection $appliedDiscounts;
-    private Collection $relations;
     private Collection $offerIds;
+    private Collection $discounts;
 
     public function __construct(
         InputCalculator $input,
         Collection $offersByDiscounts,
         Collection $appliedDiscounts,
-        Collection $relations
+        Collection $discounts
     ) {
         $this->input = $input;
         $this->offersByDiscounts = $offersByDiscounts;
         $this->appliedDiscounts = $appliedDiscounts;
-        $this->relations = $relations;
+        $this->discounts = $discounts;
     }
 
     public function setOfferIds(Collection $offerIds): void
@@ -121,9 +121,9 @@ class OfferApplier implements Applier
     protected function applicableToOffer(Discount $discount, $offerId): bool
     {
         if (
-            $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER ||
-            $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS ||
-            $discount->type == Discount::DISCOUNT_TYPE_ANY_BUNDLE
+            $discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER ||
+            $discount->type === Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS ||
+            $discount->type === Discount::DISCOUNT_TYPE_ANY_BUNDLE
         ) {
             return true;
         }
@@ -132,15 +132,12 @@ class OfferApplier implements Applier
             return true;
         }
 
-        if (!$this->relations['conditions']->has($discount->id)) {
-            return false;
-        }
-
         /** @var Collection $discountIdsForOffer */
         $discountIdsForOffer = $this->offersByDiscounts[$offerId]->pluck('id');
 
+        $discountConditions = $this->discounts->get($discount->id)->conditions;
         /** @var DiscountCondition $condition */
-        foreach ($this->relations['conditions'][$discount->id] as $condition) {
+        foreach ($discountConditions as $condition) {
             if ($condition->type === DiscountCondition::DISCOUNT_SYNERGY) {
                 $synergyDiscountIds = $condition->getSynergy();
                 if ($discountIdsForOffer->intersect($synergyDiscountIds)->count() !== $discountIdsForOffer->count()) {
