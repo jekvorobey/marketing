@@ -14,16 +14,25 @@ class DeliveryApplier implements Applier
         $this->currentDeliveries = &$currentDeliveries;
     }
 
+    public function getModifiedCurrentDeliveries()
+    {
+        return $this->currentDeliveries;
+    }
+
     public function apply(Discount $discount): ?float
     {
         $calculatorChangePrice = new CalculatorChangePrice();
 
-        return $calculatorChangePrice->changePrice(
+        $changedPrice = $calculatorChangePrice->changePrice(
             $this->currentDeliveries,
             $discount->value,
             $discount->value_type,
-            true,
             CalculatorChangePrice::FREE_DELIVERY_PRICE
         );
+        $this->currentDeliveries['discount'] = $changedPrice['discount'];
+        $this->currentDeliveries['price'] = $changedPrice['price'];
+        $this->currentDeliveries['cost'] = $changedPrice['cost'];
+
+        return $changedPrice['discountValue'];
     }
 }

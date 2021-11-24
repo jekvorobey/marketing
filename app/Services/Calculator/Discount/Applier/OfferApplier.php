@@ -38,6 +38,16 @@ class OfferApplier implements Applier
         $this->offerIds = $offerIds;
     }
 
+    public function getModifiedOffersByDiscounts(): Collection
+    {
+        return $this->offersByDiscounts;
+    }
+
+    public function getModifiedInputOffers(): Collection
+    {
+        return $this->input->offers;
+    }
+
     public function apply(Discount $discount): ?float
     {
         $offerIds = $this->offerIds->filter(function ($offerId) use ($discount) {
@@ -59,57 +69,62 @@ class OfferApplier implements Applier
         $restProductQtyLimit = $discount->product_qty_limit;
         $changed = 0;
         foreach ($offerIds as $offerId) {
-            $offer = &$this->input->offers[$offerId];
-            $lowestPossiblePrice = $offer['product_id'] ? CalculatorChangePrice::LOWEST_POSSIBLE_PRICE : CalculatorChangePrice::LOWEST_MASTERCLASS_PRICE;
+            if (isset($this->input->offers[$offerId])) {
+                $offer = $this->input->offers[$offerId];
+                $lowestPossiblePrice = $offer['product_id'] ? CalculatorChangePrice::LOWEST_POSSIBLE_PRICE : CalculatorChangePrice::LOWEST_MASTERCLASS_PRICE;
 
-            // Если в условии на суммирование скидки было "не более x%", то переопределяем минимально возможную цену товара
-            if (isset($this->maxValueByDiscount[$discount->id])) {
-                // Получаем величину скидки, которая максимально возможна по условию
-                $maxDiscountValue = $calculatorChangePrice->calculateDiscountByType(
-                    $offer['cost'],
-                    $this->maxValueByDiscount[$discount->id]['value'],
-                    $this->maxValueByDiscount[$discount->id]['value_type']
-                );
+                // Если в условии на суммирование скидки было "не более x%", то переопределяем минимально возможную цену товара
+                if (isset($this->maxValueByDiscount[$discount->id])) {
+                    // Получаем величину скидки, которая максимально возможна по условию
+                    $maxDiscountValue = $calculatorChangePrice->calculateDiscountByType(
+                        $offer['cost'],
+                        $this->maxValueByDiscount[$discount->id]['value'],
+                        $this->maxValueByDiscount[$discount->id]['value_type']
+                    );
 
-                // Чтобы не получить минимально возможную цену меньше 1р, выбираем наибольшее значение
-                $lowestPossiblePrice = max($lowestPossiblePrice, $offer['cost'] - $maxDiscountValue);
-            }
-
-            if ($hasProductQtyLimit) {
-                if ($restProductQtyLimit <= 0) {
-                    break;
+                    // Чтобы не получить минимально возможную цену меньше 1р, выбираем наибольшее значение
+                    $lowestPossiblePrice = max($lowestPossiblePrice, $offer['cost'] - $maxDiscountValue);
                 }
 
-                $valueType = $discount->value_type;
-                $maxDiscountValue = $calculatorChangePrice->calculateDiscountByType($offer['price'], $value, $valueType);
-                $valueOfLimitDiscount = ceil($maxDiscountValue * min($offer['qty'], $restProductQtyLimit) / $offer['qty']);
-                $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB;
-                $restProductQtyLimit -= $offer['qty'];
+                if ($hasProductQtyLimit) {
+                    if ($restProductQtyLimit <= 0) {
+                        break;
+                    }
+
+                    $valueType = $discount->value_type;
+                    $maxDiscountValue = $calculatorChangePrice->calculateDiscountByType($offer['price'], $value, $valueType);
+                    $valueOfLimitDiscount = ceil($maxDiscountValue * min($offer['qty'], $restProductQtyLimit) / $offer['qty']);
+                    $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB;
+                    $restProductQtyLimit -= $offer['qty'];
+                }
+
+                $changedPrice = $calculatorChangePrice->changePrice($offer, $valueOfLimitDiscount ?? $value, $valueType, $lowestPossiblePrice, $discount);
+                $offer['discount'] = $changedPrice['discount'];
+                $offer['price'] = $changedPrice['price'];
+                $offer['cost'] = $changedPrice['cost'];
+                $change = $changedPrice['discountValue'];
+                if ($change <= 0) {
+                    continue;
+                }
+
+                if (!$this->offersByDiscounts->has($offerId)) {
+                    $this->offersByDiscounts->put($offerId, collect());
+                }
+
+                $this->offersByDiscounts[$offerId]->push([
+                    'id' => $discount->id,
+                    'change' => $change,
+                    'value' => $discount->value,
+                    'value_type' => $discount->value_type,
+                ]);
+                if ($discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
+                    $qty = $offer['bundles'][$discount->id]['qty'];
+                } else {
+                    $qty = $offer['qty'];
+                }
+
+                $changed += $change * $qty;
             }
-
-            $change = $calculatorChangePrice->changePrice($offer, $valueOfLimitDiscount ?? $value, $valueType, true, $lowestPossiblePrice, $discount);
-
-            if ($change <= 0) {
-                continue;
-            }
-
-            if (!$this->offersByDiscounts->has($offerId)) {
-                $this->offersByDiscounts->put($offerId, collect());
-            }
-
-            $this->offersByDiscounts[$offerId]->push([
-                'id' => $discount->id,
-                'change' => $change,
-                'value' => $discount->value,
-                'value_type' => $discount->value_type,
-            ]);
-            if ($discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
-                $qty = $offer['bundles'][$discount->id]['qty'];
-            } else {
-                $qty = $offer['qty'];
-            }
-
-            $changed += $change * $qty;
         }
 
         return $changed;

@@ -56,21 +56,19 @@ class CalculatorChangePrice
      * @param OfferDto|array $item - оффер или доставка (если array)
      * @param $value
      * @param int $valueType
-     * @param bool $apply нужно ли применять скидку
      * @param int $lowestPossiblePrice Самая низкая возможная цена (по умолчанию = 1 рубль)
      *
-     * @return float
      */
     public function changePrice(
-        &$item,
+        $item,
         $value,
         $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB,
-        $apply = true,
         int $lowestPossiblePrice = self::LOWEST_POSSIBLE_PRICE,
         ?Discount $discount = null
-    ) {
+    ): array {
+        $result = [];
         if (!isset($item['price']) || $value <= 0) {
-            return 0;
+            return ['discountValue' => 0];
         }
 
         if ($item instanceof OfferDto && !$item->product_id) {
@@ -81,7 +79,7 @@ class CalculatorChangePrice
             if ($item['bundles']->has($discount->id)) {
                 $offerInBundle = &$item['bundles'][$discount->id];
             } else {
-                return 0;
+                return ['discountValue' => 0];
             }
 
             $offerInBundle['price'] ??= $item['price'];
@@ -100,8 +98,10 @@ class CalculatorChangePrice
                 $offerInBundle['discount'] = $currentDiscount + $discountValue;
                 $offerInBundle['price'] = self::round($currentCost - $offerInBundle['discount'], self::ROUND);
                 $offerInBundle['cost'] = $currentCost;
-                $item['cost'] = $currentCost;
+                $result['cost'] = $currentCost;
             }
+
+            $result['discountValue'] = $discountValue;
         } else {
             $currentDiscount = $item['discount'] ?? 0;
             $currentCost = $item['cost'] ?? $item['price'];
@@ -113,13 +113,15 @@ class CalculatorChangePrice
             }
 
             if ($apply) {
-                $item['discount'] = $currentDiscount + $discountValue;
-                $item['price'] = round($currentCost - $item['discount'], 2);
-                $item['cost'] = $currentCost;
+                $result['discount'] = $currentDiscount + $discountValue;
+                $result['price'] = round($currentCost - $result['discount'], 2);
+                $result['cost'] = $currentCost;
             }
+
+            $result['discountValue'] = $discountValue;
         }
 
-        return $discountValue;
+        return $result;
     }
 
     /**

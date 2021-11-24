@@ -25,6 +25,16 @@ class DiscountOutput
         $this->offersByDiscounts = $offersByDiscounts;
     }
 
+    public function getModifiedAppliedDiscounts(): Collection
+    {
+        return $this->appliedDiscounts;
+    }
+
+    public function getModifiedOffersByDiscounts(): Collection
+    {
+        return $this->offersByDiscounts;
+    }
+
     public function getOffers(): Collection
     {
         return $this->input->offers->transform(function ($offer, $offerId) {

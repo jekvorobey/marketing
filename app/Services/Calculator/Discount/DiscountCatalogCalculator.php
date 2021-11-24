@@ -10,61 +10,21 @@ use Illuminate\Support\Collection;
 
 class DiscountCatalogCalculator extends DiscountCalculator
 {
-    /**
-     * Получаем все возможные скидки и офферы из DiscountOffer
-     * @return $this
-     */
-    protected function fetchDiscountOffers()
+    public const DISCOUNT_TYPES_OF_CATALOG = [
+        Discount::DISCOUNT_TYPE_OFFER,
+        Discount::DISCOUNT_TYPE_ANY_OFFER,
+        Discount::DISCOUNT_TYPE_BRAND,
+        Discount::DISCOUNT_TYPE_ANY_BRAND,
+        Discount::DISCOUNT_TYPE_CATEGORY,
+        Discount::DISCOUNT_TYPE_ANY_CATEGORY,
+        Discount::DISCOUNT_TYPE_MASTERCLASS,
+        Discount::DISCOUNT_TYPE_ANY_MASTERCLASS,
+    ];
+
+    protected function fetchDiscounts(): void
     {
-        $this->relations['offers'] = DiscountOffer::select(['discount_id', 'offer_id', 'except'])
-            ->whereIn('discount_id', $this->discounts->pluck('id'))
-            ->get()
-            ->filter(function ($discountOffer) {
-                return $this->input->offers->has($discountOffer['offer_id']);
-            })
-            ->groupBy('discount_id');
-        return $this;
-    }
-
-    /**
-     * Получаем все возможные скидки и бренды из DiscountBrand
-     * @return $this
-     */
-    protected function fetchDiscountBrands()
-    {
-        $this->relations['brands'] = DiscountBrand::select(['discount_id', 'brand_id', 'except'])
-            ->whereIn('discount_id', $this->discounts->pluck('id'))
-            ->get()
-            ->filter(function ($discountBrand) {
-                return $this->input->brands->has($discountBrand['brand_id']);
-            })
-            ->groupBy('discount_id');
-
-        return $this;
-    }
-
-    /**
-     * Получаем все возможные скидки и условия из DiscountCondition
-     * @return $this
-     */
-    protected function fetchDiscountConditions(Collection $discountIds)
-    {
-        $this->relations['conditions'] = DiscountCondition::select(['discount_id', 'type', 'condition'])
-            ->whereIn('discount_id', $discountIds)
-            ->get()
-            ->groupBy('discount_id');
-
-        return $this;
-    }
-
-    /**
-     * Можно ли применить данную скидку (независимо от других скидок)
-     */
-    protected function checkDiscount(Discount $discount): bool
-    {
-        return $this->checkType($discount)
-            && $this->checkCustomerRole($discount)
-            && $this->checkSegment($discount);
+        $discountFetcher = new DiscountFetcher($this->input);
+        $this->discounts = $discountFetcher->getDiscounts(self::DISCOUNT_TYPES_OF_CATALOG);
     }
 
     /**
@@ -88,20 +48,5 @@ class DiscountCatalogCalculator extends DiscountCalculator
         }
 
         return true;
-    }
-
-    /**
-     * Получить все активные скидки, которые могут быть показаны (рассчитаны) в каталоге
-     *
-     * @return $this
-     */
-    protected function fetchActiveDiscounts()
-    {
-        $this->discounts = Discount::select(['id', 'type', 'value', 'value_type', 'promo_code_only', 'merchant_id'])
-            ->showInCatalog()
-            ->orderBy('type')
-            ->get();
-
-        return $this;
     }
 }

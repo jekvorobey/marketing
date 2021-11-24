@@ -89,7 +89,7 @@ class DiscountCalculator extends AbstractCalculator
         $this->getDiscountOutput();
     }
 
-    private function fetchDiscounts(): void
+    protected function fetchDiscounts(): void
     {
         $discountFetcher = new DiscountFetcher($this->input);
         $this->discounts = $discountFetcher->getDiscounts();
@@ -99,6 +99,8 @@ class DiscountCalculator extends AbstractCalculator
     {
         $discountOutput = new DiscountOutput($this->input, $this->discounts, $this->offersByDiscounts, $this->appliedDiscounts);
         $this->input->offers = $discountOutput->getOffers();
+        $this->offersByDiscounts = $discountOutput->getModifiedOffersByDiscounts();
+        $this->appliedDiscounts = $discountOutput->getModifiedAppliedDiscounts();
         $this->output->appliedDiscounts = $discountOutput->getOutputFormat();
     }
 
@@ -142,6 +144,8 @@ class DiscountCalculator extends AbstractCalculator
                 $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->discounts);
                 $offerApplier->setOfferIds($offerIds);
                 $change = $offerApplier->apply($discount);
+                $this->offersByDiscounts = $offerApplier->getModifiedOffersByDiscounts();
+                $this->input->offers = $offerApplier->getModifiedInputOffers();
                 break;
             case Discount::DISCOUNT_TYPE_ANY_OFFER:
                 # Скидка на все товары
@@ -152,6 +156,8 @@ class DiscountCalculator extends AbstractCalculator
                 $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->discounts);
                 $offerApplier->setOfferIds($offerIds);
                 $change = $offerApplier->apply($discount);
+                $this->offersByDiscounts = $offerApplier->getModifiedOffersByDiscounts();
+                $this->input->offers = $offerApplier->getModifiedInputOffers();
                 break;
             case Discount::DISCOUNT_TYPE_BUNDLE_OFFER:
             case Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS:
@@ -178,6 +184,8 @@ class DiscountCalculator extends AbstractCalculator
                     $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->discounts);
                     $offerApplier->setOfferIds($offerIds);
                     $change = $offerApplier->apply($discount);
+                    $this->offersByDiscounts = $offerApplier->getModifiedOffersByDiscounts();
+                    $this->input->offers = $offerApplier->getModifiedInputOffers();
                 }
 
                 // todo Рассчет скидки для мастерклассов и для скидки на все бандлы
@@ -198,6 +206,8 @@ class DiscountCalculator extends AbstractCalculator
                 $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->discounts);
                 $offerApplier->setOfferIds($offerIds);
                 $change = $offerApplier->apply($discount);
+                $this->offersByDiscounts = $offerApplier->getModifiedOffersByDiscounts();
+                $this->input->offers = $offerApplier->getModifiedInputOffers();
                 break;
             case Discount::DISCOUNT_TYPE_CATEGORY:
             case Discount::DISCOUNT_TYPE_ANY_CATEGORY:
@@ -220,6 +230,8 @@ class DiscountCalculator extends AbstractCalculator
                 $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->discounts);
                 $offerApplier->setOfferIds($offerIds);
                 $change = $offerApplier->apply($discount);
+                $this->offersByDiscounts = $offerApplier->getModifiedOffersByDiscounts();
+                $this->input->offers = $offerApplier->getModifiedInputOffers();
                 break;
             case Discount::DISCOUNT_TYPE_DELIVERY:
                 // Если используется бесплатная доставка (например, по промокоду), то не использовать скидку
@@ -233,6 +245,7 @@ class DiscountCalculator extends AbstractCalculator
                     $deliveryApplier = new DeliveryApplier();
                     $deliveryApplier->setCurrentDeliveries($currentDeliveries);
                     $change = $deliveryApplier->apply($discount);
+                    $currentDeliveries = $deliveryApplier->getModifiedCurrentDeliveries();
 
                     $this->input->deliveries['current'] = $currentDeliveries;
                     $this->input->deliveries['items'][$deliveryId] = $this->input->deliveries['current'];
@@ -258,6 +271,8 @@ class DiscountCalculator extends AbstractCalculator
                 $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->discounts);
                 $offerApplier->setOfferIds($offerIds);
                 $change = $offerApplier->apply($discount);
+                $this->offersByDiscounts = $offerApplier->getModifiedOffersByDiscounts();
+                $this->input->offers = $offerApplier->getModifiedInputOffers();
                 break;
             case Discount::DISCOUNT_TYPE_ANY_MASTERCLASS:
                 $offerIds = $this->input->offers
@@ -267,6 +282,8 @@ class DiscountCalculator extends AbstractCalculator
                 $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->discounts);
                 $offerApplier->setOfferIds($offerIds);
                 $change = $offerApplier->apply($discount);
+                $this->offersByDiscounts = $offerApplier->getModifiedOffersByDiscounts();
+                $this->input->offers = $offerApplier->getModifiedInputOffers();
                 break;
         }
 

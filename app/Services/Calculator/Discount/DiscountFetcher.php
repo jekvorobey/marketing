@@ -19,9 +19,9 @@ class DiscountFetcher
         $this->input = $input;
     }
 
-    public function getDiscounts(): Collection
+    public function getDiscounts(array $filterTypes = []): Collection
     {
-        $this->fetchDiscounts();
+        $this->fetchDiscounts($filterTypes);
 
         return $this->discounts;
     }
@@ -29,9 +29,9 @@ class DiscountFetcher
     /**
      * Получаем все скидки
      */
-    private function fetchDiscounts(): void
+    private function fetchDiscounts(array $filterTypes = []): void
     {
-        $this->discounts = Discount::select([
+        $query = Discount::select([
             'id',
             'type',
             'name',
@@ -49,7 +49,13 @@ class DiscountFetcher
                     $query->orWhere('id', $promoCodeDiscountId);
                 }
             })
-            ->active()
+            ->active();
+
+        if ($filterTypes) {
+            $query->whereIn('type', $filterTypes);
+        }
+
+        $query
             ->orderBy('promo_code_only')
             ->orderBy('type')
             ->with($this->withOffers())
@@ -59,7 +65,9 @@ class DiscountFetcher
             ->with($this->withSegments())
             ->with($this->withRoles())
             ->with($this->withBundleItems())
-            ->with($this->withConditions())
+            ->with($this->withConditions());
+
+        $this->discounts = $query
             ->get()
             ->keyBy('id');
     }
@@ -116,8 +124,7 @@ class DiscountFetcher
 
                         return false;
                     });
-
-            }
+            },
         ];
     }
 

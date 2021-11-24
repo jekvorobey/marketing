@@ -68,12 +68,12 @@ class BasketApplier implements Applier
                 $offer = &$this->input->offers[$offerId];
                 $valueUp = ceil($offer['price'] * $coefficient);
                 $valueDown = floor($offer['price'] * $coefficient);
-                $changeUp = $calculatorChangePrice->changePrice($offer, $valueUp, Discount::DISCOUNT_VALUE_TYPE_RUB, false);
-                $changeDown = $calculatorChangePrice->changePrice($offer, $valueDown, Discount::DISCOUNT_VALUE_TYPE_RUB, false);
+                $changeUp = $calculatorChangePrice->changePrice($offer, $valueUp)['discountValue'];
+                $changeDown = $calculatorChangePrice->changePrice($offer, $valueDown)['discountValue'];
                 if ($changeUp * $offer['qty'] <= $discountValue - $currentDiscountValue || $force) {
-                    $change = $calculatorChangePrice->changePrice($offer, $valueUp, Discount::DISCOUNT_VALUE_TYPE_RUB);
+                    $change = $calculatorChangePrice->changePrice($offer, $valueUp)['discountValue'];
                 } elseif ($changeDown * $offer['qty'] <= $discountValue - $currentDiscountValue || $force) {
-                    $change = $calculatorChangePrice->changePrice($offer, $valueDown, Discount::DISCOUNT_VALUE_TYPE_RUB);
+                    $change = $calculatorChangePrice->changePrice($offer, $valueDown)['discountValue'];
                 } else {
                     continue;
                 }
