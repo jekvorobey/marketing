@@ -3,9 +3,7 @@
 namespace App\Services\Calculator\Discount;
 
 use App\Models\Discount\Discount;
-use App\Models\Discount\DiscountBrand;
 use App\Models\Discount\DiscountCondition;
-use App\Models\Discount\DiscountOffer;
 use Illuminate\Support\Collection;
 
 class DiscountCatalogCalculator extends DiscountCalculator

@@ -9,8 +9,10 @@ class CalculatorChangePrice
 {
     /** Самая низкая возможная цена (1 рубль) */
     public const LOWEST_POSSIBLE_PRICE = 1;
+
     /** Наименьшая возможная цена на мастер-класс */
     public const LOWEST_MASTERCLASS_PRICE = 0;
+
     /** Цена для бесплатной доставки */
     public const FREE_DELIVERY_PRICE = 0;
 
@@ -57,7 +59,6 @@ class CalculatorChangePrice
      * @param $value
      * @param int $valueType
      * @param int $lowestPossiblePrice Самая низкая возможная цена (по умолчанию = 1 рубль)
-     *
      */
     public function changePrice(
         $item,
@@ -94,12 +95,10 @@ class CalculatorChangePrice
             }
 
             # Конечная цена товара в бандле всегда округляется до целого
-            if ($apply) {
-                $offerInBundle['discount'] = $currentDiscount + $discountValue;
-                $offerInBundle['price'] = self::round($currentCost - $offerInBundle['discount'], self::ROUND);
-                $offerInBundle['cost'] = $currentCost;
-                $result['cost'] = $currentCost;
-            }
+            $offerInBundle['discount'] = $currentDiscount + $discountValue;
+            $offerInBundle['price'] = self::round($currentCost - $offerInBundle['discount'], self::ROUND);
+            $offerInBundle['cost'] = $currentCost;
+            $result['cost'] = $currentCost;
 
             $result['discountValue'] = $discountValue;
         } else {
@@ -112,11 +111,9 @@ class CalculatorChangePrice
                 $discountValue = $item['price'] - $lowestPossiblePrice;
             }
 
-            if ($apply) {
-                $result['discount'] = $currentDiscount + $discountValue;
-                $result['price'] = round($currentCost - $result['discount'], 2);
-                $result['cost'] = $currentCost;
-            }
+            $result['discount'] = $currentDiscount + $discountValue;
+            $result['price'] = round($currentCost - $result['discount'], 2);
+            $result['cost'] = $currentCost;
 
             $result['discountValue'] = $discountValue;
         }

@@ -2,10 +2,8 @@
 
 namespace App\Services\Calculator;
 
-use App\Models\Discount\Discount;
 use App\Models\Option\Option;
 use Illuminate\Support\Collection;
-use Pim\Dto\Offer\OfferDto;
 
 abstract class AbstractCalculator
 {
