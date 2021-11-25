@@ -141,7 +141,7 @@ class DiscountCalculator extends AbstractCalculator
             case Discount::DISCOUNT_TYPE_OFFER:
                 # Скидка на определенные офферы
                 $offerIds = $discount->offers->pluck('offer_id');
-                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->discounts);
+                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts);
                 $offerApplier->setOfferIds($offerIds);
                 $change = $offerApplier->apply($discount);
                 $this->offersByDiscounts = $offerApplier->getModifiedOffersByDiscounts();
@@ -153,7 +153,7 @@ class DiscountCalculator extends AbstractCalculator
                     ->where('product_id', '!=', null)
                     ->pluck('id');
 
-                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->discounts);
+                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts);
                 $offerApplier->setOfferIds($offerIds);
                 $change = $offerApplier->apply($discount);
                 $this->offersByDiscounts = $offerApplier->getModifiedOffersByDiscounts();
@@ -181,7 +181,7 @@ class DiscountCalculator extends AbstractCalculator
                         });
 
                 if ($discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
-                    $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->discounts);
+                    $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts);
                     $offerApplier->setOfferIds($offerIds);
                     $change = $offerApplier->apply($discount);
                     $this->offersByDiscounts = $offerApplier->getModifiedOffersByDiscounts();
@@ -203,7 +203,7 @@ class DiscountCalculator extends AbstractCalculator
                 $exceptOfferIds = $this->getExceptOffersForDiscount($discount->id);
                 # Отбираем нужные офферы
                 $offerIds = $this->filterForBrand($brandIds, $exceptOfferIds, $discount->merchant_id);
-                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->discounts);
+                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts);
                 $offerApplier->setOfferIds($offerIds);
                 $change = $offerApplier->apply($discount);
                 $this->offersByDiscounts = $offerApplier->getModifiedOffersByDiscounts();
@@ -227,7 +227,7 @@ class DiscountCalculator extends AbstractCalculator
                     $exceptOfferIds,
                     $discount->merchant_id
                 );
-                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->discounts);
+                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts);
                 $offerApplier->setOfferIds($offerIds);
                 $change = $offerApplier->apply($discount);
                 $this->offersByDiscounts = $offerApplier->getModifiedOffersByDiscounts();
@@ -268,7 +268,7 @@ class DiscountCalculator extends AbstractCalculator
                     ->whereIn('ticket_type_id', $ticketTypeIds)
                     ->pluck('id');
 
-                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->discounts);
+                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts);
                 $offerApplier->setOfferIds($offerIds);
                 $change = $offerApplier->apply($discount);
                 $this->offersByDiscounts = $offerApplier->getModifiedOffersByDiscounts();
@@ -279,7 +279,7 @@ class DiscountCalculator extends AbstractCalculator
                     ->whereStrict('product_id', null)
                     ->pluck('id');
 
-                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->discounts);
+                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts);
                 $offerApplier->setOfferIds($offerIds);
                 $change = $offerApplier->apply($discount);
                 $this->offersByDiscounts = $offerApplier->getModifiedOffersByDiscounts();
@@ -520,7 +520,7 @@ class DiscountCalculator extends AbstractCalculator
     protected function checkSegment(Discount $discount): bool
     {
         // Если отсутствуют условия скидки на сегмент
-        if ($this->discounts->get($discount->id)->segments->pluck('segment_id')->isEmpty()) {
+        if ($discount->segments->pluck('segment_id')->isEmpty()) {
             return true;
         }
 

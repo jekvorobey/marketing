@@ -19,18 +19,15 @@ class OfferApplier implements Applier
     private Collection $offersByDiscounts;
     private Collection $appliedDiscounts;
     private Collection $offerIds;
-    private Collection $discounts;
 
     public function __construct(
         InputCalculator $input,
         Collection $offersByDiscounts,
-        Collection $appliedDiscounts,
-        Collection $discounts
+        Collection $appliedDiscounts
     ) {
         $this->input = $input;
         $this->offersByDiscounts = $offersByDiscounts;
         $this->appliedDiscounts = $appliedDiscounts;
-        $this->discounts = $discounts;
     }
 
     public function setOfferIds(Collection $offerIds): void
@@ -102,10 +99,10 @@ class OfferApplier implements Applier
                 if (isset($changedPrice['discount'])) {
                     $offer['discount'] = $changedPrice['discount'];
                 }
-                if (isset($offer['price'], $changedPrice['price'])) {
+                if (isset($changedPrice['price'])) {
                     $offer['price'] = $changedPrice['price'];
                 }
-                if (isset($offer['cost'], $changedPrice['cost'])) {
+                if (isset($changedPrice['cost'])) {
                     $offer['cost'] = $changedPrice['cost'];
                 }
                 $change = $changedPrice['discountValue'];

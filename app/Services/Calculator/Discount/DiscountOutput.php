@@ -143,8 +143,8 @@ class DiscountOutput
         $items = collect();
         foreach ($discounts as $discount) {
             $discountId = $discount->id;
-            $conditions = $this->discounts->get($discountId)->conditions
-                ? $this->discounts->get($discountId)->conditions->toArray()
+            $conditions = $discount->conditions
+                ? $discount->conditions->toArray()
                 : [];
 
             $extType = Discount::getExternalType($discount['type'], $conditions, $discount->promo_code_only);

@@ -208,10 +208,10 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
         if (isset($changedPrice['discount'])) {
             $offer['discount'] = $changedPrice['discount'];
         }
-        if (isset($offer['price'], $changedPrice['price'])) {
+        if (isset($changedPrice['price'])) {
             $offer['price'] = $changedPrice['price'];
         }
-        if (isset($offer['cost'], $changedPrice['cost'])) {
+        if (isset($changedPrice['cost'])) {
             $offer['cost'] = $changedPrice['cost'];
         }
 

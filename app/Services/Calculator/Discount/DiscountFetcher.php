@@ -6,6 +6,7 @@ use App\Models\Discount\Discount;
 use App\Services\Calculator\InputCalculator;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Pim\Core\PimException;
 
 class DiscountFetcher
@@ -72,8 +73,8 @@ class DiscountFetcher
             ->keyBy('id');
 
         $categories = InputCalculator::getAllCategories();
-        $this->discounts->transform(function (Discount $discount) use ($categories) {
-            $discount->categories->filter(function ($discountCategory) use ($categories) {
+        $this->discounts->each(function (Discount $discount) use ($categories) {
+            $filteredCategories = $discount->categories->filter(function ($discountCategory) use ($categories) {
                 $categoryLeaf = $categories[$discountCategory->category_id];
                 foreach ($this->input->categories->keys() as $categoryId) {
                     if ($categoryLeaf->isSelfOrAncestorOf($categories[$categoryId])) {
@@ -83,8 +84,7 @@ class DiscountFetcher
 
                 return false;
             });
-
-            return $discount;
+            $discount->setRelation('categories', $filteredCategories);
         });
     }
 
