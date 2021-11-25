@@ -164,7 +164,7 @@ class DiscountCalculator extends AbstractCalculator
             case Discount::DISCOUNT_TYPE_ANY_BUNDLE:
                 # Скидка на бандлы
                 # Определяем id офферов по бандлам
-                $bundleItems = $this->discounts->get($discount->id)->bundleItems;
+                $bundleItems = $discount->bundleItems;
                 /** @phpcsSuppress SlevomatCodingStandard.Functions.UnusedParameter */
                 $offerIds = $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER ||
                     $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS
@@ -196,7 +196,7 @@ class DiscountCalculator extends AbstractCalculator
                 # Скидка на бренды
                 /** @var Collection $brandIds */
                 $brandIds = $discount->type == Discount::DISCOUNT_TYPE_BRAND
-                    ? $this->discounts->get($discount->id)->brands->pluck('brand_id')
+                    ? $discount->brands->pluck('brand_id')
                     : $this->input->brands;
 
                 # За исключением офферов
@@ -214,7 +214,7 @@ class DiscountCalculator extends AbstractCalculator
                 # Скидка на категории
                 /** @var Collection $categoryIds */
                 $categoryIds = $discount->type == Discount::DISCOUNT_TYPE_CATEGORY
-                    ? $this->discounts->get($discount->id)->categories->pluck('category_id')
+                    ? $discount->categories->pluck('category_id')
                     : $this->input->categories;
                 # За исключением брендов
                 $exceptBrandIds = $this->getExceptBrandsForDiscount($discount->id);
@@ -291,7 +291,7 @@ class DiscountCalculator extends AbstractCalculator
             $this->appliedDiscounts->put($discount->id, [
                 'discountId' => $discount->id,
                 'change' => $change,
-                'conditions' => $this->discounts->get($discount->id)->conditions->pluck('type') ?? [],
+                'conditions' => $discount->conditions->pluck('type') ?? [],
             ]);
         }
 
@@ -410,7 +410,7 @@ class DiscountCalculator extends AbstractCalculator
         })->values();
 
         $this->possibleDiscounts = $this->possibleDiscounts->filter(function (Discount $discount) {
-            if ($conditions = $this->discounts->get($discount->id)->conditions) {
+            if ($conditions = $discount->conditions) {
                 return $this->checkConditions($conditions);
             }
 
@@ -468,7 +468,7 @@ class DiscountCalculator extends AbstractCalculator
     protected function checkOffers(Discount $discount): bool
     {
         return $discount->type === Discount::DISCOUNT_TYPE_OFFER
-            && $this->discounts->get($discount->id)->offers->filter(fn($offers) => !$offers['except'])->isNotEmpty();
+            && $discount->offers->filter(fn($offers) => !$offers['except'])->isNotEmpty();
     }
 
     /**
@@ -478,7 +478,7 @@ class DiscountCalculator extends AbstractCalculator
     {
         return ($discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER ||
                 $discount->type === Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS)
-                && $this->discounts->get($discount->id)->bundleItems->isNotEmpty();
+                && $discount->bundleItems->isNotEmpty();
     }
 
     /**
@@ -487,7 +487,7 @@ class DiscountCalculator extends AbstractCalculator
     protected function checkBrands(Discount $discount): bool
     {
         return $discount->type === Discount::DISCOUNT_TYPE_BRAND
-            && $this->discounts->get($discount->id)->brands->filter(fn($brand) => !$brand['except'])->isNotEmpty();
+            && $discount->brands->filter(fn($brand) => !$brand['except'])->isNotEmpty();
     }
 
     /**
@@ -496,7 +496,7 @@ class DiscountCalculator extends AbstractCalculator
     protected function checkCategories(Discount $discount): bool
     {
         return $discount->type === Discount::DISCOUNT_TYPE_CATEGORY
-            && $this->discounts->get($discount->id)->categories->isNotEmpty();
+            && $discount->categories->isNotEmpty();
     }
 
     /**
@@ -505,15 +505,15 @@ class DiscountCalculator extends AbstractCalculator
     protected function checkPublicEvents(Discount $discount): bool
     {
         return $discount->type === Discount::DISCOUNT_TYPE_MASTERCLASS
-            && $this->discounts->get($discount->id)->publicEvents->isNotEmpty();
+            && $discount->publicEvents->isNotEmpty();
     }
 
     protected function checkCustomerRole(Discount $discount): bool
     {
-        return $this->discounts->get($discount->id)->roles->pluck('role_id')->isEmpty() ||
+        return $discount->roles->pluck('role_id')->isEmpty() ||
             (
                 isset($this->input->customer['roles'])
-                && $this->discounts->get($discount->id)->roles->pluck('role_id')->intersect($this->input->customer['roles'])->isNotEmpty()
+                && $discount->roles->pluck('role_id')->intersect($this->input->customer['roles'])->isNotEmpty()
             );
     }
 
@@ -525,7 +525,7 @@ class DiscountCalculator extends AbstractCalculator
         }
 
         return isset($this->input->customer['segment'])
-            && $this->discounts->get($discount->id)->segments->pluck('segment_id')->search($this->input->customer['segment']) !== false;
+            && $discount->segments->pluck('segment_id')->search($this->input->customer['segment']) !== false;
     }
 
     /**

@@ -87,7 +87,7 @@ class PromoCodeCalculator extends AbstractCalculator
                     );
                     $changeForDelivery = $changedPrice['discountValue'];
 
-                    if (isset($delivery['discount'], $changedPrice['discount'])) {
+                    if (isset($changedPrice['discount'])) {
                         $delivery['discount'] = $changedPrice['discount'];
                     }
                     if (isset($delivery['price'], $changedPrice['price'])) {

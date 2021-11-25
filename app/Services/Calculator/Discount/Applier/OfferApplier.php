@@ -99,7 +99,7 @@ class OfferApplier implements Applier
                 }
 
                 $changedPrice = $calculatorChangePrice->changePrice($offer, $valueOfLimitDiscount ?? $value, $valueType, $lowestPossiblePrice, $discount);
-                if (isset($offer['discount'], $changedPrice['discount'])) {
+                if (isset($changedPrice['discount'])) {
                     $offer['discount'] = $changedPrice['discount'];
                 }
                 if (isset($offer['price'], $changedPrice['price'])) {
@@ -156,7 +156,7 @@ class OfferApplier implements Applier
         /** @var Collection $discountIdsForOffer */
         $discountIdsForOffer = $this->offersByDiscounts[$offerId]->pluck('id');
 
-        $discountConditions = $this->discounts->get($discount->id)->conditions;
+        $discountConditions = $discount->conditions;
         /** @var DiscountCondition $condition */
         foreach ($discountConditions as $condition) {
             if ($condition->type === DiscountCondition::DISCOUNT_SYNERGY) {

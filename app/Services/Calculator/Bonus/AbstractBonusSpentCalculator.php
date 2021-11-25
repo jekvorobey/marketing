@@ -205,7 +205,7 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
             CalculatorChangePrice::LOWEST_POSSIBLE_PRICE
         );
 
-        if (isset($offer['discount'], $changedPrice['discount'])) {
+        if (isset($changedPrice['discount'])) {
             $offer['discount'] = $changedPrice['discount'];
         }
         if (isset($offer['price'], $changedPrice['price'])) {
