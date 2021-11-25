@@ -140,7 +140,7 @@ class DiscountCalculator extends AbstractCalculator
         switch ($discount->type) {
             case Discount::DISCOUNT_TYPE_OFFER:
                 # Скидка на определенные офферы
-                $offerIds = $this->discounts->get($discount->id)->offers->pluck('offer_id');
+                $offerIds = $discount->offers->pluck('offer_id');
                 $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts, $this->discounts);
                 $offerApplier->setOfferIds($offerIds);
                 $change = $offerApplier->apply($discount);
@@ -308,7 +308,7 @@ class DiscountCalculator extends AbstractCalculator
         return $this->discounts
             ->get($discountId)
             ->offers
-            ->filter(fn($offer) => $offer['except'])
+            ->where('expect', true)
             ->pluck('offer_id');
     }
 

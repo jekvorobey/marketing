@@ -204,9 +204,16 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
             Discount::DISCOUNT_VALUE_TYPE_RUB,
             CalculatorChangePrice::LOWEST_POSSIBLE_PRICE
         );
-        $offer['discount'] = $changedPrice['discount'];
-        $offer['price'] = $changedPrice['price'];
-        $offer['cost'] = $changedPrice['cost'];
+
+        if (isset($offer['discount'], $changedPrice['discount'])) {
+            $offer['discount'] = $changedPrice['discount'];
+        }
+        if (isset($offer['price'], $changedPrice['price'])) {
+            $offer['price'] = $changedPrice['price'];
+        }
+        if (isset($offer['cost'], $changedPrice['cost'])) {
+            $offer['cost'] = $changedPrice['cost'];
+        }
 
         return $calculatorChangePrice::round($changedPrice['discountValue']) * $qty;
     }

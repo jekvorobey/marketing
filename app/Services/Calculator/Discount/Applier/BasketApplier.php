@@ -44,9 +44,7 @@ class BasketApplier implements Applier
         # Текущее значение скидки (в рублях, без учета скидок, которые могли применяться ранее)
         $currentDiscountValue = 0;
         # Номинальное значение скидки (в рублях)
-        $discountValue = $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_PERCENT
-            ? round($priceOrders * $discount->value / 100)
-            : $discount->value;
+        $discountValue = $calculatorChangePrice->calculateDiscountByType($priceOrders, $discount->value, $discount->value_type);
         # Скидка не может быть больше, чем стоимость всей корзины
         $discountValue = min($discountValue, $priceOrders);
 

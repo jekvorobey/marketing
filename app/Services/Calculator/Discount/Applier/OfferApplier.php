@@ -99,9 +99,15 @@ class OfferApplier implements Applier
                 }
 
                 $changedPrice = $calculatorChangePrice->changePrice($offer, $valueOfLimitDiscount ?? $value, $valueType, $lowestPossiblePrice, $discount);
-                $offer['discount'] = $changedPrice['discount'];
-                $offer['price'] = $changedPrice['price'];
-                $offer['cost'] = $changedPrice['cost'];
+                if (isset($offer['discount'], $changedPrice['discount'])) {
+                    $offer['discount'] = $changedPrice['discount'];
+                }
+                if (isset($offer['price'], $changedPrice['price'])) {
+                    $offer['price'] = $changedPrice['price'];
+                }
+                if (isset($offer['cost'], $changedPrice['cost'])) {
+                    $offer['cost'] = $changedPrice['cost'];
+                }
                 $change = $changedPrice['discountValue'];
                 if ($change <= 0) {
                     continue;

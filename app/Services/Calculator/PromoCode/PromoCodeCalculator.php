@@ -66,9 +66,8 @@ class PromoCodeCalculator extends AbstractCalculator
                     $discountCalculator->forceRollback();
                 } else {
                     $isApply = true;
-                    $change = $discount->value_type == Discount::DISCOUNT_VALUE_TYPE_RUB
-                        ? $discount->value
-                        : CalculatorChangePrice::round($this->input->offers->sum('price') / 100 * $discount->value);
+                    $calculatorChangePrice = new CalculatorChangePrice();
+                    $change = $calculatorChangePrice->calculateDiscountByType($this->input->offers->sum('price'), $discount->value, $discount->value_type);
                 }
                 break;
             case PromoCode::TYPE_DELIVERY:
@@ -84,13 +83,19 @@ class PromoCodeCalculator extends AbstractCalculator
                         $delivery,
                         self::HIGHEST_POSSIBLE_PRICE_PERCENT,
                         Discount::DISCOUNT_VALUE_TYPE_PERCENT,
-                        true,
                         CalculatorChangePrice::FREE_DELIVERY_PRICE
                     );
                     $changeForDelivery = $changedPrice['discountValue'];
-                    $delivery['discount'] = $changedPrice['discount'];
-                    $delivery['price'] = $changedPrice['price'];
-                    $delivery['cost'] = $changedPrice['cost'];
+
+                    if (isset($delivery['discount'], $changedPrice['discount'])) {
+                        $delivery['discount'] = $changedPrice['discount'];
+                    }
+                    if (isset($delivery['price'], $changedPrice['price'])) {
+                        $delivery['price'] = $changedPrice['price'];
+                    }
+                    if (isset($delivery['cost'], $changedPrice['cost'])) {
+                        $delivery['cost'] = $changedPrice['cost'];
+                    }
 
                     if ($changeForDelivery > 0) {
                         $isApply = $changeForDelivery > 0;

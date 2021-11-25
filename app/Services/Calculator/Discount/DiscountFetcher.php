@@ -70,6 +70,22 @@ class DiscountFetcher
         $this->discounts = $query
             ->get()
             ->keyBy('id');
+
+        $categories = InputCalculator::getAllCategories();
+        $this->discounts->transform(function (Discount $discount) use ($categories) {
+            $discount->offers->filter(function ($discountCategory) use ($categories) {
+                $categoryLeaf = $categories[$discountCategory->category_id];
+                foreach ($this->input->categories->keys() as $categoryId) {
+                    if ($categoryLeaf->isSelfOrAncestorOf($categories[$categoryId])) {
+                        return true;
+                    }
+                }
+
+                return false;
+            });
+
+            return $discount;
+        });
     }
 
     /**
@@ -106,24 +122,10 @@ class DiscountFetcher
      */
     private function withCategories(): array
     {
-        $categories = InputCalculator::getAllCategories();
-
         return [
-            'categories' => function (Relation $builder) use ($categories): void {
+            'categories' => function (Relation $builder): void {
                 $builder
-                    ->select(['discount_id', 'category_id'])
-                    ->whereIn('discount_id', $this->discounts->pluck('id'))
-                    ->get()
-                    ->filter(function ($discountCategory) use ($categories) {
-                        $categoryLeaf = $categories[$discountCategory->category_id];
-                        foreach ($this->input->categories->keys() as $categoryId) {
-                            if ($categoryLeaf->isSelfOrAncestorOf($categories[$categoryId])) {
-                                return true;
-                            }
-                        }
-
-                        return false;
-                    });
+                    ->select(['discount_id', 'category_id']);
             },
         ];
     }
