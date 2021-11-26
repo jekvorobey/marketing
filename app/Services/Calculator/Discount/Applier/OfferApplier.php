@@ -20,7 +20,8 @@ class OfferApplier implements Applier
     private Collection $appliedDiscounts;
     private Collection $offerIds;
 
-    public function __construct(InputCalculator $input, Collection $offersByDiscounts, Collection $appliedDiscounts) {
+    public function __construct(InputCalculator $input, Collection $offersByDiscounts, Collection $appliedDiscounts)
+    {
         $this->input = $input;
         $this->offersByDiscounts = $offersByDiscounts;
         $this->appliedDiscounts = $appliedDiscounts;
