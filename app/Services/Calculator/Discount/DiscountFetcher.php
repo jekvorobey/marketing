@@ -6,7 +6,6 @@ use App\Models\Discount\Discount;
 use App\Services\Calculator\InputCalculator;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
 use Pim\Core\PimException;
 
 class DiscountFetcher
