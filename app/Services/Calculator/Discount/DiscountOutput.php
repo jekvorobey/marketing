@@ -148,7 +148,7 @@ class DiscountOutput
                 : [];
 
             $extType = Discount::getExternalType($discount['type'], $conditions, $discount->promo_code_only);
-            $isPromoCodeDiscount = $this->input->promoCodeDiscount && $this->input->promoCodeDiscount->id = $discountId;
+            $isPromoCodeDiscount = $this->input->promoCodeDiscount && $this->input->promoCodeDiscount->id === $discountId;
             $items->push([
                 'id' => $discountId,
                 'name' => $discount->name,

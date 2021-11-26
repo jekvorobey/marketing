@@ -63,19 +63,7 @@ class DiscountCalculator extends AbstractCalculator
 
         if (!empty($this->input->deliveries['items'])) {
             if (!$this->input->freeDelivery) {
-                /**
-                 * Считаются только возможные скидки.
-                 * Берем все доставки, для которых необходимо посчитать только возможную скидку,
-                 * по очереди применяем скидки (откатывая предыдущие изменяния, т.к. нельзя выбрать сразу две доставки),
-                 */
-                foreach ($this->input->deliveries['notSelected'] as $delivery) {
-                    $deliveryId = $delivery['id'];
-                    $this->input->deliveries['current'] = $delivery;
-                    $this->filter()->sort()->apply();
-                    $deliveryWithDiscount = $this->input->deliveries['items'][$deliveryId];
-                    $this->rollback();
-                    $this->input->deliveries['items'][$deliveryId] = $deliveryWithDiscount;
-                }
+                $this->filter()->sort()->apply()->rollback();
             }
 
             $this->input->deliveries['current'] = $this->input->deliveries['items']->filter(function ($item) {
@@ -239,16 +227,25 @@ class DiscountCalculator extends AbstractCalculator
                     break;
                 }
 
-                $deliveryId = $this->input->deliveries['current']['id'] ?? null;
-                if ($this->input->deliveries['items']->has($deliveryId)) {
-                    $currentDeliveries = $this->input->deliveries['current'];
-                    $deliveryApplier = new DeliveryApplier();
-                    $deliveryApplier->setCurrentDeliveries($currentDeliveries);
-                    $change = $deliveryApplier->apply($discount);
-                    $currentDeliveries = $deliveryApplier->getModifiedCurrentDeliveries();
+                /**
+                 * Считаются только возможные скидки.
+                 * Берем все доставки, для которых необходимо посчитать только возможную скидку,
+                 * по очереди применяем скидки (откатывая предыдущие изменяния, т.к. нельзя выбрать сразу две доставки),
+                 */
+                $currentDeliveryId = $this->input->deliveries['current']['id'] ?? null;
+                if ($this->input->deliveries['items']->has($currentDeliveryId)) {
+                    $this->input->deliveries['items']->transform(function ($delivery) use ($discount, $currentDeliveryId, &$change) {
+                        $deliveryApplier = new DeliveryApplier();
+                        $deliveryApplier->setCurrentDeliveries($delivery);
+                        $changedPrice = $deliveryApplier->apply($discount);
+                        $currentDeliveries = $deliveryApplier->getModifiedCurrentDeliveries();
 
-                    $this->input->deliveries['current'] = $currentDeliveries;
-                    $this->input->deliveries['items'][$deliveryId] = $this->input->deliveries['current'];
+                        if ($currentDeliveries['id'] === $currentDeliveryId) {
+                            $change = $changedPrice;
+                            $this->input->deliveries['current'] = $currentDeliveries;
+                        }
+                        return $currentDeliveries;
+                    });
                 }
 
                 break;

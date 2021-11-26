@@ -7,14 +7,14 @@ use App\Services\Calculator\CalculatorChangePrice;
 
 class DeliveryApplier implements Applier
 {
-    private $currentDeliveries;
+    private array $currentDeliveries;
 
-    public function setCurrentDeliveries(&$currentDeliveries): void
+    public function setCurrentDeliveries($currentDeliveries): void
     {
-        $this->currentDeliveries = &$currentDeliveries;
+        $this->currentDeliveries = $currentDeliveries;
     }
 
-    public function getModifiedCurrentDeliveries()
+    public function getModifiedCurrentDeliveries(): array
     {
         return $this->currentDeliveries;
     }
