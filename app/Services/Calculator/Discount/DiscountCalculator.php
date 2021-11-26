@@ -393,6 +393,11 @@ class DiscountCalculator extends AbstractCalculator
             return $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER ||
                 $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS ? 1 : 0;
         })
+            ->sortBy('promo_code_only')
+            ->sortBy(fn(Discount $discount) => $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB)
+            ->sortBy(function (Discount $discount) {
+                return $discount->type === Discount::DISCOUNT_TYPE_CART_TOTAL ? 0 : 1;
+            })
             ->values();
 
         return $this;
