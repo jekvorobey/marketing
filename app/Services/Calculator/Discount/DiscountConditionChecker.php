@@ -86,9 +86,9 @@ class DiscountConditionChecker
     public function checkDeliveryMethod($deliveryMethods): bool
     {
         return isset($this->input->deliveries['current']['method']) && in_array(
-                $this->input->deliveries['current']['method'],
-                $deliveryMethods
-            );
+            $this->input->deliveries['current']['method'],
+            $deliveryMethods
+        );
     }
 
     /**
