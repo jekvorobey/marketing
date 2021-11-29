@@ -376,10 +376,9 @@ class DiscountCalculator extends AbstractCalculator
      * Сортирует скидки согласно приоритету
      * Скидки, имеющие наибольший приоритет помещаются в начало списка
      *
-     * @return $this
      * @todo
      */
-    protected function sort()
+    protected function sort(): self
     {
         /**
          * На данный момент скидки сортируются по типу скидки
@@ -397,18 +396,17 @@ class DiscountCalculator extends AbstractCalculator
 
     /**
      * Фильтрует все актуальные скидки и оставляет только те, которые можно применить
-     *
-     * @return $this
      */
-    protected function filter()
+    protected function filter(): self
     {
         $this->possibleDiscounts = $this->discounts->filter(function (Discount $discount) {
             return $this->checkDiscount($discount);
         })->values();
 
-        $this->possibleDiscounts = $this->possibleDiscounts->filter(function (Discount $discount) {
+        $conditionChecker = new DiscountConditionChecker($this->input);
+        $this->possibleDiscounts = $this->possibleDiscounts->filter(function (Discount $discount) use ($conditionChecker) {
             if ($conditions = $discount->conditions) {
-                return $this->checkConditions($conditions);
+                return $conditionChecker->check($conditions);
             }
 
             return true;
@@ -523,129 +521,6 @@ class DiscountCalculator extends AbstractCalculator
 
         return isset($this->input->customer['segment'])
             && $discount->segments->pluck('segment_id')->search($this->input->customer['segment']) !== false;
-    }
-
-    /**
-     * Проверяет доступность применения скидки на все соответствующие условия
-     *
-     *
-     * @todo
-     */
-    protected function checkConditions(Collection $conditions): bool
-    {
-        /** @var DiscountCondition $condition */
-        foreach ($conditions as $condition) {
-            switch ($condition->type) {
-                /** Скидка на первый заказ */
-                case DiscountCondition::FIRST_ORDER:
-                    $r = $this->input->getCountOrders() === 0;
-                    break;
-                /** Скидка на заказ от заданной суммы */
-                case DiscountCondition::MIN_PRICE_ORDER:
-                    $r = $this->input->getCostOrders() >= $condition->getMinPrice();
-                    break;
-                /** Скидка на заказ от заданной суммы на один из брендов */
-                case DiscountCondition::MIN_PRICE_BRAND:
-                    $r = $this->input->getMaxTotalPriceForBrands($condition->getBrands()) >= $condition->getMinPrice();
-                    break;
-                /** Скидка на заказ от заданной суммы на одну из категорий */
-                case DiscountCondition::MIN_PRICE_CATEGORY:
-                    $r = $this->input->getMaxTotalPriceForCategories($condition->getCategories()) >= $condition->getMinPrice();
-                    break;
-                /** Скидка на заказ определенного количества товара */
-                case DiscountCondition::EVERY_UNIT_PRODUCT:
-                    $r = $this->checkEveryUnitProduct($condition->getOffer(), $condition->getCount());
-                    break;
-                /** Скидка на один из методов доставки */
-                case DiscountCondition::DELIVERY_METHOD:
-                    $r = $this->checkDeliveryMethod($condition->getDeliveryMethods());
-                    break;
-                /** Скидка на один из методов оплаты */
-                case DiscountCondition::PAY_METHOD:
-                    $r = $this->checkPayMethod($condition->getPaymentMethods());
-                    break;
-                /** Скидка при заказе из региона */
-                case DiscountCondition::REGION:
-                    $r = $this->checkRegion($condition->getRegions());
-                    break;
-                /** Скидка для определенных покупателей */
-                case DiscountCondition::CUSTOMER:
-                    $r = in_array($this->input->getCustomerId(), $condition->getCustomerIds());
-                    break;
-                /** Скидка на каждый N-й заказ */
-                case DiscountCondition::ORDER_SEQUENCE_NUMBER:
-                    $countOrders = $this->input->getCountOrders();
-                    $r = isset($countOrders) && (($countOrders + 1) % $condition->getOrderSequenceNumber() === 0);
-                    break;
-                case DiscountCondition::BUNDLE:
-                    $r = true; // todo
-                    break;
-                case DiscountCondition::DISCOUNT_SYNERGY:
-                    break 2; # Проверяет отдельно на этапе применения скидок
-                default:
-                    return false;
-            }
-
-            if (!$r) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Регион пользователя
-     *
-     * @param $regions
-     *
-     * @return bool
-     */
-    public function checkRegion($regions)
-    {
-        return !empty($this->input->userRegion)
-            ? in_array($this->input->userRegion['id'], $regions)
-            : false;
-    }
-
-    /**
-     * Количество единиц одного оффера
-     *
-     * @param $offerId
-     * @param $count
-     *
-     * @return bool
-     */
-    public function checkEveryUnitProduct($offerId, $count)
-    {
-        return $this->input->offers->has($offerId) && $this->input->offers[$offerId]['qty'] >= $count;
-    }
-
-    /**
-     * Способ доставки
-     *
-     * @param $deliveryMethods
-     *
-     * @return bool
-     */
-    public function checkDeliveryMethod($deliveryMethods)
-    {
-        return isset($this->input->deliveries['current']['method']) && in_array(
-            $this->input->deliveries['current']['method'],
-            $deliveryMethods
-        );
-    }
-
-    /**
-     * Способ оплаты
-     *
-     * @param $payments
-     *
-     * @return bool
-     */
-    public function checkPayMethod($payments)
-    {
-        return isset($this->input->payment['method']) && in_array($this->input->payment['method'], $payments);
     }
 
     /**
