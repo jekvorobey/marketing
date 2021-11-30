@@ -195,7 +195,7 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
     /**
      * Применить и вернуть размер скидки на офер
      */
-    protected function applyDiscountForOffer(&$offer, int $value, int $qty): int
+    protected function applyDiscountForOffer(&$offer, int $value, int $qty, bool $apply = true): int
     {
         $calculatorChangePrice = new CalculatorChangePrice();
         $changedPrice = $calculatorChangePrice->changePrice(
@@ -205,14 +205,16 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
             CalculatorChangePrice::LOWEST_POSSIBLE_PRICE
         );
 
-        if (isset($changedPrice['discount'])) {
-            $offer['discount'] = $changedPrice['discount'];
-        }
-        if (isset($changedPrice['price'])) {
-            $offer['price'] = $changedPrice['price'];
-        }
-        if (isset($changedPrice['cost'])) {
-            $offer['cost'] = $changedPrice['cost'];
+        if ($apply) {
+            if (isset($changedPrice['discount'])) {
+                $offer['discount'] = $changedPrice['discount'];
+            }
+            if (isset($changedPrice['price'])) {
+                $offer['price'] = $changedPrice['price'];
+            }
+            if (isset($changedPrice['cost'])) {
+                $offer['cost'] = $changedPrice['cost'];
+            }
         }
 
         return $calculatorChangePrice::round($changedPrice['discountValue']) * $qty;
@@ -223,7 +225,7 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
      */
     protected function getDiscountForOffer($offer, int $value, int $qty): int
     {
-        return $this->applyDiscountForOffer($offer, $value, $qty);
+        return $this->applyDiscountForOffer($offer, $value, $qty, false);
     }
 
     /**

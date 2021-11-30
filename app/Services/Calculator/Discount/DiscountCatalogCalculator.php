@@ -3,8 +3,7 @@
 namespace App\Services\Calculator\Discount;
 
 use App\Models\Discount\Discount;
-use App\Models\Discount\DiscountCondition;
-use Illuminate\Support\Collection;
+use App\Models\Discount\DiscountCondition as DiscountConditionModel;
 
 class DiscountCatalogCalculator extends DiscountCalculator
 {
@@ -26,25 +25,22 @@ class DiscountCatalogCalculator extends DiscountCalculator
     }
 
     /**
-     * Проверяет доступность применения скидки на все соответствующие условия
-     *
-     * @todo
+     * @inheritDoc
      */
-    protected function checkConditions(Collection $conditions): bool
+    protected function getExcludedConditions(): array
     {
-        /** @var DiscountCondition $condition */
-        foreach ($conditions as $condition) {
-            switch ($condition->type) {
-                /**
-                 * Оставляем только скидки, у которых отсутсвуют доп. условия (считаются в корзине или чекауте).
-                 */
-                case DiscountCondition::DISCOUNT_SYNERGY:
-                    break 2;
-                default:
-                    return false;
-            }
-        }
-
-        return true;
+        return [
+            DiscountConditionModel::FIRST_ORDER,
+            DiscountConditionModel::MIN_PRICE_ORDER,
+            DiscountConditionModel::MIN_PRICE_BRAND,
+            DiscountConditionModel::MIN_PRICE_CATEGORY,
+            DiscountConditionModel::EVERY_UNIT_PRODUCT,
+            DiscountConditionModel::DELIVERY_METHOD,
+            DiscountConditionModel::PAY_METHOD,
+            DiscountConditionModel::REGION,
+            DiscountConditionModel::CUSTOMER,
+            DiscountConditionModel::ORDER_SEQUENCE_NUMBER,
+            DiscountConditionModel::BUNDLE,
+        ];
     }
 }

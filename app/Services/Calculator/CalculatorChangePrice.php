@@ -21,26 +21,117 @@ class CalculatorChangePrice
     public const ROUND = 3;
 
     /**
+     * Возвращает размер скидки (без учета предыдущих скидок)
+     *
+     * @param OfferDto|array $item - оффер или доставка (если array)
+     * @param int $lowestPossiblePrice Самая низкая возможная цена (по умолчанию = 1 рубль)
+     */
+    public function changePrice(
+        $item,
+        int $value,
+        int $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB,
+        int $lowestPossiblePrice = self::LOWEST_POSSIBLE_PRICE,
+        ?Discount $discount = null
+    ): array {
+        if (!isset($item['price']) || $value <= 0) {
+            return ['discountValue' => 0];
+        }
+
+        if ($item instanceof OfferDto && !$item->product_id) {
+            $lowestPossiblePrice = self::LOWEST_MASTERCLASS_PRICE;
+        }
+
+        return $discount && $discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER
+            ? $this->processBundleType($item, $value, $discount, $valueType, $lowestPossiblePrice)
+            : $this->processAllTypes($item, $value, $valueType, $lowestPossiblePrice);
+    }
+
+    /**
+     * Получить размер скидки и новую цену для бандла
+     *
+     * @param OfferDto|array $item
+     */
+    private function processBundleType(
+        $item,
+        int $value,
+        Discount $discount,
+        int $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB,
+        int $lowestPossiblePrice = self::LOWEST_POSSIBLE_PRICE
+    ): array {
+        $result = [];
+        if ($item['bundles']->has($discount->id)) {
+            $offerInBundle = &$item['bundles'][$discount->id];
+        } else {
+            return ['discountValue' => 0];
+        }
+
+        $offerInBundle['price'] ??= $item['price'];
+
+        $currentDiscount = $item['discount'] ?? 0;
+        $currentCost = $item['cost'] ?? $item['price'];
+        $discountValue = $this->getDiscountValue($offerInBundle['price'], $currentCost, $value, $valueType, $lowestPossiblePrice);
+
+        # Конечная цена товара в бандле всегда округляется до целого
+        $offerInBundle['discount'] = $currentDiscount + $discountValue;
+        $offerInBundle['price'] = self::round($currentCost - $offerInBundle['discount'], self::ROUND);
+        $offerInBundle['cost'] = $currentCost;
+        $result['cost'] = $currentCost;
+
+        $result['discountValue'] = $discountValue;
+
+        return $result;
+    }
+
+    /**
+     * Получить размер скидки и новую цену для офферов
+     *
+     * @param OfferDto|array $item
+     */
+    private function processAllTypes(
+        $item,
+        int $value,
+        int $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB,
+        int $lowestPossiblePrice = self::LOWEST_POSSIBLE_PRICE
+    ): array {
+        $currentDiscount = $item['discount'] ?? 0;
+        $currentCost = $item['cost'] ?? $item['price'];
+        $discountValue = $this->getDiscountValue($item['price'], $currentCost, $value, $valueType, $lowestPossiblePrice);
+
+        $result['discount'] = $currentDiscount + $discountValue;
+        $result['price'] = round($currentCost - $result['discount'], 2);
+        $result['cost'] = $currentCost;
+
+        $result['discountValue'] = $discountValue;
+
+        return $result;
+    }
+
+    private function getDiscountValue(int $price, int $currentCost, int $value, $valueType, $lowestPossiblePrice): int
+    {
+        $discountValue = min($price, $this->calculateDiscountByType($currentCost, $value, $valueType));
+
+        /** Цена не может быть меньше $lowestPossiblePrice */
+        if ($price - $discountValue < $lowestPossiblePrice) {
+            $discountValue = $price - $lowestPossiblePrice;
+        }
+
+        return $discountValue;
+    }
+
+    /**
      * Рассчитать процент от значения и округлить указанным методом.
      * @param int|float $value - значение от которого берётся процент
      * @param int|float $percent - процент (0-100)
-     * @param int $method - способ округления (например self::FLOOR)
-     *
-     * @return int
      */
-    public static function percent($value, $percent, $method = self::FLOOR)
+    public static function percent($value, $percent, int $method = self::FLOOR): int
     {
         return self::round($value * $percent / 100, $method);
     }
 
     /**
      * Округлить значение указанным способом.
-     * @param $value
-     * @param int $method
-     *
-     * @return int
      */
-    public static function round($value, $method = self::FLOOR)
+    public static function round($value, $method = self::FLOOR): int
     {
         switch ($method) {
             case self::FLOOR:
@@ -50,75 +141,6 @@ class CalculatorChangePrice
             default:
                 return (int) round($value);
         }
-    }
-
-    /**
-     * Возвращает размер скидки (без учета предыдущих скидок)
-     *
-     * @param OfferDto|array $item - оффер или доставка (если array)
-     * @param $value
-     * @param int $valueType
-     * @param int $lowestPossiblePrice Самая низкая возможная цена (по умолчанию = 1 рубль)
-     */
-    public function changePrice(
-        $item,
-        $value,
-        $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB,
-        int $lowestPossiblePrice = self::LOWEST_POSSIBLE_PRICE,
-        ?Discount $discount = null
-    ): array {
-        $result = [];
-        if (!isset($item['price']) || $value <= 0) {
-            return ['discountValue' => 0];
-        }
-
-        if ($item instanceof OfferDto && !$item->product_id) {
-            $lowestPossiblePrice = self::LOWEST_MASTERCLASS_PRICE;
-        }
-
-        if ($discount && $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
-            if ($item['bundles']->has($discount->id)) {
-                $offerInBundle = &$item['bundles'][$discount->id];
-            } else {
-                return ['discountValue' => 0];
-            }
-
-            $offerInBundle['price'] ??= $item['price'];
-
-            $currentDiscount = $item['discount'] ?? 0;
-            $currentCost = $item['cost'] ?? $item['price'];
-            $discountValue = min($offerInBundle['price'], $this->calculateDiscountByType($currentCost, $value, $valueType));
-
-            /** Цена не может быть меньше $lowestPossiblePrice */
-            if ($offerInBundle['price'] - $discountValue < $lowestPossiblePrice) {
-                $discountValue = $offerInBundle['price'] - $lowestPossiblePrice;
-            }
-
-            # Конечная цена товара в бандле всегда округляется до целого
-            $offerInBundle['discount'] = $currentDiscount + $discountValue;
-            $offerInBundle['price'] = self::round($currentCost - $offerInBundle['discount'], self::ROUND);
-            $offerInBundle['cost'] = $currentCost;
-            $result['cost'] = $currentCost;
-
-            $result['discountValue'] = $discountValue;
-        } else {
-            $currentDiscount = $item['discount'] ?? 0;
-            $currentCost = $item['cost'] ?? $item['price'];
-            $discountValue = min($item['price'], $this->calculateDiscountByType($currentCost, $value, $valueType));
-
-            /** Цена не может быть меньше $lowestPossiblePrice */
-            if ($item['price'] - $discountValue < $lowestPossiblePrice) {
-                $discountValue = $item['price'] - $lowestPossiblePrice;
-            }
-
-            $result['discount'] = $currentDiscount + $discountValue;
-            $result['price'] = round($currentCost - $result['discount'], 2);
-            $result['cost'] = $currentCost;
-
-            $result['discountValue'] = $discountValue;
-        }
-
-        return $result;
     }
 
     /**
