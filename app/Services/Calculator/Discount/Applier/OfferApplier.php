@@ -102,6 +102,11 @@ class OfferApplier implements Applier
                 if (isset($changedPrice['cost'])) {
                     $offer['cost'] = $changedPrice['cost'];
                 }
+
+                if ($discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER && isset($changedPrice['bundles'][$discount->id])) {
+                    $offer['bundles'][$discount->id] = $changedPrice['bundles'][$discount->id];
+                }
+
                 $change = $changedPrice['discountValue'];
                 if ($change <= 0) {
                     continue;

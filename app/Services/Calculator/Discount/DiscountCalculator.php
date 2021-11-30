@@ -189,7 +189,7 @@ class DiscountCalculator extends AbstractCalculator
                     : $this->input->brands;
 
                 # За исключением офферов
-                $exceptOfferIds = $this->getExceptOffersForDiscount($discount->id);
+                $exceptOfferIds = $this->getExceptOffersForDiscount($discount);
                 # Отбираем нужные офферы
                 $offerIds = $this->filterForBrand($brandIds, $exceptOfferIds, $discount->merchant_id);
                 $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts);
@@ -206,9 +206,9 @@ class DiscountCalculator extends AbstractCalculator
                     ? $discount->categories->pluck('category_id')
                     : $this->input->categories;
                 # За исключением брендов
-                $exceptBrandIds = $this->getExceptBrandsForDiscount($discount->id);
+                $exceptBrandIds = $this->getExceptBrandsForDiscount($discount);
                 # За исключением офферов
-                $exceptOfferIds = $this->getExceptOffersForDiscount($discount->id);
+                $exceptOfferIds = $this->getExceptOffersForDiscount($discount);
                 # Отбираем нужные офферы
                 $offerIds = $this->filterForCategory(
                     $categoryIds,
@@ -234,20 +234,18 @@ class DiscountCalculator extends AbstractCalculator
                  * по очереди применяем скидки (откатывая предыдущие изменяния, т.к. нельзя выбрать сразу две доставки),
                  */
                 $currentDeliveryId = $this->input->deliveries['current']['id'] ?? null;
-                if ($this->input->deliveries['items']->has($currentDeliveryId)) {
-                    $this->input->deliveries['items']->transform(function ($delivery) use ($discount, $currentDeliveryId, &$change) {
-                        $deliveryApplier = new DeliveryApplier();
-                        $deliveryApplier->setCurrentDeliveries($delivery);
-                        $changedPrice = $deliveryApplier->apply($discount);
-                        $currentDeliveries = $deliveryApplier->getModifiedCurrentDeliveries();
+                $this->input->deliveries['items']->transform(function ($delivery) use ($discount, $currentDeliveryId, &$change) {
+                    $deliveryApplier = new DeliveryApplier();
+                    $deliveryApplier->setCurrentDelivery($delivery);
+                    $changedPrice = $deliveryApplier->apply($discount);
+                    $currentDelivery = $deliveryApplier->getModifiedCurrentDelivery();
 
-                        if ($currentDeliveries['id'] === $currentDeliveryId) {
-                            $change = $changedPrice;
-                            $this->input->deliveries['current'] = $currentDeliveries;
-                        }
-                        return $currentDeliveries;
-                    });
-                }
+                    if ($currentDelivery['id'] === $currentDeliveryId) {
+                        $change = $changedPrice;
+                        $this->input->deliveries['current'] = $currentDelivery;
+                    }
+                    return $currentDelivery;
+                });
 
                 break;
             case Discount::DISCOUNT_TYPE_CART_TOTAL:
@@ -256,9 +254,7 @@ class DiscountCalculator extends AbstractCalculator
                 break;
             # Скидка на мастер-классы
             case Discount::DISCOUNT_TYPE_MASTERCLASS:
-                $ticketTypeIds = $this->discounts
-                    ->get($discount->id)
-                    ->publicEvents
+                $ticketTypeIds = $discount->publicEvents
                     ->pluck('ticket_type_id')
                     ->toArray();
 
@@ -289,36 +285,25 @@ class DiscountCalculator extends AbstractCalculator
             $this->appliedDiscounts->put($discount->id, [
                 'discountId' => $discount->id,
                 'change' => $change,
-                'conditions' => $discount->conditions->pluck('type') ?? [],
+                'conditions' => $discount->conditions->pluck('type') ?? collect(),
             ]);
         }
 
         return $change;
     }
 
-    /**
-     * @param $discountId
-     *
-     * @return Collection
-     */
-    protected function getExceptOffersForDiscount($discountId)
+
+    protected function getExceptOffersForDiscount(Discount $discount): Collection
     {
-        return $this->discounts
-            ->get($discountId)
+        return $discount
             ->offers
             ->where('expect', true)
             ->pluck('offer_id');
     }
 
-    /**
-     * @param $discountId
-     *
-     * @return Collection
-     */
-    protected function getExceptBrandsForDiscount($discountId)
+    protected function getExceptBrandsForDiscount(Discount $discount): Collection
     {
-        return $this->discounts
-            ->get($discountId)
+        return $discount
             ->brands
             ->filter(fn($brand) => $brand['except'])
             ->pluck('brand_id');
@@ -490,7 +475,7 @@ class DiscountCalculator extends AbstractCalculator
     protected function checkOffers(Discount $discount): bool
     {
         return $discount->type === Discount::DISCOUNT_TYPE_OFFER
-            && $discount->offers->filter(fn($offers) => !$offers['except'])->isNotEmpty();
+            && $discount->offers->where('except', '=', false)->isNotEmpty();
     }
 
     /**
@@ -498,8 +483,7 @@ class DiscountCalculator extends AbstractCalculator
      */
     protected function checkBundles(Discount $discount): bool
     {
-        return ($discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER ||
-                $discount->type === Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS)
+        return in_array($discount->type, [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS])
                 && $discount->bundleItems->isNotEmpty();
     }
 
@@ -547,7 +531,7 @@ class DiscountCalculator extends AbstractCalculator
         }
 
         return isset($this->input->customer['segment'])
-            && $discount->segments->pluck('segment_id')->search($this->input->customer['segment']) !== false;
+            && $discount->segments->contains('segment_id', $this->input->customer['segment']);
     }
 
     /**

@@ -31,7 +31,7 @@ class DiscountConditionChecker
 
     private function checkByType(DiscountConditionModel $condition, array $checkingConditionTypes = []): bool
     {
-        if (!empty($checkingConditionTypes) && !in_array($condition->type, $checkingConditionTypes)) {
+        if (!in_array($condition->type, $checkingConditionTypes)) {
             return false;
         }
         switch ($condition->type) {

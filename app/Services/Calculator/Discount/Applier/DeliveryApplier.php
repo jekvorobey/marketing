@@ -7,16 +7,16 @@ use App\Services\Calculator\CalculatorChangePrice;
 
 class DeliveryApplier implements Applier
 {
-    private array $currentDeliveries;
+    private array $currentDelivery;
 
-    public function setCurrentDeliveries($currentDeliveries): void
+    public function setCurrentDelivery($currentDelivery): void
     {
-        $this->currentDeliveries = $currentDeliveries;
+        $this->currentDelivery = $currentDelivery;
     }
 
-    public function getModifiedCurrentDeliveries(): array
+    public function getModifiedCurrentDelivery(): array
     {
-        return $this->currentDeliveries;
+        return $this->currentDelivery;
     }
 
     public function apply(Discount $discount): ?float
@@ -24,14 +24,14 @@ class DeliveryApplier implements Applier
         $calculatorChangePrice = new CalculatorChangePrice();
 
         $changedPrice = $calculatorChangePrice->changePrice(
-            $this->currentDeliveries,
+            $this->currentDelivery,
             $discount->value,
             $discount->value_type,
             CalculatorChangePrice::FREE_DELIVERY_PRICE
         );
-        $this->currentDeliveries['discount'] = $changedPrice['discount'];
-        $this->currentDeliveries['price'] = $changedPrice['price'];
-        $this->currentDeliveries['cost'] = $changedPrice['cost'];
+        $this->currentDelivery['discount'] = $changedPrice['discount'];
+        $this->currentDelivery['price'] = $changedPrice['price'];
+        $this->currentDelivery['cost'] = $changedPrice['cost'];
 
         return $changedPrice['discountValue'];
     }

@@ -60,7 +60,7 @@ class CalculatorChangePrice
     ): array {
         $result = [];
         if ($item['bundles']->has($discount->id)) {
-            $offerInBundle = &$item['bundles'][$discount->id];
+            $offerInBundle = $item['bundles'][$discount->id];
         } else {
             return ['discountValue' => 0];
         }
@@ -75,6 +75,8 @@ class CalculatorChangePrice
         $offerInBundle['discount'] = $currentDiscount + $discountValue;
         $offerInBundle['price'] = self::round($currentCost - $offerInBundle['discount'], self::ROUND);
         $offerInBundle['cost'] = $currentCost;
+
+        $result['bundles'][$discount->id] = $offerInBundle;
         $result['cost'] = $currentCost;
 
         $result['discountValue'] = $discountValue;
