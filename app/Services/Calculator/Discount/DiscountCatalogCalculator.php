@@ -27,20 +27,8 @@ class DiscountCatalogCalculator extends DiscountCalculator
     /**
      * @inheritDoc
      */
-    protected function getExcludedConditions(): array
+    protected function getCheckingConditions(): array
     {
-        return [
-            DiscountConditionModel::FIRST_ORDER,
-            DiscountConditionModel::MIN_PRICE_ORDER,
-            DiscountConditionModel::MIN_PRICE_BRAND,
-            DiscountConditionModel::MIN_PRICE_CATEGORY,
-            DiscountConditionModel::EVERY_UNIT_PRODUCT,
-            DiscountConditionModel::DELIVERY_METHOD,
-            DiscountConditionModel::PAY_METHOD,
-            DiscountConditionModel::REGION,
-            DiscountConditionModel::CUSTOMER,
-            DiscountConditionModel::ORDER_SEQUENCE_NUMBER,
-            DiscountConditionModel::BUNDLE,
-        ];
+        return [DiscountConditionModel::DISCOUNT_SYNERGY];
     }
 }

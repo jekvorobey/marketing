@@ -4,6 +4,7 @@ namespace App\Services\Calculator\Discount;
 
 use App\Models\Discount\BundleItem;
 use App\Models\Discount\Discount;
+use App\Models\Discount\DiscountCondition as DiscountConditionModel;
 use App\Services\Calculator\AbstractCalculator;
 use App\Services\Calculator\Discount\Applier\BasketApplier;
 use App\Services\Calculator\Discount\Applier\DeliveryApplier;
@@ -405,7 +406,7 @@ class DiscountCalculator extends AbstractCalculator
         $conditionChecker = new DiscountConditionChecker($this->input);
         $this->possibleDiscounts = $this->possibleDiscounts->filter(function (Discount $discount) use ($conditionChecker) {
             if ($conditions = $discount->conditions) {
-                return $conditionChecker->check($conditions, $this->getExcludedConditions());
+                return $conditionChecker->check($conditions, $this->getCheckingConditions());
             }
 
             return true;
@@ -425,11 +426,24 @@ class DiscountCalculator extends AbstractCalculator
     }
 
     /**
-     * Условия скидок, которые не должны проверяться
+     * Условия скидок, которые должны проверяться
      */
-    protected function getExcludedConditions(): array
+    protected function getCheckingConditions(): array
     {
-        return [];
+        return [
+            DiscountConditionModel::FIRST_ORDER,
+            DiscountConditionModel::MIN_PRICE_ORDER,
+            DiscountConditionModel::MIN_PRICE_BRAND,
+            DiscountConditionModel::MIN_PRICE_CATEGORY,
+            DiscountConditionModel::EVERY_UNIT_PRODUCT,
+            DiscountConditionModel::DELIVERY_METHOD,
+            DiscountConditionModel::PAY_METHOD,
+            DiscountConditionModel::REGION,
+            DiscountConditionModel::CUSTOMER,
+            DiscountConditionModel::ORDER_SEQUENCE_NUMBER,
+            DiscountConditionModel::BUNDLE,
+            DiscountConditionModel::DISCOUNT_SYNERGY,
+        ];
     }
 
     /**

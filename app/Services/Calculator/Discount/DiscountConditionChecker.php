@@ -18,20 +18,20 @@ class DiscountConditionChecker
     /**
      * Проверяет доступность применения скидки на все соответствующие условия
      */
-    public function check(Collection $conditions, array $excludedConditionTypes = []): bool
+    public function check(Collection $conditions, array $checkingConditionTypes = []): bool
     {
         $result = true;
         /** @var DiscountConditionModel $condition */
         foreach ($conditions as $condition) {
-            $result = $this->checkByType($condition, $excludedConditionTypes);
+            $result = $this->checkByType($condition, $checkingConditionTypes);
         }
 
         return $result;
     }
 
-    private function checkByType(DiscountConditionModel $condition, array $excludedConditionTypes = []): bool
+    private function checkByType(DiscountConditionModel $condition, array $checkingConditionTypes = []): bool
     {
-        if (!empty($excludedConditionTypes) && in_array($condition->type, $excludedConditionTypes)) {
+        if (!empty($checkingConditionTypes) && !in_array($condition->type, $checkingConditionTypes)) {
             return false;
         }
         switch ($condition->type) {
