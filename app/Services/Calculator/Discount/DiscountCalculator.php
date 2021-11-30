@@ -373,23 +373,28 @@ class DiscountCalculator extends AbstractCalculator
     }
 
     /**
-     * Сортирует скидки согласно приоритету
-     * Скидки, имеющие наибольший приоритет помещаются в начало списка
+     * Сортируем в порядке: скидка по промо-коду > скидка на товар > скидка на корзину
      *
      * @todo
      */
     protected function sort(): self
     {
-        /**
-         * На данный момент скидки сортируются по типу скидки
-         * Если две скидки имеют одинаковый тип, то сначала берется первая по списку
-         */
-        // Все бандлы ставим в конец списка
-        $this->possibleDiscounts = $this->possibleDiscounts->sortBy(function (Discount $discount) {
-            return $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER ||
-                $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS ? 1 : 0;
-        })
-            ->values();
+        $possibleDiscounts = $this->possibleDiscounts->sortBy(fn(Discount $discount) => $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB);
+
+        [$promocodeDiscounts, $possibleDiscounts] = $possibleDiscounts->partition('promo_code_only', true);
+        [$bundleDiscounts, $possibleDiscounts] = $possibleDiscounts->partition(
+            fn($discount) => in_array($discount->type, [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS])
+        );
+        [$cartTotalDiscounts, $possibleDiscounts] = $possibleDiscounts->partition('type', Discount::DISCOUNT_TYPE_CART_TOTAL);
+        [$discountsWithConditions, $possibleDiscounts] = $possibleDiscounts->partition(function (Discount $discount) {
+            return $discount->conditions->where('type', '!=', DiscountCondition::DISCOUNT_SYNERGY)->isNotEmpty();
+        });
+
+        $this->possibleDiscounts = $possibleDiscounts
+            ->merge($promocodeDiscounts)
+            ->merge($discountsWithConditions)
+            ->merge($cartTotalDiscounts)
+            ->merge($bundleDiscounts);
 
         return $this;
     }
