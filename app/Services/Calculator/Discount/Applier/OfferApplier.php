@@ -150,24 +150,22 @@ class OfferApplier implements Applier
         /** @var Collection $discountIdsForOffer */
         $discountIdsForOffer = $this->offersByDiscounts[$offerId]->pluck('id');
 
-        $discountConditions = $discount->conditions;
+        $discountConditions = $discount->conditions->where('type', DiscountCondition::DISCOUNT_SYNERGY);
         /** @var DiscountCondition $condition */
         foreach ($discountConditions as $condition) {
-            if ($condition->type === DiscountCondition::DISCOUNT_SYNERGY) {
-                $synergyDiscountIds = $condition->getSynergy();
-                if ($discountIdsForOffer->intersect($synergyDiscountIds)->count() !== $discountIdsForOffer->count()) {
-                    return false;
-                }
-
-                if ($condition->getMaxValueType()) {
-                    $this->maxValueByDiscount[$discount->id] = [
-                        'value_type' => $condition->getMaxValueType(),
-                        'value' => $condition->getMaxValue(),
-                    ];
-                }
-
-                return true;
+            $synergyDiscountIds = $condition->getSynergy();
+            if ($discountIdsForOffer->intersect($synergyDiscountIds)->count() !== $discountIdsForOffer->count()) {
+                return false;
             }
+
+            if ($condition->getMaxValueType()) {
+                $this->maxValueByDiscount[$discount->id] = [
+                    'value_type' => $condition->getMaxValueType(),
+                    'value' => $condition->getMaxValue(),
+                ];
+            }
+
+            return true;
         }
 
         return false;
