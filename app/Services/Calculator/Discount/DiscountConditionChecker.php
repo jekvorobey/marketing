@@ -18,19 +18,22 @@ class DiscountConditionChecker
     /**
      * Проверяет доступность применения скидки на все соответствующие условия
      */
-    public function check(Collection $conditions): bool
+    public function check(Collection $conditions, array $excludedConditionTypes = []): bool
     {
         $result = true;
         /** @var DiscountConditionModel $condition */
         foreach ($conditions as $condition) {
-            $result = $this->checkByType($condition);
+            $result = $this->checkByType($condition, $excludedConditionTypes);
         }
 
         return $result;
     }
 
-    private function checkByType(DiscountConditionModel $condition)
+    private function checkByType(DiscountConditionModel $condition, array $excludedConditionTypes = []): bool
     {
+        if (!empty($excludedConditionTypes) && in_array($condition->type, $excludedConditionTypes)) {
+            return false;
+        }
         switch ($condition->type) {
             /** Скидка на первый заказ */
             case DiscountConditionModel::FIRST_ORDER:

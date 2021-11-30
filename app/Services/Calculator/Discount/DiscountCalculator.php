@@ -405,7 +405,7 @@ class DiscountCalculator extends AbstractCalculator
         $conditionChecker = new DiscountConditionChecker($this->input);
         $this->possibleDiscounts = $this->possibleDiscounts->filter(function (Discount $discount) use ($conditionChecker) {
             if ($conditions = $discount->conditions) {
-                return $conditionChecker->check($conditions);
+                return $conditionChecker->check($conditions, $this->getExcludedConditions());
             }
 
             return true;
@@ -422,6 +422,14 @@ class DiscountCalculator extends AbstractCalculator
         return $this->checkType($discount)
             && $this->checkCustomerRole($discount)
             && $this->checkSegment($discount);
+    }
+
+    /**
+     * Условия скидок, которые не должны проверяться
+     */
+    protected function getExcludedConditions(): array
+    {
+        return [];
     }
 
     /**
