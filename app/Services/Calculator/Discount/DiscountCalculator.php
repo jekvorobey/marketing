@@ -292,7 +292,6 @@ class DiscountCalculator extends AbstractCalculator
         return $change;
     }
 
-
     protected function getExceptOffersForDiscount(Discount $discount): Collection
     {
         return $discount
