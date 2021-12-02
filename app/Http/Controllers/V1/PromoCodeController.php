@@ -205,6 +205,13 @@ class PromoCodeController extends Controller
                         $query->where($key, (int) $value);
                     }
                     break;
+                case 'code':
+                    if (is_array($value)) {
+                        $query->whereIn($key, $value);
+                    } else {
+                        $query->where($key, $value);
+                    }
+                    break;
             }
         }
 
