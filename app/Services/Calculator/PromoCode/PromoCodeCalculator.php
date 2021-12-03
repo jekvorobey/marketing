@@ -167,15 +167,15 @@ class PromoCodeCalculator extends AbstractCalculator
             return true;
         }
 
-        $customerId = $this->input->getCustomerId();
-        if (!$customerId) {
-            return false;
-        }
-
         /** @var OrderService $orderService */
         $orderService = resolve(OrderService::class);
         switch ($promoCode->type_of_limit) {
             case PromoCode::TYPE_OF_LIMIT_USER:
+                $customerId = $this->input->getCustomerId();
+                if (!$customerId) {
+                    return false;
+                }
+
                 return $promoCode->counter > $orderService->orderPromoCodeCountByCustomer($promoCode->id, $customerId);
             case PromoCode::TYPE_OF_LIMIT_ALL:
                 return $promoCode->counter > $orderService->orderPromoCodeCount($promoCode->id);
