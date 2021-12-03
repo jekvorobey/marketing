@@ -14,7 +14,7 @@ class AddTypeOfLimitToPromocodesTable extends Migration
     public function up()
     {
         Schema::table('promo_codes', function (Blueprint $table) {
-            $table->string('type_of_limit')->after('counter')->nullable();
+            $table->string('type_of_limit')->after('counter')->default('user');
         });
     }
 

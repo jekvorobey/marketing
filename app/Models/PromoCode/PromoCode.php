@@ -112,6 +112,7 @@ class PromoCode extends AbstractModel
         'name',
         'code',
         'counter',
+        'type_of_limit',
         'start_date',
         'end_date',
         'status',

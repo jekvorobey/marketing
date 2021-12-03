@@ -160,11 +160,8 @@ class PromoCodeCalculator extends AbstractCalculator
 
     /**
      * Проверяет ограничение на количество применений одного промокода
-     *
-     *
-     * @return bool
      */
-    protected function checkPromoCodeCounter(PromoCode $promoCode)
+    protected function checkPromoCodeCounter(PromoCode $promoCode): bool
     {
         if (!isset($promoCode->counter)) {
             return true;
@@ -177,8 +174,14 @@ class PromoCodeCalculator extends AbstractCalculator
 
         /** @var OrderService $orderService */
         $orderService = resolve(OrderService::class);
-
-        return $promoCode->counter > $orderService->orderPromoCodeCountByCustomer($promoCode->id, $customerId);
+        switch ($promoCode->type_of_limit) {
+            case PromoCode::TYPE_OF_LIMIT_USER:
+                return $promoCode->counter > $orderService->orderPromoCodeCountByCustomer($promoCode->id, $customerId);
+            case PromoCode::TYPE_OF_LIMIT_ALL:
+                return $promoCode->counter > $orderService->orderPromoCodeCount($promoCode->id);
+            default:
+                return false;
+        }
     }
 
     /**
