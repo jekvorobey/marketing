@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $name
  * @property string $code
  * @property int|null $counter
+ * @property string|null $type_of_limit
  * @property Carbon $start_date
  * @property Carbon $end_date
  * @property int $status
@@ -93,6 +94,15 @@ class PromoCode extends AbstractModel
     public const CONDITION_TYPE_ROLE_IDS = 'roles';
 
     /**
+     * Тип ограничения количества использований
+     */
+    /** Для текущего пользователя */
+    public const TYPE_OF_LIMIT_USER = 'user';
+
+    /** Для всех пользователей */
+    public const TYPE_OF_LIMIT_ALL = 'all';
+
+    /**
      * Заполняемые поля модели
      */
     public const FILLABLE = [
@@ -102,6 +112,7 @@ class PromoCode extends AbstractModel
         'name',
         'code',
         'counter',
+        'type_of_limit',
         'start_date',
         'end_date',
         'status',
@@ -161,6 +172,14 @@ class PromoCode extends AbstractModel
             self::TYPE_DISCOUNT,
             self::TYPE_GIFT,
             self::TYPE_BONUS,
+        ];
+    }
+
+    public static function availableTypesOfLimit(): array
+    {
+        return [
+            self::TYPE_OF_LIMIT_USER,
+            self::TYPE_OF_LIMIT_ALL,
         ];
     }
 

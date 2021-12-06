@@ -69,6 +69,10 @@ class PromoCodeHelper
             throw new HttpException(400, 'PromoCode counter error');
         }
 
+        if (isset($data['counter']) && $data['counter'] > 0 && !isset($data['type_of_limit'])) {
+            throw new HttpException(400, 'PromoCode type of limit error');
+        }
+
         $discount = $data['discount_id'] ? Discount::find($data['discount_id']) : null;
         if (isset($data['discount_id']) && !$discount) {
             throw new HttpException(400, 'PromoCode discount error');

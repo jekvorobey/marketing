@@ -82,6 +82,7 @@ class PromoCodeController extends Controller
             'name' => "string|{$required_rule}",
             'code' => "string|{$required_rule}",
             'counter' => 'numeric|nullable',
+            'type_of_limit' => 'string|nullable|required_with:counter',
             'start_date' => 'date|nullable',
             'end_date' => 'date|nullable',
             'status' => "numeric|{$required_rule}",
