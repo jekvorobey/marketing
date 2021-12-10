@@ -55,7 +55,8 @@
         "laravel/framework": "5.8.*",
         "laravel/tinker": "^1.0",
         "letsgoi/laravel-health-check": "dev-master",
-        "sentry/sentry-laravel": "^2.7"
+        "sentry/sentry-laravel": "^2.7",
+        "doctrine/dbal": "^2.5"
     },
     "require-dev": {
         "beyondcode/laravel-dump-server": "^1.0",
