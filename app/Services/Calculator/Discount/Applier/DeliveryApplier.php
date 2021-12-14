@@ -5,7 +5,7 @@ namespace App\Services\Calculator\Discount\Applier;
 use App\Models\Discount\Discount;
 use App\Services\Calculator\CalculatorChangePrice;
 
-class DeliveryApplier implements Applier
+class DeliveryApplier extends AbstractApplier
 {
     private array $currentDelivery;
 

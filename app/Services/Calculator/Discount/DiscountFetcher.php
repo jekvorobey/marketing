@@ -177,7 +177,8 @@ class DiscountFetcher
         return [
             'bundleItems' => function (Relation $builder): void {
                 $builder
-                    ->select(['discount_id', 'item_id']);
+                    ->select(['discount_id', 'item_id'])
+                    ->whereIn('discount_id', $this->input->bundles);
             },
         ];
     }

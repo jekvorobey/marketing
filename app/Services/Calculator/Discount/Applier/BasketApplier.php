@@ -4,30 +4,24 @@ namespace App\Services\Calculator\Discount\Applier;
 
 use App\Models\Discount\Discount;
 use App\Services\Calculator\CalculatorChangePrice;
-use App\Services\Calculator\InputCalculator;
 use Illuminate\Support\Collection;
 
-class BasketApplier implements Applier
+class BasketApplier extends AbstractApplier
 {
-    private InputCalculator $input;
-    private Collection $offersByDiscounts;
-
-    public function __construct(InputCalculator $input, Collection $offersByDiscounts)
-    {
-        $this->input = $input;
-        $this->offersByDiscounts = $offersByDiscounts;
-    }
-
     /**
      * @return false|float|int
      */
     public function apply(Discount $discount): ?float
     {
-        if ($this->input->offers->isEmpty()) {
+        $offerIds = $this->input->offers->filter(function ($offer) use ($discount) {
+            return $this->applicableToOffer($discount, $offer['id']);
+        })->pluck('id');
+
+        if ($offerIds->isEmpty()) {
             return null;
         }
 
-        return $this->applyEvenly($discount, $this->input->offers->pluck('id'));
+        return $this->applyEvenly($discount, $offerIds);
     }
 
     /**
@@ -36,7 +30,7 @@ class BasketApplier implements Applier
     protected function applyEvenly(Discount $discount, Collection $offerIds): ?float
     {
         $calculatorChangePrice = new CalculatorChangePrice();
-        $priceOrders = $this->input->getPriceOrders();
+        $priceOrders = $this->getBasketPriceOrders($offerIds);
         if ($priceOrders <= 0) {
             return 0.;
         }
@@ -93,7 +87,7 @@ class BasketApplier implements Applier
                 }
             }
 
-            $priceOrders = $this->input->getPriceOrders();
+            $priceOrders = $this->getBasketPriceOrders($offerIds);
             if ($prevCurrentDiscountValue === $currentDiscountValue) {
                 if ($force) {
                     break;
@@ -118,5 +112,10 @@ class BasketApplier implements Applier
 
             return ($asc ? 1 : -1) * ($totalPriceLft - $totalPriceRgt);
         });
+    }
+
+    protected function getBasketPriceOrders(Collection $offerIds): float
+    {
+        return $this->input->offers->whereIn('id', $offerIds)->sum(fn($offer) => $offer['price'] * $offer['qty']);
     }
 }

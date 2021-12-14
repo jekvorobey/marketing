@@ -235,7 +235,7 @@ class DiscountCalculator extends AbstractCalculator
                  */
                 $currentDeliveryId = $this->input->deliveries['current']['id'] ?? null;
                 $this->input->deliveries['items']->transform(function ($delivery) use ($discount, $currentDeliveryId, &$change) {
-                    $deliveryApplier = new DeliveryApplier();
+                    $deliveryApplier = new DeliveryApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts);
                     $deliveryApplier->setCurrentDelivery($delivery);
                     $changedPrice = $deliveryApplier->apply($discount);
                     $currentDelivery = $deliveryApplier->getModifiedCurrentDelivery();
@@ -249,7 +249,7 @@ class DiscountCalculator extends AbstractCalculator
 
                 break;
             case Discount::DISCOUNT_TYPE_CART_TOTAL:
-                $basketApplier = new BasketApplier($this->input, $this->offersByDiscounts);
+                $basketApplier = new BasketApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts);
                 $change = $basketApplier->apply($discount);
                 break;
             # Скидка на мастер-классы
