@@ -63,9 +63,13 @@ class BasketApplier extends AbstractApplier
                 $changeUp = $calculatorChangePrice->changePrice($offer, $valueUp)['discountValue'];
                 $changeDown = $calculatorChangePrice->changePrice($offer, $valueDown)['discountValue'];
                 if ($changeUp * $offer['qty'] <= $discountValue - $currentDiscountValue || $force) {
-                    $change = $calculatorChangePrice->changePrice($offer, $valueUp)['discountValue'];
+                    $changedPrice = $calculatorChangePrice->changePrice($offer, $valueUp);
+                    $change = $changedPrice['discountValue'];
+                    $offer = $calculatorChangePrice->syncItemWithChangedPrice($offer, $changedPrice);
                 } elseif ($changeDown * $offer['qty'] <= $discountValue - $currentDiscountValue || $force) {
-                    $change = $calculatorChangePrice->changePrice($offer, $valueDown)['discountValue'];
+                    $changedPrice = $calculatorChangePrice->changePrice($offer, $valueDown);
+                    $change = $changedPrice['discountValue'];
+                    $offer = $calculatorChangePrice->syncItemWithChangedPrice($offer, $changedPrice);
                 } else {
                     continue;
                 }

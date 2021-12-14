@@ -29,9 +29,7 @@ class DeliveryApplier extends AbstractApplier
             $discount->value_type,
             CalculatorChangePrice::FREE_DELIVERY_PRICE
         );
-        $this->currentDelivery['discount'] = $changedPrice['discount'];
-        $this->currentDelivery['price'] = $changedPrice['price'];
-        $this->currentDelivery['cost'] = $changedPrice['cost'];
+        $this->currentDelivery = $calculatorChangePrice->syncItemWithChangedPrice($this->currentDelivery, $changedPrice);
 
         return $changedPrice['discountValue'];
     }
