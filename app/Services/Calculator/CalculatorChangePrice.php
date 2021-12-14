@@ -163,4 +163,19 @@ class CalculatorChangePrice
                 return 0;
         }
     }
+
+    public function syncItemWithChangedPrice(array $item, array $changedPrice): array
+    {
+        if (isset($changedPrice['discount'])) {
+            $item['discount'] = $changedPrice['discount'];
+        }
+        if (isset($changedPrice['price'])) {
+            $item['price'] = $changedPrice['price'];
+        }
+        if (isset($changedPrice['cost'])) {
+            $item['cost'] = $changedPrice['cost'];
+        }
+
+        return $item;
+    }
 }

@@ -251,6 +251,8 @@ class DiscountCalculator extends AbstractCalculator
             case Discount::DISCOUNT_TYPE_CART_TOTAL:
                 $basketApplier = new BasketApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts);
                 $change = $basketApplier->apply($discount);
+                $this->offersByDiscounts = $basketApplier->getModifiedOffersByDiscounts();
+                $this->input->offers = $basketApplier->getModifiedInputOffers();
                 break;
             # Скидка на мастер-классы
             case Discount::DISCOUNT_TYPE_MASTERCLASS:

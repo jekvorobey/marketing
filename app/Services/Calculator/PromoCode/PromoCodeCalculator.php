@@ -86,16 +86,7 @@ class PromoCodeCalculator extends AbstractCalculator
                         CalculatorChangePrice::FREE_DELIVERY_PRICE
                     );
                     $changeForDelivery = $changedPrice['discountValue'];
-
-                    if (isset($changedPrice['discount'])) {
-                        $delivery['discount'] = $changedPrice['discount'];
-                    }
-                    if (isset($changedPrice['price'])) {
-                        $delivery['price'] = $changedPrice['price'];
-                    }
-                    if (isset($changedPrice['cost'])) {
-                        $delivery['cost'] = $changedPrice['cost'];
-                    }
+                    $delivery = $calculatorChangePrice->syncItemWithChangedPrice($delivery, $changedPrice);
 
                     if ($changeForDelivery > 0) {
                         $isApply = $changeForDelivery > 0;

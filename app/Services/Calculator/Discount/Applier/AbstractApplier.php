@@ -27,6 +27,16 @@ abstract class AbstractApplier
 
     abstract public function apply(Discount $discount): ?float;
 
+    public function getModifiedOffersByDiscounts(): Collection
+    {
+        return $this->offersByDiscounts;
+    }
+
+    public function getModifiedInputOffers(): Collection
+    {
+        return $this->input->offers;
+    }
+
     /**
      * Можно ли применить скидку к офферу
      */
@@ -66,5 +76,19 @@ abstract class AbstractApplier
         }
 
         return false;
+    }
+
+    protected function addOfferByDiscount(int $offerId, Discount $discount, float $change): void
+    {
+        if (!$this->offersByDiscounts->has($offerId)) {
+            $this->offersByDiscounts->put($offerId, collect());
+        }
+
+        $this->offersByDiscounts[$offerId]->push([
+            'id' => $discount->id,
+            'change' => $change,
+            'value' => $discount->value,
+            'value_type' => $discount->value_type,
+        ]);
     }
 }

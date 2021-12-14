@@ -206,15 +206,7 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
         );
 
         if ($apply) {
-            if (isset($changedPrice['discount'])) {
-                $offer['discount'] = $changedPrice['discount'];
-            }
-            if (isset($changedPrice['price'])) {
-                $offer['price'] = $changedPrice['price'];
-            }
-            if (isset($changedPrice['cost'])) {
-                $offer['cost'] = $changedPrice['cost'];
-            }
+            $offer = $calculatorChangePrice->syncItemWithChangedPrice($offer, $changedPrice);
         }
 
         return $calculatorChangePrice::round($changedPrice['discountValue']) * $qty;

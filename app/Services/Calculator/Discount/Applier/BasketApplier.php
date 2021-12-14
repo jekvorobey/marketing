@@ -70,16 +70,7 @@ class BasketApplier extends AbstractApplier
                     continue;
                 }
 
-                if (!$this->offersByDiscounts->has($offerId)) {
-                    $this->offersByDiscounts->put($offerId, collect());
-                }
-
-                $this->offersByDiscounts[$offerId]->push([
-                    'id' => $discount->id,
-                    'change' => $change,
-                    'value' => $discount->value,
-                    'value_type' => $discount->value_type,
-                ]);
+                $this->addOfferByDiscount($offerId, $discount, $change);
 
                 $currentDiscountValue += $change * $offer['qty'];
                 if ($currentDiscountValue >= $discountValue) {

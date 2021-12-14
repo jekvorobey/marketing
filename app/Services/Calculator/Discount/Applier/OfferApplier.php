@@ -15,16 +15,6 @@ class OfferApplier extends AbstractApplier
         $this->offerIds = $offerIds;
     }
 
-    public function getModifiedOffersByDiscounts(): Collection
-    {
-        return $this->offersByDiscounts;
-    }
-
-    public function getModifiedInputOffers(): Collection
-    {
-        return $this->input->offers;
-    }
-
     public function apply(Discount $discount): ?float
     {
         $offerIds = $this->offerIds->filter(function ($offerId) use ($discount) {
@@ -76,15 +66,7 @@ class OfferApplier extends AbstractApplier
                 }
 
                 $changedPrice = $calculatorChangePrice->changePrice($offer, $valueOfLimitDiscount ?? $value, $valueType, $lowestPossiblePrice, $discount);
-                if (isset($changedPrice['discount'])) {
-                    $offer['discount'] = $changedPrice['discount'];
-                }
-                if (isset($changedPrice['price'])) {
-                    $offer['price'] = $changedPrice['price'];
-                }
-                if (isset($changedPrice['cost'])) {
-                    $offer['cost'] = $changedPrice['cost'];
-                }
+                $offer = $calculatorChangePrice->syncItemWithChangedPrice($offer, $changedPrice);
 
                 if ($discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER && isset($changedPrice['bundles'][$discount->id])) {
                     $offer['bundles'][$discount->id] = $changedPrice['bundles'][$discount->id];
@@ -95,16 +77,8 @@ class OfferApplier extends AbstractApplier
                     continue;
                 }
 
-                if (!$this->offersByDiscounts->has($offerId)) {
-                    $this->offersByDiscounts->put($offerId, collect());
-                }
+                $this->addOfferByDiscount($offerId, $discount, $change);
 
-                $this->offersByDiscounts[$offerId]->push([
-                    'id' => $discount->id,
-                    'change' => $change,
-                    'value' => $discount->value,
-                    'value_type' => $discount->value_type,
-                ]);
                 if ($discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
                     $qty = $offer['bundles'][$discount->id]['qty'];
                 } else {
