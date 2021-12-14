@@ -164,7 +164,11 @@ class CalculatorChangePrice
         }
     }
 
-    public function syncItemWithChangedPrice(array $item, array $changedPrice): array
+    /**
+     * @param OfferDto|array $item
+     * @return array|object
+     */
+    public function syncItemWithChangedPrice($item, array $changedPrice)
     {
         if (isset($changedPrice['discount'])) {
             $item['discount'] = $changedPrice['discount'];
