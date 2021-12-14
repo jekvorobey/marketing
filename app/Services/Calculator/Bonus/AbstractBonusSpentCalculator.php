@@ -177,6 +177,10 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
      */
     protected function getSpendBonusPriceForOfferItem(array $offer, int $bonusPriceRemains): int
     {
+        if ($offer['qty'] === 0) {
+            return 0;
+        }
+
         $maxSpendForOfferItem = !$offer['has_discount']
             ? $this->maxBonusPriceForOfferItem($offer)
             : $this->maxBonusPriceForDiscountOfferItem($offer);
