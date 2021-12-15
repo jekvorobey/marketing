@@ -6,6 +6,7 @@ use App\Models\Bonus\ProductBonusOption\ProductBonusOption;
 use App\Models\Discount\Discount;
 use App\Models\Option\Option;
 use App\Services\Calculator\AbstractCalculator;
+use App\Services\Calculator\CalculatorChangePrice;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
 use Illuminate\Support\Collection;
@@ -154,7 +155,7 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
             $percent = $this->getOption(Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT);
         }
 
-        return self::percent($offer['price'], $percent);
+        return CalculatorChangePrice::percent($offer['price'], $percent);
     }
 
     /**
@@ -169,7 +170,7 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
             $percent = $this->getOption(Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_DISCOUNT_PRODUCT);
         }
 
-        return self::percent($offer['price'], $percent);
+        return CalculatorChangePrice::percent($offer['price'], $percent);
     }
 
     /**
@@ -187,7 +188,7 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
 
         $spendForOffer = min($bonusPriceRemains, $maxSpendForOfferItem * $offer['qty']);
 
-        return self::round($spendForOffer / $offer['qty']);
+        return CalculatorChangePrice::round($spendForOffer / $offer['qty']);
     }
 
     /**
@@ -200,15 +201,19 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
      */
     protected function applyDiscountForOffer(&$offer, int $value, int $qty, bool $apply = true): int
     {
-        $discount = $this->changePrice(
+        $calculatorChangePrice = new CalculatorChangePrice();
+        $changedPrice = $calculatorChangePrice->changePrice(
             $offer,
             $value,
             Discount::DISCOUNT_VALUE_TYPE_RUB,
-            $apply,
-            self::LOWEST_POSSIBLE_PRICE
+            CalculatorChangePrice::LOWEST_POSSIBLE_PRICE
         );
 
-        return self::round($discount) * $qty;
+        if ($apply) {
+            $offer = $calculatorChangePrice->syncItemWithChangedPrice($offer, $changedPrice);
+        }
+
+        return $calculatorChangePrice::round($changedPrice['discountValue']) * $qty;
     }
 
     /**
@@ -226,7 +231,7 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
     {
         $bonusPerRub = $this->getOption(Option::KEY_BONUS_PER_RUBLES);
 
-        return self::round($bonus * $bonusPerRub);
+        return CalculatorChangePrice::round($bonus * $bonusPerRub);
     }
 
     /**
@@ -240,6 +245,6 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
             return 0;
         }
 
-        return self::round($price / $bonusPerRub);
+        return CalculatorChangePrice::round($price / $bonusPerRub);
     }
 }

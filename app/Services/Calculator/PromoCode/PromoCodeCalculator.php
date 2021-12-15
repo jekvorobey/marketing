@@ -6,6 +6,7 @@ use App\Models\Discount\Discount;
 use App\Models\PromoCode\PromoCode;
 use App\Services\Calculator\AbstractCalculator;
 use App\Services\Calculator\Bonus\BonusCalculator;
+use App\Services\Calculator\CalculatorChangePrice;
 use App\Services\Calculator\Discount\DiscountCalculator;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
@@ -65,9 +66,8 @@ class PromoCodeCalculator extends AbstractCalculator
                     $discountCalculator->forceRollback();
                 } else {
                     $isApply = true;
-                    $change = $discount->value_type == Discount::DISCOUNT_VALUE_TYPE_RUB
-                        ? $discount->value
-                        : self::round($this->input->offers->sum('price') / 100 * $discount->value);
+                    $calculatorChangePrice = new CalculatorChangePrice();
+                    $change = $calculatorChangePrice->calculateDiscountByType($this->input->offers->sum('price'), $discount->value, $discount->value_type);
                 }
                 break;
             case PromoCode::TYPE_DELIVERY:
@@ -78,13 +78,15 @@ class PromoCodeCalculator extends AbstractCalculator
 
                 $change = 0;
                 foreach ($this->input->deliveries['items'] as $k => $delivery) {
-                    $changeForDelivery = $this->changePrice(
+                    $calculatorChangePrice = new CalculatorChangePrice();
+                    $changedPrice = $calculatorChangePrice->changePrice(
                         $delivery,
                         self::HIGHEST_POSSIBLE_PRICE_PERCENT,
                         Discount::DISCOUNT_VALUE_TYPE_PERCENT,
-                        true,
-                        self::FREE_DELIVERY_PRICE
+                        CalculatorChangePrice::FREE_DELIVERY_PRICE
                     );
+                    $changeForDelivery = $changedPrice['discountValue'];
+                    $delivery = $calculatorChangePrice->syncItemWithChangedPrice($delivery, $changedPrice);
 
                     if ($changeForDelivery > 0) {
                         $isApply = $changeForDelivery > 0;
