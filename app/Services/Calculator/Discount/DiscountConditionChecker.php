@@ -20,13 +20,14 @@ class DiscountConditionChecker
      */
     public function check(Collection $conditions, array $checkingConditionTypes = []): bool
     {
-        $result = true;
         /** @var DiscountConditionModel $condition */
         foreach ($conditions as $condition) {
-            $result = $this->checkByType($condition, $checkingConditionTypes);
+            if (!$this->checkByType($condition, $checkingConditionTypes)) {
+                return false;
+            }
         }
 
-        return $result;
+        return true;
     }
 
     private function checkByType(DiscountConditionModel $condition, array $checkingConditionTypes = []): bool
