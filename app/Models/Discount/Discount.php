@@ -33,6 +33,7 @@ use Pim\Services\SearchService\SearchService;
  * @property Carbon $start_date
  * @property Carbon $end_date
  * @property bool $promo_code_only
+ * @property string $comment
  * @mixin Eloquent
  *
  * @property-read Collection|DiscountOffer[] $offers
@@ -163,6 +164,7 @@ class Discount extends AbstractModel
         'start_date',
         'end_date',
         'promo_code_only',
+        'comment'
     ];
 
     /** @var array */

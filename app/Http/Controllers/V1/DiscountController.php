@@ -177,6 +177,7 @@ class DiscountController extends Controller
             'product_qty_limit' => 'numeric|nullable',
             'merchant_id' => 'numeric|nullable',
             'relations' => 'array',
+            'comment' => 'string|nullable',
         ]);
 
         foreach ($data as $field => $value) {
