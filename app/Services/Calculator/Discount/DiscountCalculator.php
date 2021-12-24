@@ -368,6 +368,7 @@ class DiscountCalculator extends AbstractCalculator
     {
         $possibleDiscounts = $this->possibleDiscounts->sortBy(fn(Discount $discount) => $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB);
 
+        [$deliveryDiscounts, $possibleDiscounts] = $possibleDiscounts->partition('type', Discount::DISCOUNT_TYPE_DELIVERY);
         [$promocodeDiscounts, $possibleDiscounts] = $possibleDiscounts->partition('promo_code_only', true);
         [$bundleDiscounts, $possibleDiscounts] = $possibleDiscounts->partition(
             fn($discount) => in_array($discount->type, [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS])
@@ -381,7 +382,8 @@ class DiscountCalculator extends AbstractCalculator
             ->merge($promocodeDiscounts)
             ->merge($discountsWithConditions)
             ->merge($cartTotalDiscounts)
-            ->merge($bundleDiscounts);
+            ->merge($bundleDiscounts)
+            ->merge($deliveryDiscounts);
 
         return $this;
     }
