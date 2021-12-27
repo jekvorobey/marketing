@@ -469,7 +469,7 @@ class DiscountController extends Controller
                     if (isset($filter['fix_' . $key]) && $filter['fix_' . $key]) {
                         $query->where($key, $value);
                     } else {
-                        $op = $key === 'start_date' ? '>=' : '<=';
+                        $op = $key === 'start_date' ? '<=' : '>=';
                         $query->where(function ($query) use ($key, $op, $value) {
                             $query->where($key, $op, $value)->orWhereNull($key);
                         });
