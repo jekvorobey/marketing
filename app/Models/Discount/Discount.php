@@ -43,6 +43,7 @@ use Pim\Services\SearchService\SearchService;
  * @property-read Collection|DiscountUserRole[] $segments
  * @property-read Collection|DiscountCondition[] $conditions
  * @property-read Collection|DiscountPublicEvent[] $publicEvents
+ * @property-read Collection|DiscountBundle[] $bundles
  */
 class Discount extends AbstractModel
 {
@@ -148,6 +149,7 @@ class Discount extends AbstractModel
     public const DISCOUNT_CONDITION_RELATION = 6;
     public const DISCOUNT_BUNDLE_RELATION = 7;
     public const DISCOUNT_PUBLIC_EVENT_RELATION = 8;
+    public const DISCOUNT_BUNDLE_ID_RELATION = 9;
 
     /**
      * Заполняемые поля модели
@@ -173,14 +175,13 @@ class Discount extends AbstractModel
         'promo_code_only' => 'bool',
     ];
 
-    /** @var bool Индикатор, обозначающий что связи были обновлены. Нужен для вызова переиндесации в pim */
+    /** Индикатор, обозначающий что связи были обновлены. Нужен для вызова переиндесации в pim */
     public bool $relationsWasRecentlyUpdated = false;
 
     /**
      * Доступные типы скидок
-     * @return array
      */
-    public static function availableTypes()
+    public static function availableTypes(): array
     {
         return [
             self::DISCOUNT_TYPE_OFFER,
@@ -201,9 +202,8 @@ class Discount extends AbstractModel
 
     /**
      * Доступные статусы скидок
-     * @return array
      */
-    public static function availableStatuses()
+    public static function availableStatuses(): array
     {
         return [
             self::STATUS_CREATED,
@@ -216,10 +216,7 @@ class Discount extends AbstractModel
         ];
     }
 
-    /**
-     * @return array
-     */
-    public static function availableRelations()
+    public static function availableRelations(): array
     {
         return [
             Discount::DISCOUNT_OFFER_RELATION,
@@ -230,14 +227,11 @@ class Discount extends AbstractModel
             Discount::DISCOUNT_CONDITION_RELATION,
             Discount::DISCOUNT_BUNDLE_RELATION,
             Discount::DISCOUNT_PUBLIC_EVENT_RELATION,
+            Discount::DISCOUNT_BUNDLE_ID_RELATION,
         ];
     }
 
-    /**
-     * @param array $discountConditions
-     * @return int|null
-     */
-    public static function getExternalType(int $discountType, array $discountConditions, bool $isPromo)
+    public static function getExternalType(int $discountType, array $discountConditions, bool $isPromo): ?int
     {
         if ($isPromo) {
             return self::EXT_TYPE_PROMO;
@@ -281,10 +275,7 @@ class Discount extends AbstractModel
         return null;
     }
 
-    /**
-     * @return array
-     */
-    public function getMappingRelations()
+    public function getMappingRelations(): array
     {
         return [
             Discount::DISCOUNT_OFFER_RELATION => ['class' => DiscountOffer::class, 'items' => $this->offers],
@@ -295,71 +286,53 @@ class Discount extends AbstractModel
             Discount::DISCOUNT_CONDITION_RELATION => ['class' => DiscountCondition::class, 'items' => $this->conditions],
             Discount::DISCOUNT_BUNDLE_RELATION => ['class' => BundleItem::class, 'items' => $this->bundleItems],
             Discount::DISCOUNT_PUBLIC_EVENT_RELATION => ['class' => DiscountPublicEvent::class, 'items' => $this->publicEvents],
+            Discount::DISCOUNT_BUNDLE_ID_RELATION => ['class' => DiscountBundle::class, 'items' => $this->bundles],
         ];
     }
 
-    /**
-     * @return HasMany
-     */
-    public function offers()
+    public function offers(): HasMany
     {
         return $this->hasMany(DiscountOffer::class, 'discount_id');
     }
 
-    /**
-     * @return HasMany
-     */
-    public function bundleItems()
+    public function bundleItems(): HasMany
     {
         return $this->hasMany(BundleItem::class, 'discount_id');
     }
 
-    /**
-     * @return HasMany
-     */
-    public function brands()
+    public function brands(): HasMany
     {
         return $this->hasMany(DiscountBrand::class, 'discount_id');
     }
 
-    /**
-     * @return HasMany
-     */
-    public function categories()
+    public function categories(): HasMany
     {
         return $this->hasMany(DiscountCategory::class, 'discount_id');
     }
 
-    /**
-     * @return HasMany
-     */
-    public function roles()
+    public function roles(): HasMany
     {
         return $this->hasMany(DiscountUserRole::class, 'discount_id');
     }
 
-    /**
-     * @return HasMany
-     */
-    public function segments()
+    public function segments(): HasMany
     {
         return $this->hasMany(DiscountSegment::class, 'discount_id');
     }
 
-    /**
-     * @return HasMany
-     */
-    public function conditions()
+    public function conditions(): HasMany
     {
         return $this->hasMany(DiscountCondition::class, 'discount_id');
     }
 
-    /**
-     * @return HasMany
-     */
-    public function publicEvents()
+    public function publicEvents(): HasMany
     {
         return $this->hasMany(DiscountPublicEvent::class, 'discount_id');
+    }
+
+    public function bundles(): HasMany
+    {
+        return $this->hasMany(DiscountBundle::class, 'discount_id');
     }
 
     public function scopeExpired(Builder $query): void
