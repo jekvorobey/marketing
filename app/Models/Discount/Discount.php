@@ -164,7 +164,7 @@ class Discount extends AbstractModel
         'start_date',
         'end_date',
         'promo_code_only',
-        'comment'
+        'comment',
     ];
 
     /** @var array */
