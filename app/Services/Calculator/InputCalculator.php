@@ -15,7 +15,6 @@ use Illuminate\Support\Collection;
 use Pim\Core\PimException;
 use Pim\Dto\CategoryDto;
 use Pim\Dto\Offer\OfferDto;
-use Pim\Dto\Product\ProductByOfferDto;
 use Pim\Dto\Product\ProductDto;
 use Pim\Services\CategoryService\CategoryService;
 use Pim\Services\OfferService\OfferService;
