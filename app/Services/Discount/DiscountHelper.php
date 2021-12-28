@@ -102,11 +102,11 @@ class DiscountHelper
                     && $publicEvents->isNotEmpty();
             case Discount::DISCOUNT_TYPE_BUNDLE_OFFER:
             case Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS:
-                return true; // todo
             case Discount::DISCOUNT_TYPE_ANY_OFFER:
             case Discount::DISCOUNT_TYPE_ANY_BUNDLE:
             case Discount::DISCOUNT_TYPE_ANY_BRAND:
             case Discount::DISCOUNT_TYPE_ANY_CATEGORY:
+                return true; // todo
             case Discount::DISCOUNT_TYPE_ANY_MASTERCLASS:
             case Discount::DISCOUNT_TYPE_DELIVERY:
             case Discount::DISCOUNT_TYPE_CART_TOTAL:
