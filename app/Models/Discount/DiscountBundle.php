@@ -26,6 +26,10 @@ class DiscountBundle extends AbstractModel
      */
     protected $fillable = ['discount_id', 'bundle_id', 'except'];
 
+    protected $casts = [
+        'except' => 'bool',
+    ];
+
     public function discount(): BelongsTo
     {
         return $this->belongsTo(Discount::class);

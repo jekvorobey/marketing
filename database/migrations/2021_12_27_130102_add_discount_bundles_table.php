@@ -17,7 +17,7 @@ class AddDiscountBundlesTable extends Migration
             $table->bigIncrements('id');
             $table->bigInteger('discount_id')->unsigned();
             $table->bigInteger('bundle_id')->unsigned();
-            $table->boolean('except');
+            $table->boolean('except')->default(false);
             $table->timestamps();
 
             $table->foreign('discount_id')

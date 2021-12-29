@@ -14,7 +14,7 @@ class AddExceptToDiscountCategories extends Migration
     public function up()
     {
         Schema::table('discount_categories', function (Blueprint $table) {
-            $table->boolean('except');
+            $table->boolean('except')->default(false);
         });
     }
 
