@@ -135,7 +135,7 @@ class DiscountHelper
         $discount->start_date = $data['start_date'] ?? null;
         $discount->end_date = $data['end_date'] ?? null;
         $discount->status = $data['status'];
-        $discount->product_qty_limit = $data['product_qty_limit'];
+        $discount->product_qty_limit = $data['product_qty_limit'] ?? null;
         $discount->promo_code_only = $data['promo_code_only'];
         $discount->comment = $data['comment'];
 
