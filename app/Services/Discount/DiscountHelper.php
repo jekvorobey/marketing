@@ -102,11 +102,11 @@ class DiscountHelper
                     && $publicEvents->isNotEmpty();
             case Discount::DISCOUNT_TYPE_BUNDLE_OFFER:
             case Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS:
-                return true; // todo
             case Discount::DISCOUNT_TYPE_ANY_OFFER:
             case Discount::DISCOUNT_TYPE_ANY_BUNDLE:
             case Discount::DISCOUNT_TYPE_ANY_BRAND:
             case Discount::DISCOUNT_TYPE_ANY_CATEGORY:
+                return true; // todo
             case Discount::DISCOUNT_TYPE_ANY_MASTERCLASS:
             case Discount::DISCOUNT_TYPE_DELIVERY:
             case Discount::DISCOUNT_TYPE_CART_TOTAL:
@@ -135,9 +135,9 @@ class DiscountHelper
         $discount->start_date = $data['start_date'] ?? null;
         $discount->end_date = $data['end_date'] ?? null;
         $discount->status = $data['status'];
-        $discount->product_qty_limit = $data['product_qty_limit'];
+        $discount->product_qty_limit = $data['product_qty_limit'] ?? null;
         $discount->promo_code_only = $data['promo_code_only'];
-        $discount->comment = $data['comment'];
+        $discount->comment = $data['comment'] ?? null;
 
         $ok = $discount->save();
         if (!$ok) {

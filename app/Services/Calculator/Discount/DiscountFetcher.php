@@ -65,7 +65,8 @@ class DiscountFetcher
             ->with($this->withSegments())
             ->with($this->withRoles())
             ->with($this->withBundleItems())
-            ->with($this->withConditions());
+            ->with($this->withConditions())
+            ->with($this->withBundles());
 
         $this->discounts = $query
             ->get()
@@ -109,8 +110,7 @@ class DiscountFetcher
         return [
             'brands' => function (Relation $builder): void {
                 $builder
-                    ->select(['discount_id', 'brand_id', 'except'])
-                    ->whereIn('brand_id', $this->input->brands->keys());
+                    ->select(['discount_id', 'brand_id', 'except']);
             },
         ];
     }
@@ -124,7 +124,7 @@ class DiscountFetcher
         return [
             'categories' => function (Relation $builder): void {
                 $builder
-                    ->select(['discount_id', 'category_id']);
+                    ->select(['discount_id', 'category_id', 'except']);
             },
         ];
     }
@@ -179,6 +179,19 @@ class DiscountFetcher
                 $builder
                     ->select(['discount_id', 'item_id'])
                     ->whereIn('discount_id', $this->input->bundles);
+            },
+        ];
+    }
+
+    /**
+     * Получаем все Bundle
+     */
+    private function withBundles(): array
+    {
+        return [
+            'bundles' => function (Relation $builder): void {
+                $builder
+                    ->select(['discount_id', 'bundle_id']);
             },
         ];
     }
