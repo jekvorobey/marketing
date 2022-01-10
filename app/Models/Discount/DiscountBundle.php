@@ -2,32 +2,29 @@
 
 namespace App\Models\Discount;
 
+use App\Models\Hash;
 use Greensight\CommonMsa\Models\AbstractModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\Hash;
 
 /**
- * Класс-модель для сущности "Скидка на товары категории"
+ * Класс-модель для сущности "Скидка на бандлы"
  * App\Models\Discount\Discount
  *
  * @property int $discount_id
- * @property int $category_id
+ * @property int $bundle_id
  * @property bool $except
  *
  * @property-read Discount $discount
  * @mixin \Eloquent
  */
-class DiscountCategory extends AbstractModel
+class DiscountBundle extends AbstractModel
 {
     use Hash;
 
     /**
      * Заполняемые поля модели
      */
-    public const FILLABLE = ['discount_id', 'category_id', 'except'];
-
-    /** @var array */
-    protected $fillable = self::FILLABLE;
+    protected $fillable = ['discount_id', 'bundle_id', 'except'];
 
     protected $casts = [
         'except' => 'bool',
