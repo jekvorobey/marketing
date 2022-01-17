@@ -298,7 +298,7 @@ class DiscountCalculator extends AbstractCalculator
     {
         return $discount
             ->offers
-            ->where('expect', true)
+            ->where('except', true)
             ->pluck('offer_id');
     }
 
