@@ -177,6 +177,7 @@ class DiscountController extends Controller
             'product_qty_limit' => 'numeric|nullable',
             'merchant_id' => 'numeric|nullable',
             'relations' => 'array',
+            'comment' => 'string|nullable',
         ]);
 
         foreach ($data as $field => $value) {
@@ -228,6 +229,7 @@ class DiscountController extends Controller
                 'product_qty_limit' => 'numeric|nullable',
                 'merchant_id' => 'numeric|nullable',
                 'relations' => 'array',
+                'comment' => 'string|nullable',
             ]);
 
             $data['user_id'] = $client->userId();
@@ -397,6 +399,10 @@ class DiscountController extends Controller
                     break;
                 case Discount::DISCOUNT_PUBLIC_EVENT_RELATION:
                     $query->with('publicEvents');
+                    break;
+                case Discount::DISCOUNT_BUNDLE_ID_RELATION:
+                    $query->with('bundles');
+                    break;
             }
         }
 

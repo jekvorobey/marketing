@@ -138,8 +138,11 @@ class DiscountCalculator extends AbstractCalculator
                 break;
             case Discount::DISCOUNT_TYPE_ANY_OFFER:
                 # Скидка на все товары
+                # За исключением офферов
+                $exceptOfferIds = $this->getExceptOffersForDiscount($discount);
                 $offerIds = $this->input->offers
                     ->where('product_id', '!=', null)
+                    ->whereNotIn('id', $exceptOfferIds)
                     ->pluck('id');
 
                 $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts);
@@ -186,8 +189,13 @@ class DiscountCalculator extends AbstractCalculator
                 /** @var Collection $brandIds */
                 $brandIds = $discount->type == Discount::DISCOUNT_TYPE_BRAND
                     ? $discount->brands->pluck('brand_id')
-                    : $this->input->brands;
+                    : $this->input->brands->keys();
 
+                # За исключением брендов
+                $exceptBrandIds = $this->getExceptBrandsForDiscount($discount);
+                $brandIds = $brandIds->filter(function ($brandId) use ($exceptBrandIds) {
+                    return !$exceptBrandIds->search($brandId);
+                });
                 # За исключением офферов
                 $exceptOfferIds = $this->getExceptOffersForDiscount($discount);
                 # Отбираем нужные офферы
@@ -204,7 +212,13 @@ class DiscountCalculator extends AbstractCalculator
                 /** @var Collection $categoryIds */
                 $categoryIds = $discount->type == Discount::DISCOUNT_TYPE_CATEGORY
                     ? $discount->categories->pluck('category_id')
-                    : $this->input->categories;
+                    : $this->input->categories->keys();
+
+                # За исключением категорий
+                $exceptCategoryIds = $this->getExceptCategoriesForDiscount($discount);
+                $categoryIds = $categoryIds->filter(function ($categoryId) use ($exceptCategoryIds) {
+                    return !$exceptCategoryIds->search($categoryId);
+                })->values();
                 # За исключением брендов
                 $exceptBrandIds = $this->getExceptBrandsForDiscount($discount);
                 # За исключением офферов
@@ -306,8 +320,16 @@ class DiscountCalculator extends AbstractCalculator
     {
         return $discount
             ->brands
-            ->filter(fn($brand) => $brand['except'])
+            ->where('except', true)
             ->pluck('brand_id');
+    }
+
+    protected function getExceptCategoriesForDiscount(Discount $discount): Collection
+    {
+        return $discount
+            ->categories
+            ->where('except', true)
+            ->pluck('category_id');
     }
 
     /**
@@ -368,6 +390,7 @@ class DiscountCalculator extends AbstractCalculator
     {
         $possibleDiscounts = $this->possibleDiscounts->sortBy(fn(Discount $discount) => $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB);
 
+        [$deliveryDiscounts, $possibleDiscounts] = $possibleDiscounts->partition('type', Discount::DISCOUNT_TYPE_DELIVERY);
         [$promocodeDiscounts, $possibleDiscounts] = $possibleDiscounts->partition('promo_code_only', true);
         [$bundleDiscounts, $possibleDiscounts] = $possibleDiscounts->partition(
             fn($discount) => in_array($discount->type, [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS])
@@ -381,7 +404,8 @@ class DiscountCalculator extends AbstractCalculator
             ->merge($promocodeDiscounts)
             ->merge($discountsWithConditions)
             ->merge($cartTotalDiscounts)
-            ->merge($bundleDiscounts);
+            ->merge($bundleDiscounts)
+            ->merge($deliveryDiscounts);
 
         return $this;
     }
