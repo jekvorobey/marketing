@@ -4,7 +4,6 @@ use App\Models\Discount\Discount;
 use App\Models\PromoCode\PromoCode;
 use App\Models\Bonus\Bonus;
 use Greensight\CommonMsa\Dto\RoleDto;
-use Greensight\CommonMsa\Dto\UserDto;
 use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\Customer\Services\CustomerService\CustomerService;
 use Illuminate\Database\Seeder;
