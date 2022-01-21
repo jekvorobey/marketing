@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f970f34cf4f5bdeb20c5228d880186e8",
+    "content-hash": "9d74934e70ace4e5148cf085975acf0e",
     "packages": [
         {
             "name": "clue/stream-filter",
@@ -1226,11 +1226,11 @@
         },
         {
             "name": "iwengo/ibt-common-lib",
-            "version": "dev-master-ylab",
+            "version": "dev-feature/IBT-489-user-role-refactoring",
             "source": {
                 "type": "git",
                 "url": "git@git.yiilab.com:ibt.studio/ibt-common-ms-code.git",
-                "reference": "2f9cbf8846b82440b37164130951c43e14191228"
+                "reference": "cdc3d7027180eb57c11b10c2e3f499329dd91938"
             },
             "require": {
                 "ext-json": "*",
@@ -1239,7 +1239,7 @@
                 "firebase/php-jwt": "^5.0",
                 "guzzlehttp/guzzle": "^6.3",
                 "mikehaertl/phpwkhtmltopdf": "^2.4",
-                "php": "^7.1.3"
+                "php": "^7.4"
             },
             "require-dev": {
                 "fzaninotto/faker": "^1.4",
@@ -1248,6 +1248,13 @@
                 "phpunit/phpunit": "^7.5"
             },
             "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Greensight\\CommonMsa\\CommonLibServiceProvider"
+                    ]
+                }
+            },
             "autoload": {
                 "files": [
                     "src/helpers.php"
@@ -1273,7 +1280,7 @@
                 }
             ],
             "description": "iBT common code for all microservices",
-            "time": "2021-04-15T10:05:28+00:00"
+            "time": "2022-01-19T14:58:46+00:00"
         },
         {
             "name": "iwengo/ibt-logistics-lib",
@@ -8941,9 +8948,9 @@
         },
         {
             "package": "iwengo/ibt-common-lib",
-            "version": "dev-master-ylab",
-            "alias": "dev-master",
-            "alias_normalized": "dev-master"
+            "version": "dev-feature/IBT-489-user-role-refactoring",
+            "alias": "dev-master-ylab",
+            "alias_normalized": "dev-master-ylab"
         },
         {
             "package": "iwengo/ibt-logistics-lib",
@@ -8994,5 +9001,5 @@
         "ext-json": "*"
     },
     "platform-dev": [],
-    "plugin-api-version": "2.1.0"
+    "plugin-api-version": "2.0.0"
 }
