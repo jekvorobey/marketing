@@ -177,6 +177,7 @@ class DiscountController extends Controller
             'product_qty_limit' => 'numeric|nullable',
             'merchant_id' => 'numeric|nullable',
             'relations' => 'array',
+            'comment' => 'string|nullable',
         ]);
 
         foreach ($data as $field => $value) {
@@ -228,6 +229,7 @@ class DiscountController extends Controller
                 'product_qty_limit' => 'numeric|nullable',
                 'merchant_id' => 'numeric|nullable',
                 'relations' => 'array',
+                'comment' => 'string|nullable',
             ]);
 
             $data['user_id'] = $client->userId();
@@ -397,6 +399,10 @@ class DiscountController extends Controller
                     break;
                 case Discount::DISCOUNT_PUBLIC_EVENT_RELATION:
                     $query->with('publicEvents');
+                    break;
+                case Discount::DISCOUNT_BUNDLE_ID_RELATION:
+                    $query->with('bundles');
+                    break;
             }
         }
 
@@ -469,7 +475,7 @@ class DiscountController extends Controller
                     if (isset($filter['fix_' . $key]) && $filter['fix_' . $key]) {
                         $query->where($key, $value);
                     } else {
-                        $op = $key === 'start_date' ? '>=' : '<=';
+                        $op = $key === 'start_date' ? '<=' : '>=';
                         $query->where(function ($query) use ($key, $op, $value) {
                             $query->where($key, $op, $value)->orWhereNull($key);
                         });
