@@ -15,14 +15,14 @@ class BonusMayBeSpentCalculator extends AbstractBonusSpentCalculator
     {
         parent::calculate();
 
-        $maxSpendableBonusPrice = min($this->totalSpentBonusPrice, $this->input->customerBonusAmount);
+        $maxSpendableBonusPrice = min($this->totalSpentBonusPrice, $this->getBonusesForSpend());
 
         $this->output->maxSpendableBonus = $this->priceToBonus($maxSpendableBonusPrice);
     }
 
     protected function getBonusesForSpend(): int
     {
-        return $this->input->customerBonusAmount;
+        return $this->input->customer['bonus'] ?? 0;
     }
 
     protected function spentBonusForOffer(&$offer, int $spendForOfferItem, int $qty): int
