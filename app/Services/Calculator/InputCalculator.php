@@ -246,22 +246,23 @@ class InputCalculator
 
             /** @var OfferDto|null $offerDto */
             $offerDto = $offersDto->get($offerId);
-            /** @var float|null $price */
-            $price = $prices->get($offerId);
 
-            if (!$offerDto || !$price) {
+            if (!$offerDto || !$prices->has($offerId)) {
                 continue;
             }
+
+            /** @var float|null $price */
+            $price = $prices->get($offerId);
 
             /** @var ProductDto|null $productDto */
             $productDto = $productsDto->get($offerDto->product_id);
 
             $hydratedOffers->put($offerId, collect([
                 'id' => $offerId,
-                'price' => $prices[$offerId] ?? $offer['price'] ?? null,
+                'price' => $price ?? null,
                 'qty' => $offer['qty'] ?? 1,
-                'brand_id' => $productDto->brand_id ?? $offer['brand_id'] ?? null,
-                'category_id' => $productDto->category_id ?? $offer['category_id'] ?? null,
+                'brand_id' => $productDto->brand_id ?? null,
+                'category_id' => $productDto->category_id ?? null,
                 'product_id' => $productDto->id ?? null,
                 'merchant_id' => $offerDto->merchant_id,
                 'bundles' => $offer['bundles'] ?? collect(),
