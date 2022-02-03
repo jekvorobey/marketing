@@ -231,7 +231,6 @@ class InputCalculator
     {
         $offers = $this->offers->filter(fn($offer) => isset($offer['id']));
         if ($offers->isEmpty()) {
-            $this->offers = collect();
             return;
         }
 
