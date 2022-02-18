@@ -5,17 +5,16 @@ namespace App\Services\Calculator;
 use App\Models\Bonus\Bonus;
 use App\Models\Discount\Discount;
 use App\Models\Price\Price;
-use Greensight\CommonMsa\Rest\RestQuery;
 use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\Customer\Dto\CustomerDto;
 use Greensight\Customer\Services\CustomerService\CustomerService;
+use Greensight\Logistics\Dto\Lists\RegionDto;
 use Greensight\Logistics\Services\ListsService\ListsService;
 use Greensight\Oms\Services\OrderService\OrderService;
 use Illuminate\Support\Collection;
 use Pim\Core\PimException;
 use Pim\Dto\CategoryDto;
 use Pim\Dto\Offer\OfferDto;
-use Pim\Dto\Product\ProductByOfferDto;
 use Pim\Dto\Product\ProductDto;
 use Pim\Services\CategoryService\CategoryService;
 use Pim\Services\OfferService\OfferService;
@@ -56,8 +55,6 @@ class InputCalculator
 
     /** @var array */
     public $userRegion;
-    /** @var int */
-    public $customerBonusAmount;
     /** @var Collection|CategoryDto[] */
     private static $allCategories;
 
@@ -85,8 +82,11 @@ class InputCalculator
             return static::$allCategories;
         }
 
+        /** @var CategoryService $categoryService */
         $categoryService = resolve(CategoryService::class);
-        static::$allCategories = $categoryService->categories($categoryService->newQuery())->keyBy('id');
+        $query = $categoryService->newQuery()->addFields(CategoryDto::entity(), 'id', '_lft', '_rgt');
+        static::$allCategories = $categoryService->categories($query)->keyBy('id');
+
         return static::$allCategories;
     }
 
@@ -111,7 +111,6 @@ class InputCalculator
                 'roles' => $params['customer']['roles'] ?? [],
                 'segment' => isset($params['customer']['segment']) ? (int) $params['customer']['segment'] : null,
             ];
-            $this->customerBonusAmount = $this->loadCustomerBonusAmount($this->customer['id']) ?? 0;
         } else {
             if (isset($params['role_ids']) && is_array($params['role_ids'])) {
                 $this->customer['roles'] = array_map(function ($roleId) {
@@ -121,11 +120,10 @@ class InputCalculator
             if (isset($params['segment_id'])) {
                 $this->customer['segment'] = (int) $params['segment_id'];
             }
-            $this->customerBonusAmount = 0;
         }
 
         $this->payment = [
-            'method' => isset($params['payment']['method']) ? intval($params['payment']['method']) : null,
+            'method' => isset($params['payment']['method']) ? (int) $params['payment']['method'] : null,
         ];
         $this->bonus = isset($params['bonus']) ? (int) $params['bonus'] : 0;
 
@@ -150,10 +148,10 @@ class InputCalculator
                 $id++;
                 $this->deliveries['items']->put($id, [
                     'id' => $id,
-                    'price' => isset($delivery['price']) ? intval($delivery['price']) : null,
-                    'method' => isset($delivery['method']) ? intval($delivery['method']) : null,
-                    'region' => isset($delivery['region']) ? intval($delivery['region']) : null,
-                    'selected' => isset($delivery['selected']) ? boolval($delivery['selected']) : false,
+                    'price' => isset($delivery['price']) ? (int) $delivery['price'] : null,
+                    'method' => isset($delivery['method']) ? (int) $delivery['method'] : null,
+                    'region' => isset($delivery['region']) ? (int) $delivery['region'] : null,
+                    'selected' => isset($delivery['selected']) ? (bool) $delivery['selected'] : false,
                 ]);
 
                 if ($this->deliveries['items'][$id]['selected']) {
@@ -168,13 +166,17 @@ class InputCalculator
         });
     }
 
-    protected function getUserRegion($userRegionFiasId)
+    protected function getUserRegion($userRegionFiasId): ?RegionDto
     {
         if (!$userRegionFiasId) {
             return null;
         }
 
-        return app(ListsService::class)->regions()->keyBy->guid->get($userRegionFiasId);
+        /** @var ListsService $listsService */
+        $listsService = resolve(ListsService::class);
+        $query = $listsService->newQuery()->setFilter('guid', $userRegionFiasId);
+
+        return $listsService->regions($query)->first();
     }
 
     /**
@@ -184,14 +186,7 @@ class InputCalculator
      */
     protected function loadData()
     {
-        $offerIds = $this->offers->pluck('id');
-        if ($offerIds->isNotEmpty()) {
-            $this->hydrateOffer();
-            $this->hydrateOfferPrice();
-            $this->hydrateProductInfo();
-        } else {
-            $this->offers = collect();
-        }
+        $this->hydrateOffers();
 
         $this->bundles = $this->offers->pluck('bundles')
             ->map(function ($bundles) {
@@ -232,199 +227,133 @@ class InputCalculator
         return $this;
     }
 
-    /**
-     * Заполняет информацию по офферам
-     * @return $this
-     * @throws PimException
-     */
-    protected function hydrateOffer()
+    protected function hydrateOffers(): void
     {
-        $offerIds = $this->offers->pluck('id')->filter();
-
-        if ($offerIds->isEmpty()) {
-            return $this;
+        $offers = $this->offers->filter(fn($offer) => isset($offer['id']));
+        if ($offers->isEmpty()) {
+            return;
         }
-        /** @var OfferService $offerService */
-        $offerService = resolve(OfferService::class);
 
-        $offersDto = $offerService->offers(
-            (new RestQuery())
-                ->setFilter('id', $offerIds)
-                ->addFields(OfferDto::entity(), 'id', 'merchant_id', 'ticket_type_id')
-        )->keyBy('id');
-        $offers = collect();
-        foreach ($this->offers as $offer) {
-            if (!isset($offer['id'])) {
-                continue;
-            }
+        $offerIds = $this->offers->pluck('id')->all();
 
+        $offersDto = $this->loadOffers($offerIds);
+        $prices = $this->loadPrices($offerIds);
+        $productsDto = $this->loadProducts($offersDto->pluck('product_id')->all());
+
+        $hydratedOffers = collect();
+        foreach ($offers as $offer) {
             $offerId = (int) $offer['id'];
-            if (!$offersDto->has($offerId)) {
-                continue;
-            }
-            /** @var OfferDto $offerDto */
+
+            /** @var OfferDto|null $offerDto */
             $offerDto = $offersDto->get($offerId);
 
-            $offers->put($offerId, collect([
+            if (!$offerDto || !$prices->has($offerId)) {
+                continue;
+            }
+
+            /** @var float|null $price */
+            $price = $prices->get($offerId);
+
+            /** @var ProductDto|null $productDto */
+            $productDto = $productsDto->get($offerDto->product_id);
+
+            $hydratedOffers->put($offerId, collect([
                 'id' => $offerId,
-                'price' => $offer['price'] ?? null,
+                'price' => $price ?? null,
                 'qty' => $offer['qty'] ?? 1,
-                'brand_id' => $offer['brand_id'] ?? null,
-                'category_id' => $offer['category_id'] ?? null,
+                'brand_id' => $productDto->brand_id ?? null,
+                'category_id' => $productDto->category_id ?? null,
+                'product_id' => $productDto->id ?? null,
                 'merchant_id' => $offerDto->merchant_id,
                 'bundles' => $offer['bundles'] ?? collect(),
                 'ticket_type_id' => $offerDto->ticket_type_id ?? null,
             ]));
         }
-        $this->offers = $offers;
 
-        return $this;
+        $this->offers = $hydratedOffers;
     }
 
-    /**
-     * Заполняет цены офферов
-     * @return $this
-     */
-    protected function hydrateOfferPrice()
+    protected function loadOffers(array $offersIds): Collection
     {
-        $offerIds = $this->offers->pluck('id');
-        /** @var Collection $prices */
-        $prices = Price::select(['offer_id', 'price'])
-            ->whereIn('offer_id', $offerIds)
-            ->get()
-            ->pluck('price', 'offer_id');
+        /** @var OfferService $offerService */
+        $offerService = resolve(OfferService::class);
+        $query = $offerService->newQuery()
+            ->setFilter('id', $offersIds)
+            ->addFields(OfferDto::entity(), 'id', 'product_id', 'merchant_id', 'ticket_type_id');
 
-        $offers = collect();
-        foreach ($this->offers as $offer) {
-            if (!isset($offer['id'])) {
-                continue;
-            }
-
-            $offerId = (int) $offer['id'];
-            if (!$prices->has($offerId)) {
-                continue;
-            }
-
-            $offers->put($offerId, collect([
-                'id' => $offerId,
-                'price' => $prices[$offerId],
-                'qty' => $offer['qty'] ?? 1,
-                'brand_id' => $offer['brand_id'] ?? null,
-                'category_id' => $offer['category_id'] ?? null,
-                'merchant_id' => $offer['merchant_id'] ?? null,
-                'bundles' => $offer['bundles'] ?? [],
-                'ticket_type_id' => $offer['ticket_type_id'] ?? null,
-            ]));
-        }
-        $this->offers = $offers;
-
-        return $this;
+        return $offerService->offers($query)->keyBy('id');
     }
 
-    /**
-     * Заполняет информацию о товаре (категория, бренд)
-     * @return $this
-     */
-    protected function hydrateProductInfo()
+    protected function loadProducts(array $productsIds): Collection
     {
-        $offerIds = $this->offers->pluck('id')->toArray();
         /** @var ProductService $productService */
         $productService = resolve(ProductService::class);
-        $productQuery = $productService
-            ->newQuery()
-            ->addFields(
-                ProductDto::entity(),
-                'id',
-                'category_id',
-                'brand_id'
-            );
+        $query = $productService->newQuery()
+            ->addFields(ProductDto::entity(), 'id', 'category_id', 'brand_id')
+            ->setFilter('id', $productsIds);
 
-        $offers = collect();
-        $productsByOffers = $productService->productsByOffers($productQuery, $offerIds);
-        foreach ($this->offers as $offer) {
-            $offerId = $offer['id'];
-            /** @var ProductByOfferDto $product */
-            $product = $productsByOffers->get($offerId);
-            $offers->put($offerId, collect([
-                'id' => $offerId,
-                'price' => $offer['price'] ?? null,
-                'qty' => $offer['qty'] ?? 1,
-                'brand_id' => isset($product->product) ? $product->product->brand_id : null,
-                'category_id' => isset($product->product) ? $product->product->category_id : null,
-                'product_id' => isset($product->product) ? $product->product->id : null,
-                'merchant_id' => $offer['merchant_id'] ?? null,
-                'bundles' => $offer['bundles'] ?? [],
-                'ticket_type_id' => $offer['ticket_type_id'] ?? null,
-            ]));
-        }
-        $this->offers = $offers;
-
-        return $this;
+        return $productService->products($query)->keyBy('id');
     }
 
-    /**
-     * @return array
-     */
-    protected function getCustomerInfo(int $customerId)
+    protected function loadPrices(array $offersIds): Collection
     {
-        $customer = [
-            'id' => $customerId,
-            'roles' => [],
-            'segment' => 1, // todo
-            'orders' => [],
-        ];
+        return Price::query()
+            ->whereIn('offer_id', $offersIds)
+            ->pluck('price', 'offer_id');
+    }
 
-        $this->customer['id'] = $customerId;
-        $customer['roles'] = $this->loadRoleForCustomer($customerId);
-        if (!$customer['roles']) {
+    protected function getCustomerInfo(int $customerId): array
+    {
+        $customer = $this->loadCustomer($customerId);
+        if (!$customer) {
             return [];
         }
 
-        $customer['orders']['count'] = $this->loadCustomerOrdersCount($customerId);
+        $roles = $this->loadCustomerUserRoles($customer);
+        if (!$roles) {
+            return [];
+        }
 
-        return $customer;
+        $ordersCount = $this->loadCustomerOrdersCount($customerId);
+
+        return [
+            'id' => $customer['id'],
+            'roles' => $roles,
+            'segment' => 1, // todo
+            'orders' => [
+                'count' => $ordersCount,
+            ],
+            'bonus' => $customer['bonus'] ?? 0,
+        ];
     }
 
-    /**
-     * @return array|null
-     */
-    protected function loadRoleForCustomer(int $customerId)
+    protected function loadCustomer(int $customerId): ?CustomerDto
     {
         /** @var CustomerService $customerService */
         $customerService = resolve(CustomerService::class);
         $query = $customerService->newQuery()
-            ->addFields(CustomerDto::entity(), 'user_id')
+            ->addFields(CustomerDto::entity(), 'id', 'user_id', 'bonus')
             ->setFilter('id', $customerId);
-        $customer = $customerService->customers($query)->first();
-        if (!isset($customer['user_id'])) {
-            return null;
-        }
 
+        return $customerService->customers($query)->first();
+    }
+
+    protected function loadCustomerUserRoles(CustomerDto $customer): ?array
+    {
         /** @var UserService $userService */
         $userService = resolve(UserService::class);
 
-        return $userService->userRoles($customer['user_id'])->pluck('id')->toArray();
+        return $userService->userRoles($customer->user_id)->pluck('id')->toArray();
     }
 
-    /**
-     * @return int
-     */
-    protected function loadCustomerOrdersCount(int $customerId)
+    protected function loadCustomerOrdersCount(int $customerId): int
     {
         /** @var OrderService $orderService */
         $orderService = resolve(OrderService::class);
         $query = $orderService->newQuery()->setFilter('customer_id', $customerId);
         $ordersCount = $orderService->ordersCount($query);
 
-        return $ordersCount['total'];
-    }
-
-    protected function loadCustomerBonusAmount(int $customerId)
-    {
-        $customerService = resolve(CustomerService::class);
-        $query = $customerService->newQuery()->setFilter('id', $customerId);
-        $customer = $customerService->customers($query)->first();
-        return $customer['bonus'] ?? 0;
+        return (int) $ordersCount['total'];
     }
 
     /**
