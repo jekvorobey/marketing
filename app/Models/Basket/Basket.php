@@ -25,7 +25,7 @@ class Basket implements \JsonSerializable
      */
     public $discount;
 
-    /** @var int */
+    /** @var int|string */
     public $user;
     /** @var int */
     public $userRegionFiasId;
@@ -101,7 +101,10 @@ class Basket implements \JsonSerializable
         return $basket;
     }
 
-    public function __construct(int $userId, $userRegionFiasId = null)
+    /**
+     * @param int|string $userId
+     */
+    public function __construct($userId, $userRegionFiasId = null)
     {
         $this->user = $userId;
         $this->userRegionFiasId = $userRegionFiasId;

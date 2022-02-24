@@ -107,7 +107,7 @@ class InputCalculator
 
         if (isset($params['customer'])) {
             $this->customer = [
-                'id' => isset($params['customer']['id']) ? (int) $params['customer']['id'] : null,
+                'id' => $params['customer']['id'] ?? null,
                 'roles' => $params['customer']['roles'] ?? [],
                 'segment' => isset($params['customer']['segment']) ? (int) $params['customer']['segment'] : null,
             ];
@@ -220,7 +220,7 @@ class InputCalculator
             })
             ->flip();
 
-        if (isset($this->customer['id'])) {
+        if (isset($this->customer['id']) && is_int($this->customer['id'])) {
             $this->customer = $this->getCustomerInfo((int) $this->customer['id']);
         }
 
