@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9d74934e70ace4e5148cf085975acf0e",
+    "content-hash": "f970f34cf4f5bdeb20c5228d880186e8",
     "packages": [
         {
             "name": "clue/stream-filter",
@@ -1188,7 +1188,7 @@
             "source": {
                 "type": "git",
                 "url": "git@git.yiilab.com:ibt.studio/ibt-cm-lib",
-                "reference": "8fa8f5b971cd97a7a2046cdbfbae4656b46d4259"
+                "reference": "8754dddea4e9d9a4b80626645c92ebc93a18eca2"
             },
             "require": {
                 "ext-json": "*",
@@ -1222,15 +1222,15 @@
                 }
             ],
             "description": "iBT Customer management client",
-            "time": "2021-04-13T08:12:13+00:00"
+            "time": "2022-02-25T10:40:50+00:00"
         },
         {
             "name": "iwengo/ibt-common-lib",
-            "version": "dev-feature/IBT-489-user-role-refactoring",
+            "version": "dev-master-ylab",
             "source": {
                 "type": "git",
                 "url": "git@git.yiilab.com:ibt.studio/ibt-common-ms-code.git",
-                "reference": "f49512b6ef4cbdca308ce15dc428e9662ef123ce"
+                "reference": "7ef213db99a9becfe3276b38757967e1863b1e3f"
             },
             "require": {
                 "ext-json": "*",
@@ -1280,7 +1280,7 @@
                 }
             ],
             "description": "iBT common code for all microservices",
-            "time": "2022-01-25T11:38:29+00:00"
+            "time": "2022-02-25T09:35:34+00:00"
         },
         {
             "name": "iwengo/ibt-logistics-lib",
@@ -1288,7 +1288,7 @@
             "source": {
                 "type": "git",
                 "url": "git@git.yiilab.com:ibt.studio/ibt-logistics-lib",
-                "reference": "de5dbd89393b20ac2a1ae86393e42d5cd97c802a"
+                "reference": "04ab0bcebd9002e1f98b9a9c008660d5ea6a84ab"
             },
             "require": {
                 "ext-json": "*",
@@ -1322,7 +1322,7 @@
                 }
             ],
             "description": "iBT logistics client",
-            "time": "2021-04-13T08:12:14+00:00"
+            "time": "2022-02-25T10:39:55+00:00"
         },
         {
             "name": "iwengo/ibt-merchant-management-lib",
@@ -8948,9 +8948,9 @@
         },
         {
             "package": "iwengo/ibt-common-lib",
-            "version": "dev-feature/IBT-489-user-role-refactoring",
-            "alias": "dev-master-ylab",
-            "alias_normalized": "dev-master-ylab"
+            "version": "dev-master-ylab",
+            "alias": "dev-master",
+            "alias_normalized": "dev-master"
         },
         {
             "package": "iwengo/ibt-logistics-lib",
