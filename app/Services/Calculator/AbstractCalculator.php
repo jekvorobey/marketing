@@ -52,8 +52,8 @@ abstract class AbstractCalculator
     protected function filterForBrand($brandIds, $exceptOfferIds, $merchantId)
     {
         return $this->input->offers->filter(function ($offer) use ($brandIds, $exceptOfferIds, $merchantId) {
-            return ($brandIds->search($offer['brand_id']) !== false)
-                && ($exceptOfferIds->search($offer['id']) === false)
+            return $brandIds->contains($offer['brand_id'])
+                && !$exceptOfferIds->contains($offer['id'])
                 && (!$merchantId || $offer['merchant_id'] == $merchantId);
         })->pluck('id');
     }
@@ -87,8 +87,8 @@ abstract class AbstractCalculator
                             && $categories[$categoryId]->isSelfOrAncestorOf($offerCategory)
                         );
                 })
-                && $exceptBrandIds->search($offer['brand_id']) === false
-                && $exceptOfferIds->search($offer['id']) === false
+                && !$exceptBrandIds->contains($offer['brand_id'])
+                && !$exceptOfferIds->contains($offer['id'])
                 && (!$merchantId || $offer['merchant_id'] == $merchantId);
         })->pluck('id');
     }

@@ -193,9 +193,7 @@ class DiscountCalculator extends AbstractCalculator
 
                 # За исключением брендов
                 $exceptBrandIds = $this->getExceptBrandsForDiscount($discount);
-                $brandIds = $brandIds->filter(function ($brandId) use ($exceptBrandIds) {
-                    return !$exceptBrandIds->search($brandId);
-                });
+                $brandIds = $brandIds->diff($exceptBrandIds);
                 # За исключением офферов
                 $exceptOfferIds = $this->getExceptOffersForDiscount($discount);
                 # Отбираем нужные офферы
@@ -216,9 +214,7 @@ class DiscountCalculator extends AbstractCalculator
 
                 # За исключением категорий
                 $exceptCategoryIds = $this->getExceptCategoriesForDiscount($discount);
-                $categoryIds = $categoryIds->filter(function ($categoryId) use ($exceptCategoryIds) {
-                    return !$exceptCategoryIds->search($categoryId);
-                })->values();
+                $categoryIds = $categoryIds->diff($exceptCategoryIds);
                 # За исключением брендов
                 $exceptBrandIds = $this->getExceptBrandsForDiscount($discount);
                 # За исключением офферов
