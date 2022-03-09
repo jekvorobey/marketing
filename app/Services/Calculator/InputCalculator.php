@@ -103,13 +103,15 @@ class InputCalculator
             'id' => null,
             'roles' => [],
             'segment' => null,
+            'isUserAuth' => false,
         ];
 
         if (isset($params['customer'])) {
             $this->customer = [
-                'id' => isset($params['customer']['id']) ? (int) $params['customer']['id'] : null,
+                'id' => $params['customer']['id'] ?? null,
                 'roles' => $params['customer']['roles'] ?? [],
                 'segment' => isset($params['customer']['segment']) ? (int) $params['customer']['segment'] : null,
+                'isUserAuth' => $params['customer']['isUserAuth'],
             ];
         } else {
             if (isset($params['role_ids']) && is_array($params['role_ids'])) {
@@ -220,7 +222,7 @@ class InputCalculator
             })
             ->flip();
 
-        if (isset($this->customer['id'])) {
+        if (isset($this->customer['id'], $this->customer['isUserAuth']) && $this->customer['isUserAuth']) {
             $this->customer = $this->getCustomerInfo((int) $this->customer['id']);
         }
 
