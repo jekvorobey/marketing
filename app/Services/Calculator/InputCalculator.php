@@ -12,6 +12,7 @@ use Greensight\Logistics\Dto\Lists\RegionDto;
 use Greensight\Logistics\Services\ListsService\ListsService;
 use Greensight\Oms\Services\OrderService\OrderService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Pim\Core\PimException;
 use Pim\Dto\CategoryDto;
 use Pim\Dto\Offer\OfferDto;
@@ -92,6 +93,7 @@ class InputCalculator
 
     protected function parse($params)
     {
+        Log::debug(json_encode($params));
         $this->offers = isset($params['offers']) ? collect($params['offers']) : collect();
         $this->bundles = collect(); // todo
         $this->brands = collect();
@@ -103,6 +105,7 @@ class InputCalculator
             'id' => null,
             'roles' => [],
             'segment' => null,
+            'isUserAuth' => false,
         ];
 
         if (isset($params['customer'])) {
@@ -110,6 +113,7 @@ class InputCalculator
                 'id' => $params['customer']['id'] ?? null,
                 'roles' => $params['customer']['roles'] ?? [],
                 'segment' => isset($params['customer']['segment']) ? (int) $params['customer']['segment'] : null,
+                'isUserAuth' => $params['customer']['isUserAuth'],
             ];
         } else {
             if (isset($params['role_ids']) && is_array($params['role_ids'])) {
@@ -220,7 +224,7 @@ class InputCalculator
             })
             ->flip();
 
-        if (isset($this->customer['id']) && is_int($this->customer['id'])) {
+        if (isset($this->customer['id'], $this->customer['isUserAuth']) && $this->customer['isUserAuth']) {
             $this->customer = $this->getCustomerInfo((int) $this->customer['id']);
         }
 
