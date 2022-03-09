@@ -12,7 +12,6 @@ use Greensight\Logistics\Dto\Lists\RegionDto;
 use Greensight\Logistics\Services\ListsService\ListsService;
 use Greensight\Oms\Services\OrderService\OrderService;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
 use Pim\Core\PimException;
 use Pim\Dto\CategoryDto;
 use Pim\Dto\Offer\OfferDto;
@@ -93,7 +92,6 @@ class InputCalculator
 
     protected function parse($params)
     {
-        Log::debug(json_encode($params));
         $this->offers = isset($params['offers']) ? collect($params['offers']) : collect();
         $this->bundles = collect(); // todo
         $this->brands = collect();
