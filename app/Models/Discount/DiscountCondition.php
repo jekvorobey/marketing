@@ -2,6 +2,7 @@
 
 namespace App\Models\Discount;
 
+use Greensight\CommonMsa\Dto\RoleDto;
 use Greensight\CommonMsa\Models\AbstractModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Hash;
@@ -243,7 +244,7 @@ class DiscountCondition extends AbstractModel
                     })
                     ->filter()
                     ->filter(function (UserDto $userDto) {
-                        return array_key_exists(UserDto::SHOWCASE__REFERRAL_PARTNER, $userDto->roles);
+                        return array_key_exists(RoleDto::ROLE_SHOWCASE_REFERRAL_PARTNER, $userDto->roles);
                     })
                     ->each(function (UserDto $userDto) use ($serviceNotificationService, $item) {
                         if ($item->discount->value_type == Discount::DISCOUNT_VALUE_TYPE_PERCENT) {

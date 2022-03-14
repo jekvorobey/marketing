@@ -1,10 +1,10 @@
 <?php
 
 use Carbon\Carbon;
+use Greensight\CommonMsa\Dto\RoleDto;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
-use Greensight\CommonMsa\Dto\UserDto;
 
 class CreateOptionsTable extends Migration
 {
@@ -32,7 +32,7 @@ class CreateOptionsTable extends Migration
         ]);
         DB::table('options')->insert([
             'key' => 'KEY_ROLES_AVAILABLE_FOR_BONUSES',
-            'value' => json_encode(['value' => [UserDto::SHOWCASE__PROFESSIONAL]]),
+            'value' => json_encode(['value' => [RoleDto::ROLE_SHOWCASE_PROFESSIONAL]]),
             'created_at' => Carbon::now(),
             'updated_at' => Carbon::now(),
         ]);

@@ -1,5 +1,6 @@
 <?php
 
+use Greensight\CommonMsa\Dto\RoleDto;
 use Illuminate\Database\Seeder;
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountOffer;
@@ -19,7 +20,6 @@ use Greensight\Oms\Dto\PaymentMethod;
 use Greensight\Logistics\Dto\Lists\DeliveryMethod;
 use Greensight\Logistics\Services\ListsService\ListsService;
 use Greensight\CommonMsa\Services\AuthService\UserService;
-use Greensight\CommonMsa\Dto\UserDto;
 use Pim\Core\PimException;
 
 /**
@@ -241,8 +241,8 @@ class DiscountsTableSeeder extends Seeder
     {
         if ($this->faker->boolean(10)) {
             $userRole = $this->faker->randomElement([
-                UserDto::SHOWCASE__PROFESSIONAL,
-                UserDto::SHOWCASE__REFERRAL_PARTNER,
+                RoleDto::ROLE_SHOWCASE_PROFESSIONAL,
+                RoleDto::ROLE_SHOWCASE_REFERRAL_PARTNER,
             ]);
             $this->createDiscountUserRole($discount->id, $userRole);
         }

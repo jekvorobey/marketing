@@ -3,7 +3,7 @@
 use App\Models\Discount\Discount;
 use App\Models\PromoCode\PromoCode;
 use App\Models\Bonus\Bonus;
-use Greensight\CommonMsa\Dto\UserDto;
+use Greensight\CommonMsa\Dto\RoleDto;
 use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\Customer\Services\CustomerService\CustomerService;
 use Illuminate\Database\Seeder;
@@ -141,7 +141,7 @@ class PromoCodesTableSeeder extends Seeder
 
         $this->segmentIds = [1, 2, 3]; // todo: ID сегментов
 
-        $this->userRoles = [UserDto::SHOWCASE__PROFESSIONAL, UserDto::SHOWCASE__REFERRAL_PARTNER];
+        $this->userRoles = [RoleDto::ROLE_SHOWCASE_PROFESSIONAL, RoleDto::ROLE_SHOWCASE_REFERRAL_PARTNER];
 
         $this->discountIds = Discount::select('id')
             ->where('promo_code_only', true)
