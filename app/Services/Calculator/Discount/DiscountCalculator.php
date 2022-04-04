@@ -378,7 +378,7 @@ class DiscountCalculator extends AbstractCalculator
     }
 
     /**
-     * Сортируем в порядке: скидка по промо-коду > скидка на товар > скидка на корзину
+     * Сортируем в порядке: бандлы > скидка по промо-коду > скидка на товар > скидка на корзину
      *
      * @todo
      */
@@ -397,10 +397,10 @@ class DiscountCalculator extends AbstractCalculator
         });
 
         $this->possibleDiscounts = $possibleDiscounts
+            ->merge($bundleDiscounts)
             ->merge($promocodeDiscounts)
             ->merge($discountsWithConditions)
             ->merge($cartTotalDiscounts)
-            ->merge($bundleDiscounts)
             ->merge($deliveryDiscounts);
 
         return $this;
