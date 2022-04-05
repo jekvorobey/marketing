@@ -35,7 +35,7 @@ class OfferApplier extends AbstractApplier
         $hasProductQtyLimit = $discount->product_qty_limit > 0;
         $restProductQtyLimit = $discount->product_qty_limit;
         $changed = 0;
-        foreach ($offerIds as $offerId) {
+        foreach ($offerIds as $key => $offerId) {
             if (isset($this->input->offers[$offerId])) {
                 $offer = $this->input->offers[$offerId];
                 $lowestPossiblePrice = $offer['product_id'] ? CalculatorChangePrice::LOWEST_POSSIBLE_PRICE : CalculatorChangePrice::LOWEST_MASTERCLASS_PRICE;
@@ -66,6 +66,11 @@ class OfferApplier extends AbstractApplier
                 }
 
                 $changedPrice = $calculatorChangePrice->changePrice($offer, $valueOfLimitDiscount ?? $value, $valueType, $lowestPossiblePrice, $discount);
+
+                if (array_key_last($offerIds->toArray()) === $key) {
+                    $changedPrice = $this->getChangedPriceForLastBundleItem($discount, $changedPrice, $changed);
+                }
+
                 $offer = $calculatorChangePrice->syncItemWithChangedPrice($offer, $changedPrice);
 
                 if ($discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER && isset($changedPrice['bundles'][$discount->id])) {
@@ -90,5 +95,24 @@ class OfferApplier extends AbstractApplier
         }
 
         return $changed;
+    }
+
+    private function getChangedPriceForLastBundleItem(Discount $discount, array $changedPrice, int $changed): array
+    {
+        $restOfDiscount = max(0, $discount->value - $changed);
+        $diffOfDiscount = max(0, $restOfDiscount - $changedPrice['discountValue']);
+        if (
+            $discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER
+            && isset($changedPrice['bundles'][$discount->id])
+            && $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB
+            && $diffOfDiscount > 0
+        ) {
+            $changedPrice['bundles'][$discount->id]['price'] -= $diffOfDiscount;
+            $changedPrice['bundles'][$discount->id]['cost'] -= $diffOfDiscount;
+            $changedPrice['bundles'][$discount->id]['discount'] += $diffOfDiscount;
+            $changedPrice['discountValue'] = max(0, $restOfDiscount);
+        }
+
+        return $changedPrice;
     }
 }
