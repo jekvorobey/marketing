@@ -11,18 +11,18 @@ class DiscountOutput
     private InputCalculator $input;
     private Collection $discounts;
     private Collection $appliedDiscounts;
-    private Collection $offersByDiscounts;
+    private Collection $basketItemsByDiscounts;
 
     public function __construct(
         InputCalculator $input,
         Collection $discounts,
-        Collection $offersByDiscounts,
+        Collection $basketItemsByDiscounts,
         Collection $appliedDiscounts
     ) {
         $this->input = $input;
         $this->discounts = $discounts;
         $this->appliedDiscounts = $appliedDiscounts;
-        $this->offersByDiscounts = $offersByDiscounts;
+        $this->basketItemsByDiscounts = $basketItemsByDiscounts;
     }
 
     public function getModifiedAppliedDiscounts(): Collection
@@ -30,31 +30,31 @@ class DiscountOutput
         return $this->appliedDiscounts;
     }
 
-    public function getModifiedOffersByDiscounts(): Collection
+    public function getModifiedBasketItemsByDiscounts(): Collection
     {
-        return $this->offersByDiscounts;
+        return $this->basketItemsByDiscounts;
     }
 
-    public function getOffers(): Collection
+    public function getBasketItems(): Collection
     {
-        return $this->input->offers->transform(function ($offer, $offerId) {
+        return $this->input->basketItems->transform(function ($basketItem, $basketItemId) {
 
-            if (!$this->offersByDiscounts->has($offerId)) {
+            if (!$this->basketItemsByDiscounts->has($basketItemId)) {
                 $offer['discount'] = null;
                 $offer['discounts'] = null;
                 return $offer;
             }
             # Конечная цена товара после применения скидки всегда округляется до целого
-            $offer['price'] = round($offer['price']);
+            $basketItem['price'] = round($basketItem['price']);
 
             $roundOffs = collect();
             # Погрешность после применения базовых товарных скидок (не бандлов)
             $basicError = 0;
-            if (isset($offer['discount'])) {
+            if (isset($basketItem['discount'])) {
                 # Финальная скидка, в которую входит сама скидка и ошибка округления
-                $finalDiscount = $offer['cost'] - $offer['price'];
-                $basicError = $finalDiscount - $offer['discount'];
-                $basicDiscountsNumber = $this->offersByDiscounts[$offerId]->filter(function ($discount) {
+                $finalDiscount = $basketItem['cost'] - $basketItem['price'];
+                $basicError = $finalDiscount - $basketItem['discount'];
+                $basicDiscountsNumber = $this->basketItemsByDiscounts[$basketItemId]->filter(function ($discount) {
                     return !$this->input->bundles->contains($discount['id']);
                 })->count();
                 $diffPerDiscount = $basicDiscountsNumber > 0
@@ -67,15 +67,15 @@ class DiscountOutput
                 $roundOffs->put(0, [
                     'error' => $diffPerDiscount,
                     'correction' => $correctionValue,
-                    'affectedQty' => $offer['qty'],
+                    'affectedQty' => $basketItem['qty'],
                 ]);
             }
 
-            $offer['bundles']->each(function ($bundle, $id) use ($roundOffs, $offer, &$basicError) {
+            $basketItem['bundles']->each(function ($bundle, $id) use ($roundOffs, $basketItem, &$basicError) {
                 if ($id == 0 || !isset($bundle['discount'])) {
                     return;
                 }
-                $finalDiscount = $offer['cost'] - $bundle['price'];
+                $finalDiscount = $basketItem['cost'] - $bundle['price'];
                 $roundOffError = $finalDiscount - $bundle['discount'];
 
                 $roundOffs->put($id, [
@@ -85,7 +85,7 @@ class DiscountOutput
                 ]);
             });
 
-            $this->offersByDiscounts[$offerId]->transform(function ($discount) use ($roundOffs) {
+            $this->basketItemsByDiscounts[$basketItemId]->transform(function ($discount) use ($roundOffs) {
                 $key = $roundOffs->has($discount['id']) ? $discount['id'] : 0;
                 $roundOff = $roundOffs->get($key);
                 if (!$roundOff) {
@@ -106,22 +106,22 @@ class DiscountOutput
             });
 
             /** @var Collection|null $discountsWithoutBundles */
-            $discountsWithoutBundles = $this->offersByDiscounts[$offerId]->filter(function ($discount) {
+            $discountsWithoutBundles = $this->basketItemsByDiscounts[$basketItemId]->filter(function ($discount) {
                 return !$this->input->bundles->contains($discount['id']);
             })->values();
 
             $sum = round($discountsWithoutBundles->sum('change'), 2);
-            $offer['discount'] = $sum;
+            $basketItem['discount'] = $sum;
 
-            $offer['discounts'] = $discountsWithoutBundles->toArray();
+            $basketItem['discounts'] = $discountsWithoutBundles->toArray();
 
             /** @var Collection|null $discountsWithBundles */
-            $discountsWithBundles = $this->offersByDiscounts[$offerId]->filter(function ($discount) {
+            $discountsWithBundles = $this->basketItemsByDiscounts[$basketItemId]->filter(function ($discount) {
                 return $this->input->bundles->contains($discount['id']);
             })->keyBy('id');
 
             if ($discountsWithBundles && !$discountsWithBundles->isEmpty()) {
-                $offer['bundles']->transform(function ($bundle, $bundleId) use ($sum, $discountsWithBundles, $discountsWithoutBundles) {
+                $basketItem['bundles']->transform(function ($bundle, $bundleId) use ($sum, $discountsWithBundles, $discountsWithoutBundles) {
                     if ($bundleId && $discountsWithBundles->has($bundleId)) {
                         $bundle['discount'] = $sum + $discountsWithBundles[$bundleId]['change'];
                         $bundle['discounts'] = $discountsWithoutBundles->push($discountsWithBundles[$bundleId]);
@@ -130,7 +130,7 @@ class DiscountOutput
                 });
             }
 
-            return $offer;
+            return $basketItem;
         });
     }
 

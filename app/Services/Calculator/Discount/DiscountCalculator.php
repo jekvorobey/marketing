@@ -34,10 +34,10 @@ class DiscountCalculator extends AbstractCalculator
 
     /**
      * Офферы со скидками в формате:
-     * [offer_id => [['id' => discount_id, 'value' => value, 'value_type' => value_type], ...]]
+     * [basket_item_id => [['id' => discount_id, 'value' => value, 'value_type' => value_type], ...]]
      * @var Collection
      */
-    protected $offersByDiscounts;
+    protected $basketItemsByDiscounts;
 
     /**
      * Список активных скидок
@@ -55,7 +55,7 @@ class DiscountCalculator extends AbstractCalculator
         $this->discounts = collect();
         $this->appliedDiscounts = collect();
         $this->possibleDiscounts = collect();
-        $this->offersByDiscounts = collect();
+        $this->basketItemsByDiscounts = collect();
     }
 
     public function calculate()
@@ -86,9 +86,9 @@ class DiscountCalculator extends AbstractCalculator
 
     private function getDiscountOutput(): void
     {
-        $discountOutput = new DiscountOutput($this->input, $this->discounts, $this->offersByDiscounts, $this->appliedDiscounts);
-        $this->input->offers = $discountOutput->getOffers();
-        $this->offersByDiscounts = $discountOutput->getModifiedOffersByDiscounts();
+        $discountOutput = new DiscountOutput($this->input, $this->discounts, $this->basketItemsByDiscounts, $this->appliedDiscounts);
+        $this->input->basketItems = $discountOutput->getBasketItems();
+        $this->basketItemsByDiscounts = $discountOutput->getModifiedBasketItemsByDiscounts();
         $this->appliedDiscounts = $discountOutput->getModifiedAppliedDiscounts();
         $this->output->appliedDiscounts = $discountOutput->getOutputFormat();
     }
@@ -130,26 +130,26 @@ class DiscountCalculator extends AbstractCalculator
             case Discount::DISCOUNT_TYPE_OFFER:
                 # Скидка на определенные офферы
                 $offerIds = $discount->offers->pluck('offer_id');
-                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts);
+                $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
                 $offerApplier->setOfferIds($offerIds);
                 $change = $offerApplier->apply($discount);
-                $this->offersByDiscounts = $offerApplier->getModifiedOffersByDiscounts();
-                $this->input->offers = $offerApplier->getModifiedInputOffers();
+                $this->basketItemsByDiscounts = $offerApplier->getModifiedBasketItemsByDiscounts();
+                $this->input->basketItems = $offerApplier->getModifiedInputBasketItems();
                 break;
             case Discount::DISCOUNT_TYPE_ANY_OFFER:
                 # Скидка на все товары
                 # За исключением офферов
                 $exceptOfferIds = $this->getExceptOffersForDiscount($discount);
-                $offerIds = $this->input->offers
+                $offerIds = $this->input->basketItems
                     ->where('product_id', '!=', null)
-                    ->whereNotIn('id', $exceptOfferIds)
-                    ->pluck('id');
+                    ->whereNotIn('offer_id', $exceptOfferIds)
+                    ->pluck('offer_id');
 
-                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts);
+                $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
                 $offerApplier->setOfferIds($offerIds);
                 $change = $offerApplier->apply($discount);
-                $this->offersByDiscounts = $offerApplier->getModifiedOffersByDiscounts();
-                $this->input->offers = $offerApplier->getModifiedInputOffers();
+                $this->basketItemsByDiscounts = $offerApplier->getModifiedBasketItemsByDiscounts();
+                $this->input->basketItems = $offerApplier->getModifiedInputBasketItems();
                 break;
             case Discount::DISCOUNT_TYPE_BUNDLE_OFFER:
             case Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS:
@@ -173,11 +173,11 @@ class DiscountCalculator extends AbstractCalculator
                         });
 
                 if ($discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
-                    $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts);
+                    $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
                     $offerApplier->setOfferIds($offerIds);
                     $change = $offerApplier->apply($discount);
-                    $this->offersByDiscounts = $offerApplier->getModifiedOffersByDiscounts();
-                    $this->input->offers = $offerApplier->getModifiedInputOffers();
+                    $this->basketItemsByDiscounts = $offerApplier->getModifiedBasketItemsByDiscounts();
+                    $this->input->basketItems = $offerApplier->getModifiedInputBasketItems();
                 }
 
                 // todo Рассчет скидки для мастерклассов и для скидки на все бандлы
@@ -198,11 +198,11 @@ class DiscountCalculator extends AbstractCalculator
                 $exceptOfferIds = $this->getExceptOffersForDiscount($discount);
                 # Отбираем нужные офферы
                 $offerIds = $this->filterForBrand($brandIds, $exceptOfferIds, $discount->merchant_id);
-                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts);
+                $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
                 $offerApplier->setOfferIds($offerIds);
                 $change = $offerApplier->apply($discount);
-                $this->offersByDiscounts = $offerApplier->getModifiedOffersByDiscounts();
-                $this->input->offers = $offerApplier->getModifiedInputOffers();
+                $this->basketItemsByDiscounts = $offerApplier->getModifiedBasketItemsByDiscounts();
+                $this->input->basketItems = $offerApplier->getModifiedInputBasketItems();
                 break;
             case Discount::DISCOUNT_TYPE_CATEGORY:
             case Discount::DISCOUNT_TYPE_ANY_CATEGORY:
@@ -226,11 +226,11 @@ class DiscountCalculator extends AbstractCalculator
                     $exceptOfferIds,
                     $discount->merchant_id
                 );
-                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts);
+                $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
                 $offerApplier->setOfferIds($offerIds);
                 $change = $offerApplier->apply($discount);
-                $this->offersByDiscounts = $offerApplier->getModifiedOffersByDiscounts();
-                $this->input->offers = $offerApplier->getModifiedInputOffers();
+                $this->basketItemsByDiscounts = $offerApplier->getModifiedBasketItemsByDiscounts();
+                $this->input->basketItems = $offerApplier->getModifiedInputBasketItems();
                 break;
             case Discount::DISCOUNT_TYPE_DELIVERY:
                 // Если используется бесплатная доставка (например, по промокоду), то не использовать скидку
@@ -245,7 +245,7 @@ class DiscountCalculator extends AbstractCalculator
                  */
                 $currentDeliveryId = $this->input->deliveries['current']['id'] ?? null;
                 $this->input->deliveries['items']->transform(function ($delivery) use ($discount, $currentDeliveryId, &$change) {
-                    $deliveryApplier = new DeliveryApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts);
+                    $deliveryApplier = new DeliveryApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
                     $deliveryApplier->setCurrentDelivery($delivery);
                     $changedPrice = $deliveryApplier->apply($discount);
                     $currentDelivery = $deliveryApplier->getModifiedCurrentDelivery();
@@ -259,10 +259,10 @@ class DiscountCalculator extends AbstractCalculator
 
                 break;
             case Discount::DISCOUNT_TYPE_CART_TOTAL:
-                $basketApplier = new BasketApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts);
+                $basketApplier = new BasketApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
                 $change = $basketApplier->apply($discount);
-                $this->offersByDiscounts = $basketApplier->getModifiedOffersByDiscounts();
-                $this->input->offers = $basketApplier->getModifiedInputOffers();
+                $this->basketItemsByDiscounts = $basketApplier->getModifiedBasketItemsByDiscounts();
+                $this->input->basketItems = $basketApplier->getModifiedInputBasketItems();
                 break;
             # Скидка на мастер-классы
             case Discount::DISCOUNT_TYPE_MASTERCLASS:
@@ -270,26 +270,26 @@ class DiscountCalculator extends AbstractCalculator
                     ->pluck('ticket_type_id')
                     ->toArray();
 
-                $offerIds = $this->input->offers
+                $offerIds = $this->input->basketItems
                     ->whereIn('ticket_type_id', $ticketTypeIds)
                     ->pluck('id');
 
-                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts);
+                $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
                 $offerApplier->setOfferIds($offerIds);
                 $change = $offerApplier->apply($discount);
-                $this->offersByDiscounts = $offerApplier->getModifiedOffersByDiscounts();
-                $this->input->offers = $offerApplier->getModifiedInputOffers();
+                $this->basketItemsByDiscounts = $offerApplier->getModifiedBasketItemsByDiscounts();
+                $this->input->basketItems = $offerApplier->getModifiedInputBasketItems();
                 break;
             case Discount::DISCOUNT_TYPE_ANY_MASTERCLASS:
-                $offerIds = $this->input->offers
+                $offerIds = $this->input->basketItems
                     ->whereStrict('product_id', null)
-                    ->pluck('id');
+                    ->pluck('offer_id');
 
-                $offerApplier = new OfferApplier($this->input, $this->offersByDiscounts, $this->appliedDiscounts);
+                $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
                 $offerApplier->setOfferIds($offerIds);
                 $change = $offerApplier->apply($discount);
-                $this->offersByDiscounts = $offerApplier->getModifiedOffersByDiscounts();
-                $this->input->offers = $offerApplier->getModifiedInputOffers();
+                $this->basketItemsByDiscounts = $offerApplier->getModifiedBasketItemsByDiscounts();
+                $this->input->basketItems = $offerApplier->getModifiedInputBasketItems();
                 break;
         }
 
@@ -346,24 +346,24 @@ class DiscountCalculator extends AbstractCalculator
     protected function rollback()
     {
         $this->appliedDiscounts = collect();
-        $this->offersByDiscounts = collect();
+        $this->basketItemsByDiscounts = collect();
         $this->output->appliedDiscounts = collect();
 
-        $offers = collect();
-        foreach ($this->input->offers as $offer) {
-            $offer['price'] = $offer['cost'] ?? $offer['price'];
-            unset($offer['discount']);
-            unset($offer['cost']);
-            if (isset($offer['bundles'])) {
-                $offer['bundles']->transform(function ($bundle) use ($offer) {
-                    $bundle['price'] = $offer['price'];
+        $basketItems = collect();
+        foreach ($this->input->basketItems as $basketItem) {
+            $basketItem['price'] = $basketItem['cost'] ?? $basketItem['price'];
+            unset($basketItem['discount']);
+            unset($basketItem['cost']);
+            if (isset($basketItem['bundles'])) {
+                $basketItem['bundles']->transform(function ($bundle) use ($basketItem) {
+                    $bundle['price'] = $basketItem['price'];
                     unset($bundle['discount']);
                     return $bundle;
                 });
             }
-            $offers->put($offer['id'], $offer);
+            $basketItems->put($basketItem['id'], $basketItem);
         }
-        $this->input->offers = $offers;
+        $this->input->basketItems = $basketItems;
 
         $deliveries = collect();
         foreach ($this->input->deliveries['items'] as $delivery) {
@@ -484,7 +484,7 @@ class DiscountCalculator extends AbstractCalculator
             case Discount::DISCOUNT_TYPE_ANY_BRAND:
             case Discount::DISCOUNT_TYPE_ANY_CATEGORY:
             case Discount::DISCOUNT_TYPE_ANY_MASTERCLASS:
-                return $this->input->offers->isNotEmpty();
+                return $this->input->basketItems->isNotEmpty();
             default:
                 return false;
         }

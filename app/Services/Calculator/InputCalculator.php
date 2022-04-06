@@ -2,6 +2,7 @@
 
 namespace App\Services\Calculator;
 
+use App\Models\Basket\BasketItem;
 use App\Models\Bonus\Bonus;
 use App\Models\Discount\Discount;
 use App\Models\Price\Price;
@@ -28,6 +29,8 @@ class InputCalculator
 {
     /** @var Collection */
     public $bundles;
+    /** @var Collection */
+    public $basketItems;
     /** @var Collection */
     public $offers;
     /** @var Collection */
@@ -92,7 +95,7 @@ class InputCalculator
 
     protected function parse($params)
     {
-        $this->offers = isset($params['offers']) ? collect($params['offers']) : collect();
+        $this->basketItems = isset($params['basketItems']) ? collect($params['basketItems']) : collect();
         $this->bundles = collect(); // todo
         $this->brands = collect();
         $this->categories = collect();
@@ -188,9 +191,9 @@ class InputCalculator
      */
     protected function loadData()
     {
-        $this->hydrateOffers();
+        $this->hydrateBasketItems();
 
-        $this->bundles = $this->offers->pluck('bundles')
+        $this->bundles = $this->basketItems->pluck('bundles')
             ->map(function ($bundles) {
                 return $bundles->keys();
             })
@@ -201,21 +204,21 @@ class InputCalculator
             })
             ->values();
 
-        $this->brands = $this->offers->pluck('brand_id')
+        $this->brands = $this->basketItems->pluck('brand_id')
             ->unique()
             ->filter(function ($brandId) {
                 return $brandId > 0;
             })
             ->flip();
 
-        $this->categories = $this->offers->pluck('category_id')
+        $this->categories = $this->basketItems->pluck('category_id')
             ->unique()
             ->filter(function ($categoryId) {
                 return $categoryId > 0;
             })
             ->flip();
 
-        $this->ticketTypeIds = $this->offers->pluck('ticket_type_id')
+        $this->ticketTypeIds = $this->basketItems->pluck('ticket_type_id')
             ->unique()
             ->filter(function ($ticketType) {
                 return $ticketType > 0;
@@ -229,22 +232,23 @@ class InputCalculator
         return $this;
     }
 
-    protected function hydrateOffers(): void
+    protected function hydrateBasketItems(): void
     {
-        $offers = $this->offers->filter(fn($offer) => isset($offer['id']));
-        if ($offers->isEmpty()) {
+        $basketItems = $this->basketItems->filter(fn(BasketItem $basketItem) => isset($basketItem->offerId));
+        if ($basketItems->isEmpty()) {
             return;
         }
 
-        $offerIds = $this->offers->pluck('id')->all();
+        $offerIds = $this->basketItems->pluck('offerId')->all();
 
         $offersDto = $this->loadOffers($offerIds);
         $prices = $this->loadPrices($offerIds);
         $productsDto = $this->loadProducts($offersDto->pluck('product_id')->all());
 
-        $hydratedOffers = collect();
-        foreach ($offers as $offer) {
-            $offerId = (int) $offer['id'];
+        $hydratedBasketItems = collect();
+        /** @var BasketItem $basketItem */
+        foreach ($basketItems as $basketItem) {
+            $offerId = (int) $basketItem->offerId;
 
             /** @var OfferDto|null $offerDto */
             $offerDto = $offersDto->get($offerId);
@@ -259,20 +263,31 @@ class InputCalculator
             /** @var ProductDto|null $productDto */
             $productDto = $productsDto->get($offerDto->product_id);
 
-            $hydratedOffers->put($offerId, collect([
-                'id' => $offerId,
+            $bundleQty = collect([$basketItem])->keyBy('bundleId')
+                ->map(function ($item) {
+                    return collect([
+                        'qty' => $item->qty,
+                    ]);
+                });
+
+            $qty = $bundleQty->pluck('qty')->sum();
+
+            $hydratedBasketItems->put($basketItem->id, collect([
+                'id' => $basketItem->id,
+                'offer_id' => $offerId,
                 'price' => $price ?? null,
-                'qty' => $offer['qty'] ?? 1,
+                'qty' => $qty ?? 1,
                 'brand_id' => $productDto->brand_id ?? null,
                 'category_id' => $productDto->category_id ?? null,
                 'product_id' => $productDto->id ?? null,
                 'merchant_id' => $offerDto->merchant_id,
-                'bundles' => $offer['bundles'] ?? collect(),
+                'bundle_id' => $basketItem->bundleId,
+                'bundles' => $bundleQty,
                 'ticket_type_id' => $offerDto->ticket_type_id ?? null,
             ]));
         }
 
-        $this->offers = $hydratedOffers;
+        $this->basketItems = $hydratedBasketItems;
     }
 
     protected function loadOffers(array $offersIds): Collection
@@ -380,8 +395,8 @@ class InputCalculator
      */
     public function getCostOrders()
     {
-        return $this->offers->map(function ($offer) {
-            return ($offer['cost'] ?? $offer['price']) * $offer['qty'];
+        return $this->basketItems->map(function ($basketItem) {
+            return ($basketItem['cost'] ?? $basketItem['price']) * $basketItem['qty'];
         })->sum();
     }
 
@@ -391,8 +406,8 @@ class InputCalculator
      */
     public function getPriceOrders()
     {
-        return $this->offers->map(function ($offer) {
-            return $offer['price'] * $offer['qty'];
+        return $this->basketItems->map(function ($basketItem) {
+            return $basketItem['price'] * $basketItem['qty'];
         })->sum();
     }
 
@@ -404,13 +419,13 @@ class InputCalculator
     {
         $max = 0;
         foreach ($categories as $categoryId) {
-            $sum = $this->offers->filter(function ($offer) use ($categoryId) {
+            $sum = $this->basketItems->filter(function ($basketItem) use ($categoryId) {
                 $allCategories = static::getAllCategories();
                 return $allCategories->has($categoryId)
-                    && $allCategories->has($offer['category_id'])
-                    && $allCategories[$categoryId]->isSelfOrAncestorOf($allCategories[$offer['category_id']]);
-            })->map(function ($offer) {
-                return $offer['price'] * $offer['qty'];
+                    && $allCategories->has($basketItem['category_id'])
+                    && $allCategories[$categoryId]->isSelfOrAncestorOf($allCategories[$basketItem['category_id']]);
+            })->map(function ($basketItem) {
+                return $basketItem['price'] * $basketItem['qty'];
             })->sum();
             $max = max($sum, $max);
         }
@@ -427,10 +442,10 @@ class InputCalculator
     {
         $max = 0;
         foreach ($brands as $brandId) {
-            $sum = $this->offers->filter(function ($offer) use ($brandId) {
-                return (int) $offer['brand_id'] === (int) $brandId;
-            })->map(function ($offer) {
-                return $offer['price'] * $offer['qty'];
+            $sum = $this->basketItems->filter(function ($basketItem) use ($brandId) {
+                return (int) $basketItem['brand_id'] === (int) $brandId;
+            })->map(function ($basketItem) {
+                return $basketItem['price'] * $basketItem['qty'];
             })->sum();
             $max = max($sum, $max);
         }

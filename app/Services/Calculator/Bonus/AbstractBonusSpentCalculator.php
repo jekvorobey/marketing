@@ -27,7 +27,7 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
      */
     private function loadProductBonusOptions(): void
     {
-        $offerProductIds = $this->input->offers->pluck('product_id')->unique()->values();
+        $offerProductIds = $this->input->basketItems->pluck('product_id')->unique()->values();
 
         $this->productBonusOptions = ProductBonusOption::query()
             ->whereIn('product_id', $offerProductIds)
@@ -68,23 +68,22 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
             return;
         }
 
-        $offers = $this->prepareOffers();
+        $basketItems = $this->prepareBasketItems();
 
         $bonusPriceRemains = $this->bonusToPrice(
             $this->getBonusesForSpend()
         );
 
-        foreach ($offers as $offer) {
-            $spendForOfferItem = $this->getSpendBonusPriceForOfferItem($offer, $bonusPriceRemains);
+        foreach ($basketItems as $basketItem) {
+            $spendForBasketItem = $this->getSpendBonusPriceForBasketItem($basketItem, $bonusPriceRemains);
 
-            $offerId = $offer['offer_id'] ?? null;
-            if ($bundleId = $offer['bundle_id'] ?? null) {
-                $inputOffer = &$this->input->offers[$offerId]['bundles'][$bundleId];
+            if ($bundleId = $basketItem['bundle_id'] ?? null) {
+                $inputBasketItem = &$this->input->basketItems[$basketItem['id']]['bundles'][$bundleId];
             } else {
-                $inputOffer = &$this->input->offers[$offerId];
+                $inputBasketItem = &$this->input->basketItems[$basketItem['id']];
             }
 
-            $bonusPriceRemains -= $this->spentBonusForOffer($inputOffer, $spendForOfferItem, $offer['qty']);
+            $bonusPriceRemains -= $this->spentBonusForBasketItem($inputBasketItem, $spendForBasketItem, $basketItem['qty']);
 
             if ($bonusPriceRemains <= 0) {
                 break;
@@ -93,31 +92,32 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
     }
 
     /**
-     * Подготовить данные по оферам для вычисления
+     * Подготовить данные по элементам корзины для вычисления
      */
-    private function prepareOffers(): Collection
+    private function prepareBasketItems(): Collection
     {
-        return $this->sortOffers(
-            $this->transformOffers()
+        return $this->sortBasketItems(
+            $this->transformBasketItems()
         );
     }
 
     /**
-     * Преобразовать данные по оферам
+     * Преобразовать данные по элементам корзины
      */
-    private function transformOffers(): Collection
+    private function transformBasketItems(): Collection
     {
         $items = collect();
 
-        $this->input->offers->each(function ($offer) use ($items) {
-            foreach ($offer['bundles'] as $id => $bundle) {
+        $this->input->basketItems->each(function ($basketItem) use ($items) {
+            foreach ($basketItem['bundles'] as $id => $bundle) {
                 $items->push([
-                    'offer_id' => $offer['id'],
-                    'product_id' => $offer['product_id'],
-                    'qty' => $bundle['qty'],
-                    'price' => $id == 0 ? $offer['price'] : $bundle['price'],
+                    'id' => $basketItem['id'],
+                    'offer_id' => $basketItem['offer_id'],
+                    'product_id' => $basketItem['product_id'],
+                    'qty' => $basketItem['qty'],
+                    'price' => $id == 0 ? $basketItem['price'] : $bundle['price'],
                     'bundle_id' => $this->input->bundles->contains($id) ? $id : null,
-                    'has_discount' => isset($offer['discount']) && $offer['discount'] > 0,
+                    'has_discount' => isset($basketItem['discount']) && $basketItem['discount'] > 0,
                 ]);
             }
         });
@@ -126,11 +126,11 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
     }
 
     /**
-     * Сортировать данные по оферам:
+     * Сортировать данные по элементам корзины:
      * - сначала с меньшим кол-во, чтобы бонусы лучше делились
      * - потом с большей стоимости ед.товара, чтобы распределять бонусы по меньшему кол-во позиций в заказе
      */
-    protected function sortOffers(Collection $offers): Collection
+    protected function sortBasketItems(Collection $offers): Collection
     {
         // @see https://gist.github.com/matt-allan/4ce3ba62396c3d71241f0da39ddb88e6
         return $offers
@@ -146,82 +146,82 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
     /**
      * Получить макс.размер стоимости ед.товара, который можно погасить бонусом
      */
-    protected function maxBonusPriceForOfferItem(array $offer): int
+    protected function maxBonusPriceForBasketItem(array $basketItem): int
     {
-        $productId = $offer['product_id'];
+        $productId = $basketItem['product_id'];
         $percent = $this->getBonusProductOption($productId, ProductBonusOption::MAX_PERCENTAGE_PAYMENT);
 
         if ($percent === null) {
             $percent = $this->getOption(Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_PRODUCT);
         }
 
-        return CalculatorChangePrice::percent($offer['price'], $percent);
+        return CalculatorChangePrice::percent($basketItem['price'], $percent);
     }
 
     /**
      * Получить макс.размер стоимости ед.товара со скидкой, который можно погасить бонусом
      */
-    protected function maxBonusPriceForDiscountOfferItem(array $offer): int
+    protected function maxBonusPriceForDiscountBasketItem(array $basketItem): int
     {
-        $productId = $offer['product_id'];
+        $productId = $basketItem['product_id'];
         $percent = $this->getBonusProductOption($productId, ProductBonusOption::MAX_PERCENTAGE_DISCOUNT_PAYMENT);
 
         if ($percent === null) {
             $percent = $this->getOption(Option::KEY_MAX_DEBIT_PERCENTAGE_FOR_DISCOUNT_PRODUCT);
         }
 
-        return CalculatorChangePrice::percent($offer['price'], $percent);
+        return CalculatorChangePrice::percent($basketItem['price'], $percent);
     }
 
     /**
      * Высчитать размер стоимости ед.товара, который можно погасить бонусом
      */
-    protected function getSpendBonusPriceForOfferItem(array $offer, int $bonusPriceRemains): int
+    protected function getSpendBonusPriceForBasketItem(array $basketItem, int $bonusPriceRemains): int
     {
-        if ($offer['qty'] === 0) {
+        if ($basketItem['qty'] === 0) {
             return 0;
         }
 
-        $maxSpendForOfferItem = !$offer['has_discount']
-            ? $this->maxBonusPriceForOfferItem($offer)
-            : $this->maxBonusPriceForDiscountOfferItem($offer);
+        $maxSpendForOfferItem = !$basketItem['has_discount']
+            ? $this->maxBonusPriceForBasketItem($basketItem)
+            : $this->maxBonusPriceForDiscountBasketItem($basketItem);
 
-        $spendForOffer = min($bonusPriceRemains, $maxSpendForOfferItem * $offer['qty']);
+        $spendForOffer = min($bonusPriceRemains, $maxSpendForOfferItem * $basketItem['qty']);
 
-        return CalculatorChangePrice::round($spendForOffer / $offer['qty']);
+        return CalculatorChangePrice::round($spendForOffer / $basketItem['qty']);
     }
 
     /**
-     * Установить кол-во списания бонусов для офера
+     * Установить кол-во списания бонусов для элемента корзины
      */
-    abstract protected function spentBonusForOffer(&$offer, int $spendForOfferItem, int $qty): int;
+    abstract protected function spentBonusForBasketItem(&$basketItem, int $spendForBasketItem, int $qty): int;
 
     /**
      * Применить и вернуть размер скидки на офер
      */
-    protected function applyDiscountForOffer(&$offer, int $value, int $qty, bool $apply = true): int
+    protected function applyDiscountForBasketItem(&$basketItem, int $value, int $qty, bool $apply = true): int
     {
         $calculatorChangePrice = new CalculatorChangePrice();
         $changedPrice = $calculatorChangePrice->changePrice(
-            $offer,
+            $basketItem,
             $value,
             Discount::DISCOUNT_VALUE_TYPE_RUB,
             CalculatorChangePrice::LOWEST_POSSIBLE_PRICE
         );
 
         if ($apply) {
-            $offer = $calculatorChangePrice->syncItemWithChangedPrice($offer, $changedPrice);
+            $basketItem = $calculatorChangePrice->syncItemWithChangedPrice($basketItem, $changedPrice);
         }
 
         return $calculatorChangePrice::round($changedPrice['discountValue']) * $qty;
     }
 
     /**
-     * Получить возможный размер скидку на офер (без применения)
+     * Получить возможный размер скидку на элемент корзины (без применения)
      */
-    protected function getDiscountForOffer($offer, int $value, int $qty): int
+    protected function getDiscountForBasketItem($basketItem, int $value, int $qty): int
     {
-        return $this->applyDiscountForOffer($offer, $value, $qty, false);
+        return $this->applyDiscountForBasketItem($basketItem, $value, $qty, false);
     }
 
     /**

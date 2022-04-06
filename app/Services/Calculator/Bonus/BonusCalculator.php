@@ -48,14 +48,14 @@ class BonusCalculator extends AbstractCalculator
 
         $this->fetchActiveBonuses()->apply();
 
-        $this->input->offers->transform(function ($offer, $offerId) {
-            $bonuses = $this->offersByBonuses[$offerId] ?? collect();
-            $offer['bonus'] = $bonuses->reduce(function ($carry, $bonus) use ($offer) {
-                return $carry + $bonus['bonus'] * ($offer['qty'] ?? 1);
+        $this->input->basketItems->transform(function ($basketItem) {
+            $bonuses = $this->offersByBonuses[$basketItem['offer_id']] ?? collect();
+            $basketItem['bonus'] = $bonuses->reduce(function ($carry, $bonus) use ($basketItem) {
+                return $carry + $bonus['bonus'] * ($basketItem['qty'] ?? 1);
             }) ?? 0;
 
-            $offer['bonuses'] = $bonuses;
-            return $offer;
+            $basketItem['bonuses'] = $bonuses;
+            return $basketItem;
         });
 
         $this->output->appliedBonuses = $this->appliedBonuses;
@@ -85,7 +85,7 @@ class BonusCalculator extends AbstractCalculator
                     # Бонусы на офферы
                     $offerIds = $bonus->type === Bonus::TYPE_OFFER
                         ? $bonus->offers->pluck('offer_id')
-                        : $this->input->offers->pluck('id');
+                        : $this->input->basketItems->pluck('offer_id')->unique();
 
                     $bonusValue = $this->applyBonusToOffer($bonus, $offerIds);
                     break;
@@ -153,7 +153,7 @@ class BonusCalculator extends AbstractCalculator
     protected function applyBonusToOffer(Bonus $bonus, $offerIds)
     {
         $offerIds = $offerIds->filter(function ($offerId) {
-            return $this->input->offers->has($offerId);
+            return (bool) $this->input->basketItems->where('offer_id', $offerId)->first();
         });
 
         if ($offerIds->isEmpty()) {
@@ -162,7 +162,7 @@ class BonusCalculator extends AbstractCalculator
 
         $totalBonusValue = 0;
         foreach ($offerIds as $offerId) {
-            $offer = &$this->input->offers[$offerId];
+            $offer = $this->input->basketItems->where('offer_id', $offerId)->first();
             //$bonusValue = $this->priceToBonusValue($offer['price'], $bonus);
             $offerPriceWithDiscount = isset($offer['cost'])
                 ? $offer['discounts']

@@ -97,7 +97,7 @@ class DiscountFetcher
             'offers' => function (Relation $builder): void {
                 $builder
                     ->select(['discount_id', 'offer_id', 'except'])
-                    ->whereIn('offer_id', $this->input->offers->pluck('id'));
+                    ->whereIn('offer_id', $this->input->basketItems->pluck('offer_id'));
             },
         ];
     }

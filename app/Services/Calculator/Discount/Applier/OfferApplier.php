@@ -17,11 +17,13 @@ class OfferApplier extends AbstractApplier
 
     public function apply(Discount $discount): ?float
     {
-        $offerIds = $this->offerIds->filter(function ($offerId) use ($discount) {
-            return $this->applicableToOffer($discount, $offerId);
-        });
+        $basketItems = $this->input->basketItems
+            ->whereIn('offer_id', $this->offerIds->toArray())
+            ->filter(function ($basketItem) use ($discount) {
+                return $this->applicableToBasketItem($discount, $basketItem['id']);
+            });
 
-        if ($offerIds->isEmpty()) {
+        if ($basketItems->isEmpty()) {
             return null;
         }
 
@@ -29,28 +31,30 @@ class OfferApplier extends AbstractApplier
         $value = $discount->value;
         $valueType = $discount->value_type;
         if ($discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER && $valueType === Discount::DISCOUNT_VALUE_TYPE_RUB) {
-            $value /= $offerIds->count();
+            $basketItems = $basketItems->where('bundle_id', $discount->id);
+            $value /= $basketItems->count();
         }
 
         $hasProductQtyLimit = $discount->product_qty_limit > 0;
         $restProductQtyLimit = $discount->product_qty_limit;
         $changed = 0;
-        foreach ($offerIds as $key => $offerId) {
-            if (isset($this->input->offers[$offerId])) {
-                $offer = $this->input->offers[$offerId];
-                $lowestPossiblePrice = $offer['product_id'] ? CalculatorChangePrice::LOWEST_POSSIBLE_PRICE : CalculatorChangePrice::LOWEST_MASTERCLASS_PRICE;
+        foreach ($basketItems as $basketItemId => $basketItem) {
+            if (isset($this->input->basketItems[$basketItemId])) {
+                $lowestPossiblePrice = $basketItem['product_id']
+                    ? CalculatorChangePrice::LOWEST_POSSIBLE_PRICE
+                    : CalculatorChangePrice::LOWEST_MASTERCLASS_PRICE;
 
                 // Если в условии на суммирование скидки было "не более x%", то переопределяем минимально возможную цену товара
                 if (isset($this->maxValueByDiscount[$discount->id])) {
                     // Получаем величину скидки, которая максимально возможна по условию
                     $maxDiscountValue = $calculatorChangePrice->calculateDiscountByType(
-                        $offer['cost'],
+                        $basketItem['cost'],
                         $this->maxValueByDiscount[$discount->id]['value'],
                         $this->maxValueByDiscount[$discount->id]['value_type']
                     );
 
                     // Чтобы не получить минимально возможную цену меньше 1р, выбираем наибольшее значение
-                    $lowestPossiblePrice = max($lowestPossiblePrice, $offer['cost'] - $maxDiscountValue);
+                    $lowestPossiblePrice = max($lowestPossiblePrice, $basketItem['cost'] - $maxDiscountValue);
                 }
 
                 if ($hasProductQtyLimit) {
@@ -59,22 +63,22 @@ class OfferApplier extends AbstractApplier
                     }
 
                     $valueType = $discount->value_type;
-                    $maxDiscountValue = $calculatorChangePrice->calculateDiscountByType($offer['price'], $value, $valueType);
-                    $valueOfLimitDiscount = ceil($maxDiscountValue * min($offer['qty'], $restProductQtyLimit) / $offer['qty']);
+                    $maxDiscountValue = $calculatorChangePrice->calculateDiscountByType($basketItem['price'], $value, $valueType);
+                    $valueOfLimitDiscount = ceil($maxDiscountValue * min($basketItem['qty'], $restProductQtyLimit) / $basketItem['qty']);
                     $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB;
-                    $restProductQtyLimit -= $offer['qty'];
+                    $restProductQtyLimit -= $basketItem['qty'];
                 }
 
-                $changedPrice = $calculatorChangePrice->changePrice($offer, $valueOfLimitDiscount ?? $value, $valueType, $lowestPossiblePrice, $discount);
+                $changedPrice = $calculatorChangePrice->changePrice($basketItem, $valueOfLimitDiscount ?? $value, $valueType, $lowestPossiblePrice, $discount);
 
-                if (array_key_last($offerIds->toArray()) === $key) {
+                if ($basketItems->keys()->last() === $basketItemId) {
                     $changedPrice = $this->getChangedPriceForLastBundleItem($discount, $changedPrice, $changed);
                 }
 
-                $offer = $calculatorChangePrice->syncItemWithChangedPrice($offer, $changedPrice);
+                $basketItem = $calculatorChangePrice->syncItemWithChangedPrice($basketItem, $changedPrice);
 
                 if ($discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER && isset($changedPrice['bundles'][$discount->id])) {
-                    $offer['bundles'][$discount->id] = $changedPrice['bundles'][$discount->id];
+                    $basketItem['bundles'][$discount->id] = $changedPrice['bundles'][$discount->id];
                 }
 
                 $change = $changedPrice['discountValue'];
@@ -82,12 +86,12 @@ class OfferApplier extends AbstractApplier
                     continue;
                 }
 
-                $this->addOfferByDiscount($offerId, $discount, $change);
+                $this->addBasketItemByDiscount($basketItemId, $discount, $change);
 
                 if ($discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
-                    $qty = $offer['bundles'][$discount->id]['qty'];
+                    $qty = $basketItem['bundles'][$discount->id]['qty'];
                 } else {
-                    $qty = $offer['qty'];
+                    $qty = $basketItem['qty'];
                 }
 
                 $changed += $change * $qty;

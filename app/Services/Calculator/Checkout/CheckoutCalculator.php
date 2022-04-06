@@ -69,7 +69,7 @@ class CheckoutCalculator extends AbstractCalculator
             'discounts' => $this->output->appliedDiscounts->values(),
             'bonuses' => $this->output->appliedBonuses->values(),
             'maxSpendableBonus' => $this->output->maxSpendableBonus ?? 0,
-            'offers' => $this->getFormatOffers(),
+            'basketItems' => $this->getFormatOffers(),
             'deliveries' => $this->input->deliveries['items']->values(),
         ];
     }
@@ -79,19 +79,20 @@ class CheckoutCalculator extends AbstractCalculator
      */
     public function getFormatOffers()
     {
-        return $this->input->offers->map(function ($offer, $offerId) {
+        return $this->input->basketItems->map(function ($basketItem, $basketItemId) {
             return [
-                'offer_id' => $offerId,
-                'price' => $offer['price'],
-                'qty' => (float) $offer['qty'],
-                'cost' => $offer['cost'] ?? $offer['price'],
-                'discount' => $offer['discount'] ?? 0,
-                'discounts' => $offer['discounts'] ?? [],
-                'bonusSpent' => $offer['bonusSpent'] ?? 0,
-                'bonusDiscount' => $offer['bonusDiscount'] ?? 0,
-                'bonus' => $offer['bonus'] ?? 0,
-                'bonuses' => $offer['bonuses'] ?? collect(),
-                'bundles' => $offer['bundles'] ?? collect(),
+                'id' => $basketItemId,
+                'offer_id' => $basketItem['offer_id'],
+                'price' => $basketItem['price'],
+                'qty' => (float) $basketItem['qty'],
+                'cost' => $basketItem['cost'] ?? $basketItem['price'],
+                'discount' => $basketItem['discount'] ?? 0,
+                'discounts' => $basketItem['discounts'] ?? [],
+                'bonusSpent' => $basketItem['bonusSpent'] ?? 0,
+                'bonusDiscount' => $basketItem['bonusDiscount'] ?? 0,
+                'bonus' => $basketItem['bonus'] ?? 0,
+                'bonuses' => $basketItem['bonuses'] ?? collect(),
+                'bundles' => $basketItem['bundles'] ?? collect(),
             ];
         });
     }

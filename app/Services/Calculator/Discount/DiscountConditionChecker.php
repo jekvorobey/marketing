@@ -81,7 +81,8 @@ class DiscountConditionChecker
      */
     public function checkEveryUnitProduct($offerId, $count): bool
     {
-        return $this->input->offers->has($offerId) && $this->input->offers[$offerId]['qty'] >= $count;
+        $basketItemByOfferId = $this->input->basketItems->where('offer_id', $offerId)->first();
+        return $basketItemByOfferId && $basketItemByOfferId['qty'] >= $count;
     }
 
     /**
