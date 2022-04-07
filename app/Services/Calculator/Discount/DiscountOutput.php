@@ -40,9 +40,9 @@ class DiscountOutput
         return $this->input->basketItems->transform(function ($basketItem, $basketItemId) {
 
             if (!$this->basketItemsByDiscounts->has($basketItemId)) {
-                $offer['discount'] = null;
-                $offer['discounts'] = null;
-                return $offer;
+                $basketItem['discount'] = null;
+                $basketItem['discounts'] = null;
+                return $basketItem;
             }
             # Конечная цена товара после применения скидки всегда округляется до целого
             $basketItem['price'] = round($basketItem['price']);
