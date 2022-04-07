@@ -159,6 +159,31 @@ class DiscountHelper
         return $discount->id;
     }
 
+    public static function copy(int $id): int
+    {
+        /** @var Discount $discount */
+        $discount = Discount::query()->findOrFail($id);
+        $copyDiscount = $discount->replicate();
+
+        $copyDiscount->name = "Копия {$copyDiscount->name}";
+        $copyDiscount->status = Discount::STATUS_CREATED;
+        $ok = $copyDiscount->save();
+
+        if (!$ok) {
+            throw new HttpException(500, 'Error when copying discount');
+        }
+
+        foreach ($discount->getMappingRelations() as $value) {
+            $value['items']->each(function ($item) use ($copyDiscount) {
+                $copyRelation = $item->replicate();
+                $copyRelation->discount_id = $copyDiscount->id;
+                $copyRelation->save();
+            });
+        }
+
+        return $copyDiscount->id;
+    }
+
     /**
      * @param array $relations
      * @return bool

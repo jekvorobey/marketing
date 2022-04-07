@@ -262,6 +262,24 @@ class DiscountController extends Controller
         ], 201);
     }
 
+    public function copy(int $id): JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+            $copyDiscountId = DiscountHelper::copy($id);
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+
+        return response()->json([
+            'id' => $copyDiscountId,
+        ], 201);
+    }
+
     /**
      * Возвращаент IDs авторов создания скидок
      *

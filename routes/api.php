@@ -29,6 +29,7 @@ Route::namespace('V1')->prefix('v1')->group(function () {
         Route::prefix('{id}')->group(function () {
             Route::get('', 'DiscountController@read');
             Route::put('', 'DiscountController@update');
+            Route::post('copy', 'DiscountController@copy');
         });
     });
 
