@@ -76,12 +76,7 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
 
         foreach ($basketItems as $basketItem) {
             $spendForBasketItem = $this->getSpendBonusPriceForBasketItem($basketItem, $bonusPriceRemains);
-
-            if ($bundleId = $basketItem['bundle_id'] ?? null) {
-                $inputBasketItem = &$this->input->basketItems[$basketItem['id']]['bundles'][$bundleId];
-            } else {
-                $inputBasketItem = &$this->input->basketItems[$basketItem['id']];
-            }
+            $inputBasketItem = &$this->input->basketItems[$basketItem['id']];
 
             $bonusPriceRemains -= $this->spentBonusForBasketItem($inputBasketItem, $spendForBasketItem, $basketItem['qty']);
 
@@ -109,17 +104,15 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
         $items = collect();
 
         $this->input->basketItems->each(function ($basketItem) use ($items) {
-            foreach ($basketItem['bundles'] as $id => $bundle) {
-                $items->push([
-                    'id' => $basketItem['id'],
-                    'offer_id' => $basketItem['offer_id'],
-                    'product_id' => $basketItem['product_id'],
-                    'qty' => $basketItem['qty'],
-                    'price' => $id == 0 ? $basketItem['price'] : $bundle['price'],
-                    'bundle_id' => $this->input->bundles->contains($id) ? $id : null,
-                    'has_discount' => isset($basketItem['discount']) && $basketItem['discount'] > 0,
-                ]);
-            }
+            $items->push([
+                'id' => $basketItem['id'],
+                'offer_id' => $basketItem['offer_id'],
+                'product_id' => $basketItem['product_id'],
+                'qty' => $basketItem['qty'],
+                'price' => $basketItem['price'],
+                'bundle_id' => $basketItem['bundle_id'],
+                'has_discount' => isset($basketItem['discount']) && $basketItem['discount'] > 0,
+            ]);
         });
 
         return $items;

@@ -118,7 +118,7 @@ class Basket implements \JsonSerializable
     /**
      * @throws Exception
      */
-    public function addPricesAndBonuses()
+    public function addPricesAndBonuses(): void
     {
         $calculation = (new CheckoutCalculatorBuilder())
             ->customer(['id' => $this->user, 'isUserAuth' => $this->isUserAuth])
@@ -147,39 +147,23 @@ class Basket implements \JsonSerializable
                 throw new Exception("basket item id {$item->id} without price");
             }
 
-            if (!$calculation['basketItems'][$item->id]['bundles']->has($item->bundleId)) {
-                throw new Exception("basket item id {$item->id} from bundle {$item->bundleId} without price");
-            }
-
             $basketItem = $calculation['basketItems'][$item->id];
 
-            if ($item->bundleId) {
-                $qty = $basketItem['bundles'][$item->bundleId]['qty'];
-                $discount = $basketItem['bundles'][$item->bundleId]['discount'] ?? 0;
-                $discounts = $basketItem['bundles'][$item->bundleId]['discounts'] ?? [];
-                $price = $basketItem['bundles'][$item->bundleId]['price'] ?? 0;
-                $bonusSpent = ($basketItem['bundles'][$item->bundleId]['bonusSpent'] ?? 0) * $qty;
-                $bonusDiscount = ($basketItem['bundles'][$item->bundleId]['bonusDiscount'] ?? 0) * $qty;
-            } else {
-                $qty = $basketItem['bundles'][0]['qty'];
-                $discount = $basketItem['discount'] ?? 0;
-                $discounts = $basketItem['discounts'] ?? [];
-                $price = $basketItem['price'];
-                $bonusSpent = ($basketItem['bonusSpent'] ?? 0);// * $qty;
-                $bonusDiscount = ($basketItem['bonusDiscount'] ?? 0);// * $qty;
-            }
+            $qty = $basketItem['qty'];
+            $discount = $basketItem['discount'] ?? 0;
+            $price = $basketItem['price'];
 
             $basketItem['cost'] ??= $price;
             $item->cost = $basketItem['cost'];
             $item->totalCost = $basketItem['cost'] * $qty;
             $item->discount = $discount * $qty;
-            $item->discounts = $discounts;
+            $item->discounts = $basketItem['discounts'] ?? [];
             $item->unitPrice = $price;
             $item->price = $price * $qty;
             $item->bonus = $basketItem['bonus'];
             $item->bonuses = $basketItem['bonuses']->toArray();
-            $item->bonusSpent = $bonusSpent;
-            $item->bonusDiscount = $bonusDiscount;
+            $item->bonusSpent = ($basketItem['bonusSpent'] ?? 0);
+            $item->bonusDiscount = ($basketItem['bonusDiscount'] ?? 0);
 
             $totalCost += $item->totalCost;
             $totalItemDiscount += $item->discount;

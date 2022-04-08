@@ -69,15 +69,12 @@ class CheckoutCalculator extends AbstractCalculator
             'discounts' => $this->output->appliedDiscounts->values(),
             'bonuses' => $this->output->appliedBonuses->values(),
             'maxSpendableBonus' => $this->output->maxSpendableBonus ?? 0,
-            'basketItems' => $this->getFormatOffers(),
+            'basketItems' => $this->getFormatBasketItems(),
             'deliveries' => $this->input->deliveries['items']->values(),
         ];
     }
 
-    /**
-     * @return Collection
-     */
-    public function getFormatOffers()
+    public function getFormatBasketItems(): Collection
     {
         return $this->input->basketItems->map(function ($basketItem, $basketItemId) {
             return [
@@ -92,7 +89,7 @@ class CheckoutCalculator extends AbstractCalculator
                 'bonusDiscount' => $basketItem['bonusDiscount'] ?? 0,
                 'bonus' => $basketItem['bonus'] ?? 0,
                 'bonuses' => $basketItem['bonuses'] ?? collect(),
-                'bundles' => $basketItem['bundles'] ?? collect(),
+                'bundle_id' => $basketItem['bundle_id'] ?? 0,
             ];
         });
     }

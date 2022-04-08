@@ -59,13 +59,10 @@ class CatalogCalculator extends AbstractCalculator
             $calculator->calculate($checkPermissions);
         }
 
-        return $this->getFormatOffers();
+        return $this->getFormatBasketItems();
     }
 
-    /**
-     * @return array
-     */
-    public function getFormatOffers()
+    public function getFormatBasketItems(): array
     {
         return $this->input->basketItems->map(function ($basketItem, $basketItemId) {
             return [

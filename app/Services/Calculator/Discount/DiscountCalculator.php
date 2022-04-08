@@ -162,7 +162,7 @@ class DiscountCalculator extends AbstractCalculator
                     $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS
                     ? $bundleItems->pluck('item_id')
                     : $bundleItems->filter(function ($items, $discountId) {
-                        return $this->input->bundles->has($discountId);
+                        return $this->input->bundles->contains($discountId);
                     })
                         ->collapse()
                         ->map(function (BundleItem $item) {
@@ -330,20 +330,16 @@ class DiscountCalculator extends AbstractCalculator
 
     /**
      * Совместимы ли скидки (даже если они не пересекаются)
-     *
-     *
-     * @return bool
      */
-    protected function isCompatibleDiscount(Discount $discount)
+    protected function isCompatibleDiscount(Discount $discount): bool
     {
         return !$this->appliedDiscounts->has($discount->id);
     }
 
     /**
      * Откатывает все примененные скидки
-     * @return $this
      */
-    protected function rollback()
+    protected function rollback(): self
     {
         $this->appliedDiscounts = collect();
         $this->basketItemsByDiscounts = collect();
@@ -354,13 +350,6 @@ class DiscountCalculator extends AbstractCalculator
             $basketItem['price'] = $basketItem['cost'] ?? $basketItem['price'];
             unset($basketItem['discount']);
             unset($basketItem['cost']);
-            if (isset($basketItem['bundles'])) {
-                $basketItem['bundles']->transform(function ($bundle) use ($basketItem) {
-                    $bundle['price'] = $basketItem['price'];
-                    unset($bundle['discount']);
-                    return $bundle;
-                });
-            }
             $basketItems->put($basketItem['id'], $basketItem);
         }
         $this->input->basketItems = $basketItems;
@@ -561,7 +550,6 @@ class DiscountCalculator extends AbstractCalculator
      * метод не совсем соответсвует названию, в случае если существует скидка с таким типом,
      * то возвращается false, хотя по названию должно возвращаться true
      *
-     * @param array $types
      */
     protected function existsAnyTypeInDiscounts(array $types): bool
     {

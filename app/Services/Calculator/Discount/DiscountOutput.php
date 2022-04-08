@@ -71,20 +71,6 @@ class DiscountOutput
                 ]);
             }
 
-            $basketItem['bundles']->each(function ($bundle, $id) use ($roundOffs, $basketItem, &$basicError) {
-                if ($id == 0 || !isset($bundle['discount'])) {
-                    return;
-                }
-                $finalDiscount = $basketItem['cost'] - $bundle['price'];
-                $roundOffError = $finalDiscount - $bundle['discount'];
-
-                $roundOffs->put($id, [
-                    'error' => round($roundOffError - $basicError, 2),
-                    'correction' => 0,
-                    'affectedQty' => $bundle['qty'],
-                ]);
-            });
-
             $this->basketItemsByDiscounts[$basketItemId]->transform(function ($discount) use ($roundOffs) {
                 $key = $roundOffs->has($discount['id']) ? $discount['id'] : 0;
                 $roundOff = $roundOffs->get($key);
@@ -105,30 +91,10 @@ class DiscountOutput
                 return $discount;
             });
 
-            /** @var Collection|null $discountsWithoutBundles */
-            $discountsWithoutBundles = $this->basketItemsByDiscounts[$basketItemId]->filter(function ($discount) {
-                return !$this->input->bundles->contains($discount['id']);
-            })->values();
-
-            $sum = round($discountsWithoutBundles->sum('change'), 2);
+            $sum = round($this->basketItemsByDiscounts[$basketItemId]->sum('change'), 2);
             $basketItem['discount'] = $sum;
 
-            $basketItem['discounts'] = $discountsWithoutBundles->toArray();
-
-            /** @var Collection|null $discountsWithBundles */
-            $discountsWithBundles = $this->basketItemsByDiscounts[$basketItemId]->filter(function ($discount) {
-                return $this->input->bundles->contains($discount['id']);
-            })->keyBy('id');
-
-            if ($discountsWithBundles && !$discountsWithBundles->isEmpty()) {
-                $basketItem['bundles']->transform(function ($bundle, $bundleId) use ($sum, $discountsWithBundles, $discountsWithoutBundles) {
-                    if ($bundleId && $discountsWithBundles->has($bundleId)) {
-                        $bundle['discount'] = $sum + $discountsWithBundles[$bundleId]['change'];
-                        $bundle['discounts'] = $discountsWithoutBundles->push($discountsWithBundles[$bundleId]);
-                    }
-                    return $bundle;
-                });
-            }
+            $basketItem['discounts'] = $this->basketItemsByDiscounts[$basketItemId]->toArray();
 
             return $basketItem;
         });

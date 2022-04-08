@@ -186,18 +186,12 @@ class InputCalculator
 
     /**
      * Загружает все необходимые данные
-     * @return $this
-     * @throws PimException
      */
-    protected function loadData()
+    protected function loadData(): self
     {
         $this->hydrateBasketItems();
 
-        $this->bundles = $this->basketItems->pluck('bundles')
-            ->map(function ($bundles) {
-                return $bundles->keys();
-            })
-            ->collapse()
+        $this->bundles = $this->basketItems->pluck('bundle_id')
             ->unique()
             ->filter(function ($bundleId) {
                 return $bundleId > 0;
@@ -263,26 +257,16 @@ class InputCalculator
             /** @var ProductDto|null $productDto */
             $productDto = $productsDto->get($offerDto->product_id);
 
-            $bundleQty = collect([$basketItem])->keyBy('bundleId')
-                ->map(function ($item) {
-                    return collect([
-                        'qty' => $item->qty,
-                    ]);
-                });
-
-            $qty = $bundleQty->pluck('qty')->sum();
-
             $hydratedBasketItems->put($basketItem->id, collect([
                 'id' => $basketItem->id,
                 'offer_id' => $offerId,
                 'price' => $price ?? null,
-                'qty' => $qty ?? 1,
+                'qty' => $basketItem->qty ?? 1,
                 'brand_id' => $productDto->brand_id ?? null,
                 'category_id' => $productDto->category_id ?? null,
                 'product_id' => $productDto->id ?? null,
                 'merchant_id' => $offerDto->merchant_id,
                 'bundle_id' => $basketItem->bundleId,
-                'bundles' => $bundleQty,
                 'ticket_type_id' => $offerDto->ticket_type_id ?? null,
             ]));
         }

@@ -187,12 +187,7 @@ class BonusCalculator extends AbstractCalculator
         return $totalBonusValue;
     }
 
-    /**
-     * @param $price
-     *
-     * @return int
-     */
-    protected function priceToBonusValue($price, Bonus $bonus)
+    protected function priceToBonusValue($price, Bonus $bonus): int
     {
         switch ($bonus->value_type) {
             case Bonus::VALUE_TYPE_PERCENT:
@@ -204,10 +199,7 @@ class BonusCalculator extends AbstractCalculator
         return 0;
     }
 
-    /**
-     * @return $this
-     */
-    protected function fetchActiveBonuses()
+    protected function fetchActiveBonuses(): self
     {
         $this->bonuses = Bonus::query()
             ->where(function ($query) {
