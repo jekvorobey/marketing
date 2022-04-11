@@ -67,7 +67,11 @@ class PromoCodeCalculator extends AbstractCalculator
                 } else {
                     $isApply = true;
                     $calculatorChangePrice = new CalculatorChangePrice();
-                    $change = $calculatorChangePrice->calculateDiscountByType($this->input->offers->sum('price'), $discount->value, $discount->value_type);
+                    $change = $calculatorChangePrice->calculateDiscountByType(
+                        $this->input->basketItems->sum('price'),
+                        $discount->value,
+                        $discount->value_type
+                    );
                 }
                 break;
             case PromoCode::TYPE_DELIVERY:

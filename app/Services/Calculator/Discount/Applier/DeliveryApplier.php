@@ -23,8 +23,8 @@ class DeliveryApplier extends AbstractApplier
     {
         $calculatorChangePrice = new CalculatorChangePrice();
 
-        $isApplicableDiscount = !$this->input->offers->contains(function ($offer) use ($discount) {
-            return !$this->applicableToOffer($discount, $offer['id']);
+        $isApplicableDiscount = !$this->input->basketItems->contains(function ($basketItem) use ($discount) {
+            return !$this->applicableToBasketItem($discount, $basketItem['id']);
         });
 
         if (!$isApplicableDiscount) {

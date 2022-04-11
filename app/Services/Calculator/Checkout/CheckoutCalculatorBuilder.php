@@ -17,7 +17,7 @@ class CheckoutCalculatorBuilder
     {
         $this->params = collect();
         $this->params->put('customer', collect());
-        $this->params->put('offers', collect());
+        $this->params->put('items', collect());
         $this->params->put('promoCode', null);
         $this->params->put('deliveries', collect());
         $this->params->put('payment', collect());
@@ -26,41 +26,32 @@ class CheckoutCalculatorBuilder
 
     /**
      * @param Collection|array $customers
-     *
-     * @return CheckoutCalculatorBuilder
      */
-    public function customer($customers)
+    public function customer($customers): self
     {
         $this->params['customer'] = collect($customers);
         return $this;
     }
 
     /**
-     * @param Collection|array $offers
-     *
-     * @return CheckoutCalculatorBuilder
+     * @param Collection|array $basketItems
      */
-    public function offers($offers)
+    public function basketItems($basketItems): self
     {
-        $this->params['offers'] = collect($offers);
+        $this->params['basketItems'] = collect($basketItems);
         return $this;
     }
 
     /**
      * @param Collection|array $bundles
-     *
-     * @return CheckoutCalculatorBuilder
      */
-    public function bundles($bundles)
+    public function bundles($bundles): self
     {
         $this->params['bundles'] = collect($bundles);
         return $this;
     }
 
-    /**
-     * @return CheckoutCalculatorBuilder
-     */
-    public function promoCode(?string $promoCode)
+    public function promoCode(?string $promoCode): self
     {
         $this->params['promoCode'] = $promoCode;
         return $this;
@@ -68,10 +59,8 @@ class CheckoutCalculatorBuilder
 
     /**
      * @param Collection|array $deliveries
-     *
-     * @return CheckoutCalculatorBuilder
      */
-    public function deliveries($deliveries)
+    public function deliveries($deliveries): self
     {
         $this->params['deliveries'] = collect($deliveries);
         return $this;
@@ -79,10 +68,8 @@ class CheckoutCalculatorBuilder
 
     /**
      * @param Collection|array $payment
-     *
-     * @return CheckoutCalculatorBuilder
      */
-    public function payment($payment)
+    public function payment($payment): self
     {
         $this->params['payment'] = collect($payment);
         return $this;
@@ -90,26 +77,23 @@ class CheckoutCalculatorBuilder
 
     /**
      * @param string $id
-     *
-     * @return CheckoutCalculatorBuilder
      */
-    public function regionFiasId($id)
+    public function regionFiasId($id): self
     {
         $this->params['regionFiasId'] = $id;
         return $this;
     }
 
-    public function bonus(?int $bonus)
+    public function bonus(?int $bonus): self
     {
         $this->params['bonus'] = $bonus ?? 0;
         return $this;
     }
 
     /**
-     * @return array
      * @throws PimException
      */
-    public function calculate()
+    public function calculate(): array
     {
         return (new CheckoutCalculator($this->params))->calculate();
     }

@@ -59,21 +59,19 @@ class CatalogCalculator extends AbstractCalculator
             $calculator->calculate($checkPermissions);
         }
 
-        return $this->getFormatOffers();
+        return $this->getFormatBasketItems();
     }
 
-    /**
-     * @return array
-     */
-    public function getFormatOffers()
+    public function getFormatBasketItems(): array
     {
-        return $this->input->offers->map(function ($offer, $offerId) {
+        return $this->input->basketItems->map(function ($basketItem, $basketItemId) {
             return [
-                'offer_id' => $offerId,
-                'price' => $offer['price'],
-                'cost' => $offer['cost'] ?? $offer['price'],
-                'discounts' => $offer['discounts'] ?? null,
-                'bonus' => $offer['bonus'] ?? 0,
+                'id' => $basketItemId,
+                'offer_id' => $basketItem['offer_id'],
+                'price' => $basketItem['price'],
+                'cost' => $basketItem['cost'] ?? $basketItem['price'],
+                'discounts' => $basketItem['discounts'] ?? null,
+                'bonus' => $basketItem['bonus'] ?? 0,
             ];
         })->values()->toArray();
     }

@@ -297,13 +297,11 @@ class DiscountController extends Controller
 
     /**
      * Возвращает данные о примененных скидках
-     *
-     * @return JsonResponse
      */
-    public function calculate(Request $request)
+    public function calculate(Request $request): JsonResponse
     {
         $customer = collect($request->post('customer', []));
-        $offers = collect($request->post('offers', []));
+        $basketItems = collect($request->post('basketItems', []));
         $deliveries = collect($request->post('deliveries', []));
         $payment = collect($request->post('payment', []));
         $promoCode = $request->post('promoCode', null);
@@ -311,7 +309,7 @@ class DiscountController extends Controller
 
         $result = (new CheckoutCalculatorBuilder())
             ->customer($customer)
-            ->offers($offers)
+            ->basketItems($basketItems)
             ->promoCode($promoCode)
             ->deliveries($deliveries)
             ->payment($payment)

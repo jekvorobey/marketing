@@ -13,24 +13,24 @@ class BasketApplier extends AbstractApplier
      */
     public function apply(Discount $discount): ?float
     {
-        $offerIds = $this->input->offers->filter(function ($offer) use ($discount) {
-            return $this->applicableToOffer($discount, $offer['id']);
+        $basketItemIds = $this->input->basketItems->filter(function ($basketItem) use ($discount) {
+            return $this->applicableToBasketItem($discount, $basketItem['id']);
         })->pluck('id');
 
-        if ($offerIds->isEmpty()) {
+        if ($basketItemIds->isEmpty()) {
             return null;
         }
 
-        return $this->applyEvenly($discount, $offerIds);
+        return $this->applyEvenly($discount, $basketItemIds);
     }
 
     /**
      * Равномерно распределяет скидку
      */
-    protected function applyEvenly(Discount $discount, Collection $offerIds): ?float
+    protected function applyEvenly(Discount $discount, Collection $basketItemIds): ?float
     {
         $calculatorChangePrice = new CalculatorChangePrice();
-        $priceOrders = $this->getBasketPriceOrders($offerIds);
+        $priceOrders = $this->getBasketPriceOrders($basketItemIds);
         if ($priceOrders <= 0) {
             return 0.;
         }
@@ -54,35 +54,35 @@ class BasketApplier extends AbstractApplier
              * Сначала применяем скидки на самые дорогие товары (цена * количество)
              * Если необходимо использовать скидку сверх номинальной ($force), то сортируем в обратном порядке.
              */
-            $offerIds = $this->sortOrderIdsByTotalPrice($offerIds, $force);
+            $basketItemIds = $this->sortOrderIdsByTotalPrice($basketItemIds, $force);
             $coefficient = ($discountValue - $currentDiscountValue) / $priceOrders;
-            foreach ($offerIds as $offerId) {
-                $offer = &$this->input->offers[$offerId];
-                $valueUp = ceil($offer['price'] * $coefficient);
-                $valueDown = floor($offer['price'] * $coefficient);
-                $changeUp = $calculatorChangePrice->changePrice($offer, $valueUp)['discountValue'];
-                $changeDown = $calculatorChangePrice->changePrice($offer, $valueDown)['discountValue'];
-                if ($changeUp * $offer['qty'] <= $discountValue - $currentDiscountValue || $force) {
-                    $changedPrice = $calculatorChangePrice->changePrice($offer, $valueUp);
+            foreach ($basketItemIds as $basketItemId) {
+                $basketItem = &$this->input->basketItems[$basketItemId];
+                $valueUp = ceil($basketItem['price'] * $coefficient);
+                $valueDown = floor($basketItem['price'] * $coefficient);
+                $changeUp = $calculatorChangePrice->changePrice($basketItem, $valueUp)['discountValue'];
+                $changeDown = $calculatorChangePrice->changePrice($basketItem, $valueDown)['discountValue'];
+                if ($changeUp * $basketItem['qty'] <= $discountValue - $currentDiscountValue || $force) {
+                    $changedPrice = $calculatorChangePrice->changePrice($basketItem, $valueUp);
                     $change = $changedPrice['discountValue'];
-                    $offer = $calculatorChangePrice->syncItemWithChangedPrice($offer, $changedPrice);
-                } elseif ($changeDown * $offer['qty'] <= $discountValue - $currentDiscountValue || $force) {
-                    $changedPrice = $calculatorChangePrice->changePrice($offer, $valueDown);
+                    $basketItem = $calculatorChangePrice->syncItemWithChangedPrice($basketItem, $changedPrice);
+                } elseif ($changeDown * $basketItem['qty'] <= $discountValue - $currentDiscountValue || $force) {
+                    $changedPrice = $calculatorChangePrice->changePrice($basketItem, $valueDown);
                     $change = $changedPrice['discountValue'];
-                    $offer = $calculatorChangePrice->syncItemWithChangedPrice($offer, $changedPrice);
+                    $basketItem = $calculatorChangePrice->syncItemWithChangedPrice($basketItem, $changedPrice);
                 } else {
                     continue;
                 }
 
-                $this->addOfferByDiscount($offerId, $discount, $change);
+                $this->addBasketItemByDiscount($basketItemId, $discount, $change);
 
-                $currentDiscountValue += $change * $offer['qty'];
+                $currentDiscountValue += $change * $basketItem['qty'];
                 if ($currentDiscountValue >= $discountValue) {
                     break 2;
                 }
             }
 
-            $priceOrders = $this->getBasketPriceOrders($offerIds);
+            $priceOrders = $this->getBasketPriceOrders($basketItemIds);
             if ($prevCurrentDiscountValue === $currentDiscountValue) {
                 if ($force) {
                     break;
@@ -97,20 +97,20 @@ class BasketApplier extends AbstractApplier
         return $currentDiscountValue;
     }
 
-    private function sortOrderIdsByTotalPrice(Collection $offerIds, bool $asc = true): Collection
+    private function sortOrderIdsByTotalPrice(Collection $basketItemIds, bool $asc = true): Collection
     {
-        return $offerIds->sort(function ($offerIdLft, $offerIdRgt) use ($asc) {
-            $offerLft = $this->input->offers[$offerIdLft];
-            $totalPriceLft = $offerLft['price'] * $offerLft['qty'];
-            $offerRgt = $this->input->offers[$offerIdRgt];
-            $totalPriceRgt = $offerRgt['price'] * $offerRgt['qty'];
+        return $basketItemIds->sort(function ($basketItemIdLft, $basketItemIdRgt) use ($asc) {
+            $basketItemLft = $this->input->basketItems[$basketItemIdLft];
+            $totalPriceLft = $basketItemLft['price'] * $basketItemLft['qty'];
+            $basketItemRgt = $this->input->basketItems[$basketItemIdRgt];
+            $totalPriceRgt = $basketItemRgt['price'] * $basketItemRgt['qty'];
 
             return ($asc ? 1 : -1) * ($totalPriceLft - $totalPriceRgt);
         });
     }
 
-    protected function getBasketPriceOrders(Collection $offerIds): float
+    protected function getBasketPriceOrders(Collection $basketItemIds): float
     {
-        return $this->input->offers->whereIn('id', $offerIds)->sum(fn($offer) => $offer['price'] * $offer['qty']);
+        return $this->input->basketItems->whereIn('id', $basketItemIds)->sum(fn($basketItem) => $basketItem['price'] * $basketItem['qty']);
     }
 }

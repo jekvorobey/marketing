@@ -59,24 +59,19 @@ class CalculatorChangePrice
         int $lowestPossiblePrice = self::LOWEST_POSSIBLE_PRICE
     ): array {
         $result = [];
-        if ($item['bundles']->has($discount->id)) {
-            $offerInBundle = $item['bundles'][$discount->id];
-        } else {
+        if ($item['bundle_id'] !== $discount->id) {
             return ['discountValue' => 0];
         }
 
-        $offerInBundle['price'] ??= $item['price'];
+        $result['price'] ??= $item['price'];
 
         $currentDiscount = $item['discount'] ?? 0;
         $currentCost = $item['cost'] ?? $item['price'];
-        $discountValue = $this->getDiscountValue($offerInBundle['price'], $currentCost, $value, $valueType, $lowestPossiblePrice);
+        $discountValue = $this->getDiscountValue($result['price'], $currentCost, $value, $valueType, $lowestPossiblePrice);
 
         # Конечная цена товара в бандле всегда округляется до целого
-        $offerInBundle['discount'] = $currentDiscount + $discountValue;
-        $offerInBundle['price'] = self::round($currentCost - $offerInBundle['discount'], self::ROUND);
-        $offerInBundle['cost'] = $currentCost;
-
-        $result['bundles'][$discount->id] = $offerInBundle;
+        $result['discount'] = $currentDiscount + $discountValue;
+        $result['price'] = self::round($currentCost - $result['discount'], self::ROUND);
         $result['cost'] = $currentCost;
 
         $result['discountValue'] = $discountValue;
