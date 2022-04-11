@@ -111,7 +111,7 @@ class InputCalculator
 
         if (isset($params['customer'])) {
             $this->customer = [
-                'id' => $params['customer']['id'] ?? null,
+                'id' => $params['customer']['id'] && $params['customer']['isUserAuth'] ? $params['customer']['id'] : null,
                 'roles' => $params['customer']['roles'] ?? [],
                 'segment' => isset($params['customer']['segment']) ? (int) $params['customer']['segment'] : null,
                 'isUserAuth' => $params['customer']['isUserAuth'],
