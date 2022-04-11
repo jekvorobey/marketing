@@ -258,7 +258,6 @@ class DiscountController extends Controller
 
     public function copy(CopyAndDeleteDiscountRequest $request): Response
     {
-        Log::debug(json_encode($request->get('ids')));
         DiscountHelper::copy($request->get('ids'));
 
         return response('', 204);
