@@ -543,7 +543,6 @@ class DiscountCalculator extends AbstractCalculator
      *
      * метод не совсем соответсвует названию, в случае если существует скидка с таким типом,
      * то возвращается false, хотя по названию должно возвращаться true
-     *
      */
     protected function existsAnyTypeInDiscounts(array $types): bool
     {
