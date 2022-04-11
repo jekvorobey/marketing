@@ -42,14 +42,7 @@ abstract class AbstractCalculator
         $this->output = $outputCalculator;
     }
 
-    /**
-     * @param $brandIds
-     * @param $exceptOfferIds
-     * @param $merchantId
-     *
-     * @return Collection
-     */
-    protected function filterForBrand($brandIds, $exceptOfferIds, $merchantId)
+    protected function filterForBrand($brandIds, $exceptOfferIds, $merchantId): Collection
     {
         return $this->input->basketItems->filter(function ($basketItem) use ($brandIds, $exceptOfferIds, $merchantId) {
             return $brandIds->contains($basketItem['brand_id'])
@@ -58,15 +51,7 @@ abstract class AbstractCalculator
         })->pluck('offer_id');
     }
 
-    /**
-     * @param $categoryIds
-     * @param $exceptBrandIds
-     * @param $exceptOfferIds
-     * @param $merchantId
-     *
-     * @return Collection
-     */
-    protected function filterForCategory($categoryIds, $exceptBrandIds, $exceptOfferIds, $merchantId)
+    protected function filterForCategory($categoryIds, $exceptBrandIds, $exceptOfferIds, $merchantId): Collection
     {
         return $this->input->basketItems->filter(function ($basketItem) use (
             $categoryIds,

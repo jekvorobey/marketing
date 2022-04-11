@@ -2,7 +2,6 @@
 
 namespace App\Services\Calculator\Discount;
 
-use App\Models\Discount\BundleItem;
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountCondition;
 use App\Models\Discount\DiscountCondition as DiscountConditionModel;
@@ -157,22 +156,17 @@ class DiscountCalculator extends AbstractCalculator
                 # Скидка на бандлы
                 # Определяем id офферов по бандлам
                 $bundleItems = $discount->bundleItems;
-                /** @phpcsSuppress SlevomatCodingStandard.Functions.UnusedParameter */
-                $offerIds = $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER ||
-                    $discount->type == Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS
-                    ? $bundleItems->pluck('item_id')
-                    : $bundleItems->filter(function ($items, $discountId) {
-                        return $this->input->bundles->contains($discountId);
+                if (in_array($discount->type, [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS])) {
+                    $offerIds = $bundleItems->pluck('item_id');
+                } else {
+                    $exceptBundleIds = $discount->bundles->pluck('bundle_id');
+                    $offerIds = $this->input->basketItems->filter(function ($basketItem) use ($exceptBundleIds) {
+                        return $basketItem['bundle_id'] > 0 && !$exceptBundleIds->contains($basketItem['bundle_id']);
                     })
-                        ->collapse()
-                        ->map(function (BundleItem $item) {
-                            return [
-                                'item_id' => $item->item_id,
-                                'bundle_id' => $item->discount_id,
-                            ];
-                        });
+                    ->pluck('offer_id');
+                }
 
-                if ($discount->type == Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
+                if (in_array($discount->type, [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_ANY_BUNDLE])) {
                     $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
                     $offerApplier->setOfferIds($offerIds);
                     $change = $offerApplier->apply($discount);
@@ -180,7 +174,7 @@ class DiscountCalculator extends AbstractCalculator
                     $this->input->basketItems = $offerApplier->getModifiedInputBasketItems();
                 }
 
-                // todo Рассчет скидки для мастерклассов и для скидки на все бандлы
+                // todo Рассчет скидки для мастерклассов
 
                 break;
             case Discount::DISCOUNT_TYPE_BRAND:
