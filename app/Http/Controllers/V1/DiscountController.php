@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CopyAndDeleteDiscountRequest;
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountCondition;
 use App\Services\Discount\DiscountHelper;
@@ -17,6 +18,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Pim\Dto\Offer\OfferDto;
 use Pim\Dto\Product\ProductDto;
 use Pim\Services\OfferService\OfferService;
@@ -128,20 +130,12 @@ class DiscountController extends Controller
         return response('', 204);
     }
 
-    /**
-     * @return Response
-     */
-    public function delete(Request $request)
+    public function delete(CopyAndDeleteDiscountRequest $request): Response
     {
-        $data = $request->validate([
-            'ids' => 'array|required',
-            'ids.*' => 'integer|required',
-        ]);
-
-
-        DB::transaction(function () use ($data) {
+        DB::transaction(function () use ($request) {
             $r = true;
-            $discounts = Discount::query()->whereIn('id', $data['ids'])->get();
+            $ids = $request->get('ids');
+            $discounts = Discount::query()->whereIn('id', $ids)->get();
             foreach ($discounts as $discount) {
                 $r &= $discount->delete();
             }
@@ -262,22 +256,12 @@ class DiscountController extends Controller
         ], 201);
     }
 
-    public function copy(int $id): JsonResponse
+    public function copy(CopyAndDeleteDiscountRequest $request): Response
     {
-        try {
-            DB::beginTransaction();
-            $copyDiscountId = DiscountHelper::copy($id);
-            DB::commit();
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            return response()->json([
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        Log::debug(json_encode($request->get('ids')));
+        DiscountHelper::copy($request->get('ids'));
 
-        return response()->json([
-            'id' => $copyDiscountId,
-        ], 201);
+        return response('', 204);
     }
 
     /**

@@ -25,11 +25,11 @@ Route::namespace('V1')->prefix('v1')->group(function () {
         Route::post('calculate', 'DiscountController@calculate');
         Route::put('status', 'DiscountController@updateStatus');
         Route::post('bundle-discount-values', 'DiscountController@bundleDiscountValues');
+        Route::post('copy', 'DiscountController@copy');
 
         Route::prefix('{id}')->group(function () {
             Route::get('', 'DiscountController@read');
             Route::put('', 'DiscountController@update');
-            Route::post('copy', 'DiscountController@copy');
         });
     });
 

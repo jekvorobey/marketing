@@ -8,6 +8,8 @@ use App\Models\Discount\DiscountOffer;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class DiscountHelper
@@ -159,29 +161,37 @@ class DiscountHelper
         return $discount->id;
     }
 
-    public static function copy(int $id): int
+    public static function copy(array $ids): void
     {
-        /** @var Discount $discount */
-        $discount = Discount::query()->findOrFail($id);
-        $copyDiscount = $discount->replicate();
+        $discounts = Discount::query()->whereIn('id', $ids)->get();
+        $discounts->each(function (Discount $discount) {
+            DB::beginTransaction();
+            $copyDiscount = $discount->replicate();
 
-        $copyDiscount->name = "Копия {$copyDiscount->name}";
-        $copyDiscount->status = Discount::STATUS_CREATED;
-        $ok = $copyDiscount->save();
+            $copyDiscount->name = "Копия {$copyDiscount->name}";
+            $copyDiscount->status = Discount::STATUS_CREATED;
+            $copyDiscountResult = $copyDiscount->save();
 
-        if (!$ok) {
-            throw new HttpException(500, 'Error when copying discount');
-        }
+            if (!$copyDiscountResult) {
+                DB::rollBack();
+                throw new HttpException(500, 'Error when copying discount');
+            }
 
-        foreach ($discount->getMappingRelations() as $value) {
-            $value['items']->each(function ($item) use ($copyDiscount) {
-                $copyRelation = $item->replicate();
-                $copyRelation->discount_id = $copyDiscount->id;
-                $copyRelation->save();
-            });
-        }
+            foreach ($discount->getMappingRelations() as $relationKey => $relation) {
+                $relation['items']->each(function ($item) use ($copyDiscount, $relationKey) {
+                    $copyRelation = $item->replicate();
+                    $copyRelation->discount_id = $copyDiscount->id;
+                    $relationSaveOk = $copyRelation->save();
 
-        return $copyDiscount->id;
+                    if (!$relationSaveOk) {
+                        DB::rollBack();
+                        throw new HttpException(500, "Error when copying discount relation {$relationKey}");
+                    }
+                });
+            }
+
+            DB::commit();
+        });
     }
 
     /**
