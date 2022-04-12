@@ -255,9 +255,9 @@ class DiscountController extends Controller
         ], 201);
     }
 
-    public function copy(CopyAndDeleteDiscountRequest $request): Response
+    public function copy(CopyAndDeleteDiscountRequest $request, RequestInitiator $client): Response
     {
-        DiscountHelper::copy($request->get('ids'));
+        DiscountHelper::copy($request->get('ids'), $client->userId());
 
         return response('', 204);
     }

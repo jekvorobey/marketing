@@ -160,15 +160,16 @@ class DiscountHelper
         return $discount->id;
     }
 
-    public static function copy(array $ids): void
+    public static function copy(array $ids, int $userId): void
     {
         $discounts = Discount::query()->whereIn('id', $ids)->get();
-        $discounts->each(function (Discount $discount) {
+        $discounts->each(function (Discount $discount) use ($userId) {
             DB::beginTransaction();
             $copyDiscount = $discount->replicate();
 
             $copyDiscount->name = "Копия {$copyDiscount->name}";
             $copyDiscount->status = Discount::STATUS_CREATED;
+            $copyDiscount->user_id = $userId;
             $copyDiscountResult = $copyDiscount->save();
 
             if (!$copyDiscountResult) {
