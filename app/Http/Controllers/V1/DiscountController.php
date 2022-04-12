@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CopyAndDeleteDiscountRequest;
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountCondition;
 use App\Services\Discount\DiscountHelper;
@@ -128,20 +129,12 @@ class DiscountController extends Controller
         return response('', 204);
     }
 
-    /**
-     * @return Response
-     */
-    public function delete(Request $request)
+    public function delete(CopyAndDeleteDiscountRequest $request): Response
     {
-        $data = $request->validate([
-            'ids' => 'array|required',
-            'ids.*' => 'integer|required',
-        ]);
-
-
-        DB::transaction(function () use ($data) {
+        DB::transaction(function () use ($request) {
             $r = true;
-            $discounts = Discount::query()->whereIn('id', $data['ids'])->get();
+            $ids = $request->get('ids');
+            $discounts = Discount::query()->whereIn('id', $ids)->get();
             foreach ($discounts as $discount) {
                 $r &= $discount->delete();
             }
@@ -260,6 +253,13 @@ class DiscountController extends Controller
         return response()->json([
             'id' => $discountId,
         ], 201);
+    }
+
+    public function copy(CopyAndDeleteDiscountRequest $request, RequestInitiator $client): Response
+    {
+        DiscountHelper::copy($request->get('ids'), $client->userId());
+
+        return response('', 204);
     }
 
     /**
