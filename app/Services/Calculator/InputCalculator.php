@@ -32,8 +32,6 @@ class InputCalculator
     /** @var Collection */
     public $basketItems;
     /** @var Collection */
-    public $offers;
-    /** @var Collection */
     public $brands;
     /** @var Collection */
     public $categories;

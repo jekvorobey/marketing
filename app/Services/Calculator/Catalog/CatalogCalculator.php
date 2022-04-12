@@ -2,6 +2,7 @@
 
 namespace App\Services\Calculator\Catalog;
 
+use App\Models\Basket\BasketItem;
 use App\Services\Calculator\AbstractCalculator;
 use App\Services\Calculator\Bonus\BonusCatalogCalculator;
 use App\Services\Calculator\Discount\DiscountCatalogCalculator;
@@ -31,8 +32,8 @@ class CatalogCalculator extends AbstractCalculator
     public function __construct(array $params = [])
     {
         if (isset($params['offer_ids'])) {
-            $params['offers'] = array_map(function (int $offerId) {
-                return ['id' => $offerId];
+            $params['basketItems'] = array_map(function (int $offerId) {
+                return new BasketItem($offerId, 1, $offerId, 0, 0, 0);
             }, $params['offer_ids']);
             unset($params['offer_ids']);
         }

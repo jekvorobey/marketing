@@ -26,7 +26,7 @@ class BonusCalculator extends AbstractCalculator
 
     /**
      * Количество бонусов для каждого оффера:
-     * [offer_id => ['id' => bonus_id], ...]
+     * [basket_item_id => ['id' => bonus_id], ...]
      * @var Collection
      */
     protected $basketItemsByBonuses;
