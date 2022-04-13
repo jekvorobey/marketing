@@ -30,9 +30,12 @@ class OfferApplier extends AbstractApplier
         $calculatorChangePrice = new CalculatorChangePrice();
         $value = $discount->value;
         $valueType = $discount->value_type;
-        if ($discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER && $valueType === Discount::DISCOUNT_VALUE_TYPE_RUB) {
+        if ($discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
             $basketItems = $basketItems->where('bundle_id', $discount->id);
-            $value /= $basketItems->count();
+
+            if ($valueType === Discount::DISCOUNT_VALUE_TYPE_RUB) {
+                $value /= $basketItems->count();
+            }
         }
 
         $hasProductQtyLimit = $discount->product_qty_limit > 0;
