@@ -50,7 +50,7 @@ class OfferApplier extends AbstractApplier
             if (isset($this->maxValueByDiscount[$discount->id])) {
                 // Получаем величину скидки, которая максимально возможна по условию
                 $maxDiscountValue = $calculatorChangePrice->calculateDiscountByType(
-                    $basketItem['cost'],
+                    $basketItem['cost'] ?? $basketItem['price'],
                     $this->maxValueByDiscount[$discount->id]['value'],
                     $this->maxValueByDiscount[$discount->id]['value_type']
                 );
