@@ -96,18 +96,28 @@ class OfferApplier extends AbstractApplier
         array $changedPrice,
         int $changed
     ): array {
-        $restOfDiscount = max(0, $discount->value - $changed);
-        $diffOfDiscount = max(0, $restOfDiscount - $changedPrice['discountValue']);
-
         if (
             $discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER
             && $bundleId === $discount->id
-            && $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB
-            && $diffOfDiscount > 0
         ) {
-            $changedPrice['price'] -= $diffOfDiscount;
-            $changedPrice['discount'] += $diffOfDiscount;
-            $changedPrice['discountValue'] = max(0, $restOfDiscount);
+            $restOfDiscount = 0;
+            switch ($discount->value_type) {
+                case Discount::DISCOUNT_VALUE_TYPE_RUB:
+                    $restOfDiscount = max(0, $discount->value - $changed);
+                    break;
+                case Discount::DISCOUNT_VALUE_TYPE_PERCENT:
+                    $fullDiscount = CalculatorChangePrice::percent($this->input->basketItems->sum('cost') + $changedPrice['cost'], $discount->value);
+                    $restOfDiscount = max(0, $fullDiscount - $changed);
+                    break;
+            }
+
+            $diffOfDiscount = max(0, $restOfDiscount - $changedPrice['discountValue']);
+
+            if ($diffOfDiscount > 0) {
+                $changedPrice['price'] -= $diffOfDiscount;
+                $changedPrice['discount'] += $diffOfDiscount;
+                $changedPrice['discountValue'] = max(0, $restOfDiscount);
+            }
         }
 
         return $changedPrice;
