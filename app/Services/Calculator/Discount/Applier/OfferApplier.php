@@ -48,15 +48,16 @@ class OfferApplier extends AbstractApplier
 
             // Если в условии на суммирование скидки было "не более x%", то переопределяем минимально возможную цену товара
             if (isset($this->maxValueByDiscount[$discount->id])) {
+                $cost = $basketItem['cost'] ?? $basketItem['price'];
                 // Получаем величину скидки, которая максимально возможна по условию
                 $maxDiscountValue = $calculatorChangePrice->calculateDiscountByType(
-                    $basketItem['cost'] ?? $basketItem['price'],
+                    $cost,
                     $this->maxValueByDiscount[$discount->id]['value'],
                     $this->maxValueByDiscount[$discount->id]['value_type']
                 );
 
                 // Чтобы не получить минимально возможную цену меньше 1р, выбираем наибольшее значение
-                $lowestPossiblePrice = max($lowestPossiblePrice, $basketItem['cost'] - $maxDiscountValue);
+                $lowestPossiblePrice = max($lowestPossiblePrice, $cost - $maxDiscountValue);
             }
 
             if ($hasProductQtyLimit) {
