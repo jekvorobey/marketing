@@ -13,7 +13,7 @@ class BonusCatalogCalculator extends BonusCalculator
     /**
      * @return $this
      */
-    protected function fetchActiveBonuses()
+    protected function fetchActiveBonuses(): self
     {
         $this->bonuses = Bonus::query()
             ->where('promo_code_only', false)
