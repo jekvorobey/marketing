@@ -259,6 +259,7 @@ class InputCalculator
                 'id' => $basketItem->id,
                 'offer_id' => $offerId,
                 'price' => $price ?? null,
+                'cost' => $price ?? null,
                 'qty' => $basketItem->qty ?? 1,
                 'brand_id' => $productDto->brand_id ?? null,
                 'category_id' => $productDto->category_id ?? null,
