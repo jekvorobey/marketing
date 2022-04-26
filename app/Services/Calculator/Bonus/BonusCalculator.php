@@ -26,10 +26,10 @@ class BonusCalculator extends AbstractCalculator
 
     /**
      * Количество бонусов для каждого оффера:
-     * [offer_id => ['id' => bonus_id], ...]
+     * [basket_item_id => ['id' => bonus_id], ...]
      * @var Collection
      */
-    protected $offersByBonuses;
+    protected $basketItemsByBonuses;
 
     public function __construct(InputCalculator $inputCalculator, OutputCalculator $outputCalculator)
     {
@@ -44,18 +44,18 @@ class BonusCalculator extends AbstractCalculator
 
         $this->bonuses = collect();
         $this->appliedBonuses = collect();
-        $this->offersByBonuses = collect();
+        $this->basketItemsByBonuses = collect();
 
         $this->fetchActiveBonuses()->apply();
 
-        $this->input->offers->transform(function ($offer, $offerId) {
-            $bonuses = $this->offersByBonuses[$offerId] ?? collect();
-            $offer['bonus'] = $bonuses->reduce(function ($carry, $bonus) use ($offer) {
-                return $carry + $bonus['bonus'] * ($offer['qty'] ?? 1);
+        $this->input->basketItems->transform(function ($basketItem) {
+            $bonuses = $this->basketItemsByBonuses[$basketItem['id']] ?? collect();
+            $basketItem['bonus'] = $bonuses->reduce(function ($carry, $bonus) use ($basketItem) {
+                return $carry + $bonus['bonus'] * ($basketItem['qty'] ?? 1);
             }) ?? 0;
 
-            $offer['bonuses'] = $bonuses;
-            return $offer;
+            $basketItem['bonuses'] = $bonuses;
+            return $basketItem;
         });
 
         $this->output->appliedBonuses = $this->appliedBonuses;
@@ -83,11 +83,11 @@ class BonusCalculator extends AbstractCalculator
                 case Bonus::TYPE_OFFER:
                 case Bonus::TYPE_ANY_OFFER:
                     # Бонусы на офферы
-                    $offerIds = $bonus->type === Bonus::TYPE_OFFER
-                        ? $bonus->offers->pluck('offer_id')
-                        : $this->input->offers->pluck('id');
+                    $basketItemsIds = $bonus->type === Bonus::TYPE_OFFER
+                        ? $this->input->basketItems->whereIn('offer_id', $bonus->offers->pluck('offer_id')->toArray())->pluck('id')
+                        : $this->input->basketItems->pluck('id');
 
-                    $bonusValue = $this->applyBonusToOffer($bonus, $offerIds);
+                    $bonusValue = $this->applyBonusToBasketItem($bonus, $basketItemsIds);
                     break;
                 case Bonus::TYPE_BRAND:
                 case Bonus::TYPE_ANY_BRAND:
@@ -100,7 +100,8 @@ class BonusCalculator extends AbstractCalculator
                     $exceptOfferIds = $bonus->offers->pluck('offer_id');
                     # Отбираем нужные офферы
                     $offerIds = $this->filterForBrand($brandIds, $exceptOfferIds, null);
-                    $bonusValue = $this->applyBonusToOffer($bonus, $offerIds);
+                    $basketItemsIds = $this->input->basketItems->whereIn('offer_id', $offerIds->toArray())->pluck('id');
+                    $bonusValue = $this->applyBonusToBasketItem($bonus, $basketItemsIds);
                     break;
                 case Bonus::TYPE_CATEGORY:
                 case Bonus::TYPE_ANY_CATEGORY:
@@ -116,7 +117,8 @@ class BonusCalculator extends AbstractCalculator
                     $exceptOfferIds = $bonus->offers->pluck('offer_id');
                     # Отбираем нужные офферы
                     $offerIds = $this->filterForCategory($categoryIds, $exceptBrandIds, $exceptOfferIds, null);
-                    $bonusValue = $this->applyBonusToOffer($bonus, $offerIds);
+                    $basketItemsIds = $this->input->basketItems->whereIn('offer_id', $offerIds->toArray())->pluck('id');
+                    $bonusValue = $this->applyBonusToBasketItem($bonus, $basketItemsIds);
                     break;
                 case Bonus::TYPE_SERVICE:
                 case Bonus::TYPE_ANY_SERVICE:
@@ -146,53 +148,42 @@ class BonusCalculator extends AbstractCalculator
     }
 
     /**
-     * @param $offerIds
-     *
      * @return bool|int
      */
-    protected function applyBonusToOffer(Bonus $bonus, $offerIds)
+    protected function applyBonusToBasketItem(Bonus $bonus, Collection $basketItemsIds)
     {
-        $offerIds = $offerIds->filter(function ($offerId) {
-            return $this->input->offers->has($offerId);
-        });
-
-        if ($offerIds->isEmpty()) {
+        if ($basketItemsIds->isEmpty()) {
             return false;
         }
 
         $totalBonusValue = 0;
-        foreach ($offerIds as $offerId) {
-            $offer = &$this->input->offers[$offerId];
+        foreach ($basketItemsIds as $basketItemId) {
+            $basketItem = $this->input->basketItems->get($basketItemId);
             //$bonusValue = $this->priceToBonusValue($offer['price'], $bonus);
-            $offerPriceWithDiscount = isset($offer['cost'])
-                ? $offer['discounts']
-                    ? $offer['cost'] - array_sum(array_column($offer['discounts'], 'change'))
-                    : $offer['cost']
-                : $offer['price'];
-            $bonusValue = $this->priceToBonusValue($offerPriceWithDiscount, $bonus);
+            $basketItemPriceWithDiscount = isset($basketItem['cost'])
+                ? $basketItem['discounts']
+                    ? $basketItem['cost'] - array_sum(array_column($basketItem['discounts'], 'change'))
+                    : $basketItem['cost']
+                : $basketItem['price'];
+            $bonusValue = $this->priceToBonusValue($basketItemPriceWithDiscount, $bonus);
 
-            if (!$this->offersByBonuses->has($offerId)) {
-                $this->offersByBonuses->put($offerId, collect());
+            if (!$this->basketItemsByBonuses->has($basketItemId)) {
+                $this->basketItemsByBonuses->put($basketItemId, collect());
             }
 
-            $this->offersByBonuses[$offerId]->push([
+            $this->basketItemsByBonuses[$basketItemId]->push([
                 'id' => $bonus->id,
                 'bonus' => $bonusValue,
                 'value' => $bonus->value,
                 'value_type' => $bonus->value_type,
             ]);
-            $totalBonusValue += $bonusValue * $offer['qty'];
+            $totalBonusValue += $bonusValue * $basketItem['qty'];
         }
 
         return $totalBonusValue;
     }
 
-    /**
-     * @param $price
-     *
-     * @return int
-     */
-    protected function priceToBonusValue($price, Bonus $bonus)
+    protected function priceToBonusValue($price, Bonus $bonus): int
     {
         switch ($bonus->value_type) {
             case Bonus::VALUE_TYPE_PERCENT:
@@ -204,10 +195,7 @@ class BonusCalculator extends AbstractCalculator
         return 0;
     }
 
-    /**
-     * @return $this
-     */
-    protected function fetchActiveBonuses()
+    protected function fetchActiveBonuses(): self
     {
         $this->bonuses = Bonus::query()
             ->where(function ($query) {

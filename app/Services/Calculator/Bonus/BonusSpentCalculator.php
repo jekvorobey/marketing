@@ -14,13 +14,13 @@ class BonusSpentCalculator extends AbstractBonusSpentCalculator
         return $this->input->bonus;
     }
 
-    protected function spentBonusForOffer(&$offer, int $spendForOfferItem, int $qty): int
+    protected function spentBonusForBasketItem(&$basketItem, int $spendForBasketItem, int $qty): int
     {
-        $spentForOffer = $this->applyDiscountForOffer($offer, $spendForOfferItem, $qty);
+        $spentForBasketItem = $this->applyDiscountForBasketItem($basketItem, $spendForBasketItem, $qty);
 
-        $offer['bonusSpent'] = $this->priceToBonus($spentForOffer);
-        $offer['bonusDiscount'] = $spentForOffer;
+        $basketItem['bonusSpent'] = $this->priceToBonus($spentForBasketItem);
+        $basketItem['bonusDiscount'] = $spentForBasketItem;
 
-        return $spentForOffer;
+        return $spentForBasketItem;
     }
 }

@@ -15,53 +15,48 @@ abstract class AbstractApplier
      */
     protected array $maxValueByDiscount = [];
     protected InputCalculator $input;
-    protected Collection $offersByDiscounts;
+    protected Collection $basketItemsByDiscounts;
     protected Collection $appliedDiscounts;
 
-    public function __construct(InputCalculator $input, Collection $offersByDiscounts, Collection $appliedDiscounts)
-    {
+    public function __construct(
+        InputCalculator $input,
+        Collection $basketItemsByDiscounts,
+        Collection $appliedDiscounts
+    ) {
         $this->input = $input;
-        $this->offersByDiscounts = $offersByDiscounts;
+        $this->basketItemsByDiscounts = $basketItemsByDiscounts;
         $this->appliedDiscounts = $appliedDiscounts;
     }
 
     abstract public function apply(Discount $discount): ?float;
 
-    public function getModifiedOffersByDiscounts(): Collection
+    public function getModifiedBasketItemsByDiscounts(): Collection
     {
-        return $this->offersByDiscounts;
+        return $this->basketItemsByDiscounts;
     }
 
-    public function getModifiedInputOffers(): Collection
+    public function getModifiedInputBasketItems(): Collection
     {
-        return $this->input->offers;
+        return $this->input->basketItems;
     }
 
     /**
-     * Можно ли применить скидку к офферу
+     * Можно ли применить скидку к элементу корзины
      */
-    protected function applicableToOffer(Discount $discount, $offerId): bool
+    protected function applicableToBasketItem(Discount $discount, $basketItemId): bool
     {
-        if (
-            $discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER ||
-            $discount->type === Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS ||
-            $discount->type === Discount::DISCOUNT_TYPE_ANY_BUNDLE
-        ) {
+        if ($this->appliedDiscounts->isEmpty() || !$this->basketItemsByDiscounts->has($basketItemId)) {
             return true;
         }
 
-        if ($this->appliedDiscounts->isEmpty() || !$this->offersByDiscounts->has($offerId)) {
-            return true;
-        }
-
-        /** @var Collection $discountIdsForOffer */
-        $discountIdsForOffer = $this->offersByDiscounts[$offerId]->pluck('id');
+        /** @var Collection $discountIdsForBasketItem */
+        $discountIdsForBasketItem = $this->basketItemsByDiscounts[$basketItemId]->pluck('id');
 
         $discountConditions = $discount->conditions->where('type', DiscountCondition::DISCOUNT_SYNERGY);
         /** @var DiscountCondition $condition */
         foreach ($discountConditions as $condition) {
             $synergyDiscountIds = $condition->getSynergy();
-            if ($discountIdsForOffer->intersect($synergyDiscountIds)->count() !== $discountIdsForOffer->count()) {
+            if ($discountIdsForBasketItem->intersect($synergyDiscountIds)->count() !== $discountIdsForBasketItem->count()) {
                 return false;
             }
 
@@ -78,13 +73,13 @@ abstract class AbstractApplier
         return false;
     }
 
-    protected function addOfferByDiscount(int $offerId, Discount $discount, float $change): void
+    protected function addBasketItemByDiscount(int $basketItemId, Discount $discount, float $change): void
     {
-        if (!$this->offersByDiscounts->has($offerId)) {
-            $this->offersByDiscounts->put($offerId, collect());
+        if (!$this->basketItemsByDiscounts->has($basketItemId)) {
+            $this->basketItemsByDiscounts->put($basketItemId, collect());
         }
 
-        $this->offersByDiscounts[$offerId]->push([
+        $this->basketItemsByDiscounts[$basketItemId]->push([
             'id' => $discount->id,
             'change' => $change,
             'value' => $discount->value,
