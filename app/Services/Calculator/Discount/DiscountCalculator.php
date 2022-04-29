@@ -266,7 +266,7 @@ class DiscountCalculator extends AbstractCalculator
 
                 $offerIds = $this->input->basketItems
                     ->whereIn('ticket_type_id', $ticketTypeIds)
-                    ->pluck('id');
+                    ->pluck('offer_id');
 
                 $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
                 $offerApplier->setOfferIds($offerIds);
