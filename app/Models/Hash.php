@@ -40,21 +40,18 @@ trait Hash
     }
 
     /**
-     * @param self[] $a
-     * @param self[] $b
+     * @param Collection|self[] $a
+     * @param Collection|self[] $b
      */
     public static function hashDiff(Collection $a, Collection $b)
     {
-        return $a->filter(function (self $item) use ($b) {
-            if ($b->isEmpty()) {
-                return true;
-            }
+        $bHashes = $b->map(fn(self $item) => $item->getHash());
 
-            $hash = $item->getHash();
-            return $b->filter(function (self $item) use ($hash) {
-                    return $item->getHash() == $hash;
-            })->count() === 0;
-        });
+        if ($bHashes->isEmpty()) {
+            return $a;
+        }
+
+        return $a->filter(fn(self $item) => !$bHashes->contains($item->getHash()));
     }
 
     /**
