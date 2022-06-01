@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f970f34cf4f5bdeb20c5228d880186e8",
+    "content-hash": "0fd7376ccb205d06dc36af35623cf165",
     "packages": [
         {
             "name": "clue/stream-filter",
@@ -1399,11 +1399,11 @@
         },
         {
             "name": "iwengo/ibt-oms-lib",
-            "version": "dev-master-ylab",
+            "version": "dev-feature/BX-6199-credit-payment",
             "source": {
                 "type": "git",
                 "url": "git@git.yiilab.com:ibt.studio/ibt-oms-lib",
-                "reference": "92af833d878b73ed910989ea6e03443cfce8f063"
+                "reference": "686b7b18fced502ccbf0180fdbfd6961cee28c5d"
             },
             "require": {
                 "ext-json": "*",
@@ -1438,7 +1438,7 @@
                 }
             ],
             "description": "iBT oms client",
-            "time": "2021-04-13T08:12:14+00:00"
+            "time": "2022-05-31T12:22:39+00:00"
         },
         {
             "name": "iwengo/ibt-pim-lib",
@@ -8972,9 +8972,9 @@
         },
         {
             "package": "iwengo/ibt-oms-lib",
-            "version": "dev-master-ylab",
-            "alias": "dev-master",
-            "alias_normalized": "dev-master"
+            "version": "dev-feature/BX-6199-credit-payment",
+            "alias": "dev-master-ylab",
+            "alias_normalized": "dev-master-ylab"
         },
         {
             "package": "iwengo/ibt-pim-lib",
@@ -9001,5 +9001,5 @@
         "ext-json": "*"
     },
     "platform-dev": [],
-    "plugin-api-version": "2.1.0"
+    "plugin-api-version": "2.3.0"
 }

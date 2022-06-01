@@ -10,6 +10,7 @@ use App\Services\Calculator\Discount\DiscountCalculator;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
 use App\Services\Calculator\PromoCode\PromoCodeCalculator;
+use Greensight\Oms\Dto\Payment\PaymentMethod;
 use Illuminate\Support\Collection;
 use Pim\Core\PimException;
 
@@ -48,7 +49,7 @@ class CheckoutCalculator extends AbstractCalculator
      *
      * @return array
      */
-    public function calculate()
+    public function calculate(): array
     {
         $calculators = [
             PromoCodeCalculator::class,
@@ -58,10 +59,12 @@ class CheckoutCalculator extends AbstractCalculator
             BonusCalculator::class,
         ];
 
-        foreach ($calculators as $calculatorName) {
-            /** @var AbstractCalculator $calculator */
-            $calculator = new $calculatorName($this->input, $this->output);
-            $calculator->calculate();
+        if ($this->input->payment['method'] !== PaymentMethod::CREDITPAYMENT) {
+            foreach ($calculators as $calculatorName) {
+                /** @var AbstractCalculator $calculator */
+                $calculator = new $calculatorName($this->input, $this->output);
+                $calculator->calculate();
+            }
         }
 
         return [
