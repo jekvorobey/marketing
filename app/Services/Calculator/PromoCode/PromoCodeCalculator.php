@@ -10,6 +10,7 @@ use App\Services\Calculator\CalculatorChangePrice;
 use App\Services\Calculator\Discount\DiscountCalculator;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
+use Greensight\Oms\Dto\Payment\PaymentMethod;
 use Greensight\Oms\Services\OrderService\OrderService;
 
 /**
@@ -31,14 +32,16 @@ class PromoCodeCalculator extends AbstractCalculator
 
     public function calculate()
     {
+        if ($this->input->payment['method'] === PaymentMethod::CREDITPAYMENT) {
+            return;
+        }
         $this->output->appliedPromoCode = $this->fetchPromoCode()->apply();
     }
 
     /**
      * Применяет промокоды
-     * @return array|null
      */
-    protected function apply()
+    protected function apply(): ?array
     {
         if (!$this->promoCode) {
             return null;
@@ -140,11 +143,8 @@ class PromoCodeCalculator extends AbstractCalculator
 
     /**
      * Проверяет ограничения заданные в conditions
-     *
-     *
-     * @return bool
      */
-    protected function checkPromoCodeConditions(PromoCode $promoCode)
+    protected function checkPromoCodeConditions(PromoCode $promoCode): bool
     {
         if (empty($promoCode->conditions)) {
             return true;
@@ -159,8 +159,8 @@ class PromoCodeCalculator extends AbstractCalculator
         if (!empty($customerIds) && !in_array($this->input->customer['id'], $customerIds)) {
             return false;
         }
-
         $segmentIds = $promoCode->getSegmentIds();
+
         return empty($segmentIds) || in_array($this->input->customer['segment'], $segmentIds);
     }
 
@@ -192,10 +192,8 @@ class PromoCodeCalculator extends AbstractCalculator
 
     /**
      * Получить активный промокод (с кодом $this->input->promoCode)
-     *
-     * @return $this
      */
-    protected function fetchPromoCode()
+    protected function fetchPromoCode(): self
     {
         if (!$this->input->promoCode) {
             return $this;

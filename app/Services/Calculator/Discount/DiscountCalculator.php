@@ -11,6 +11,7 @@ use App\Services\Calculator\Discount\Applier\DeliveryApplier;
 use App\Services\Calculator\Discount\Applier\OfferApplier;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
+use Greensight\Oms\Dto\Payment\PaymentMethod;
 use Illuminate\Support\Collection;
 
 /**
@@ -59,6 +60,9 @@ class DiscountCalculator extends AbstractCalculator
 
     public function calculate()
     {
+        if ($this->input->payment['method'] === PaymentMethod::CREDITPAYMENT) {
+            return;
+        }
         $this->fetchDiscounts();
 
         if (!empty($this->input->deliveries['items'])) {
@@ -94,18 +98,16 @@ class DiscountCalculator extends AbstractCalculator
 
     /**
      * Полностью откатывает все примененные скидки
-     * @return $this
      */
-    public function forceRollback()
+    public function forceRollback(): self
     {
         return $this->rollback();
     }
 
     /**
      * Применяет скидки
-     * @return $this
      */
-    protected function apply()
+    protected function apply(): self
     {
         /** @var Discount $discount */
         foreach ($this->possibleDiscounts as $discount) {

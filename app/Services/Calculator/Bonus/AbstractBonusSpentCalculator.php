@@ -9,6 +9,7 @@ use App\Services\Calculator\AbstractCalculator;
 use App\Services\Calculator\CalculatorChangePrice;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
+use Greensight\Oms\Dto\Payment\PaymentMethod;
 use Illuminate\Support\Collection;
 
 abstract class AbstractBonusSpentCalculator extends AbstractCalculator
@@ -64,7 +65,7 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
 
     public function calculate(): void
     {
-        if (!$this->needCalculateBonus()) {
+        if (!$this->needCalculateBonus() || $this->input->payment['method'] === PaymentMethod::CREDITPAYMENT) {
             return;
         }
 
