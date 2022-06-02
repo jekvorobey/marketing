@@ -32,10 +32,15 @@ class PromoCodeCalculator extends AbstractCalculator
 
     public function calculate()
     {
-        if ($this->input->payment['method'] === PaymentMethod::CREDITPAYMENT) {
+        if (!$this->needCalculate()) {
             return;
         }
         $this->output->appliedPromoCode = $this->fetchPromoCode()->apply();
+    }
+
+    protected function needCalculate(): bool
+    {
+        return $this->input->payment['method'] !== PaymentMethod::CREDITPAYMENT;
     }
 
     /**

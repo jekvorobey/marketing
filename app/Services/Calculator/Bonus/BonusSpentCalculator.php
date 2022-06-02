@@ -2,11 +2,13 @@
 
 namespace App\Services\Calculator\Bonus;
 
+use Greensight\Oms\Dto\Payment\PaymentMethod;
+
 class BonusSpentCalculator extends AbstractBonusSpentCalculator
 {
-    protected function needCalculateBonus(): bool
+    protected function needCalculate(): bool
     {
-        return $this->bonusSettingsIsSet() && $this->input->bonus > 0;
+        return $this->bonusSettingsIsSet() && $this->input->bonus > 0 && $this->input->payment['method'] !== PaymentMethod::CREDITPAYMENT;
     }
 
     protected function getBonusesForSpend(): int

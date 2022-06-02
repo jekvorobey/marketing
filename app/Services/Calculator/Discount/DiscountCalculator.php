@@ -60,7 +60,7 @@ class DiscountCalculator extends AbstractCalculator
 
     public function calculate()
     {
-        if ($this->input->payment['method'] === PaymentMethod::CREDITPAYMENT) {
+        if (!$this->needCalculate()) {
             return;
         }
         $this->fetchDiscounts();
@@ -79,6 +79,11 @@ class DiscountCalculator extends AbstractCalculator
         $this->filter()->sort()->apply();
 
         $this->getDiscountOutput();
+    }
+
+    protected function needCalculate(): bool
+    {
+        return $this->input->payment['method'] !== PaymentMethod::CREDITPAYMENT;
     }
 
     protected function fetchDiscounts(): void

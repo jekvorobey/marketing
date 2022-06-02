@@ -9,7 +9,6 @@ use App\Services\Calculator\AbstractCalculator;
 use App\Services\Calculator\CalculatorChangePrice;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
-use Greensight\Oms\Dto\Payment\PaymentMethod;
 use Illuminate\Support\Collection;
 
 abstract class AbstractBonusSpentCalculator extends AbstractCalculator
@@ -51,7 +50,7 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
     /**
      * Нужно ли вычислять скидку бонусами
      */
-    abstract protected function needCalculateBonus(): bool;
+    abstract protected function needCalculate(): bool;
 
     /**
      * Заданы ли все настройки для списания бонусов
@@ -65,7 +64,7 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
 
     public function calculate(): void
     {
-        if (!$this->needCalculateBonus() || $this->input->payment['method'] === PaymentMethod::CREDITPAYMENT) {
+        if (!$this->needCalculate()) {
             return;
         }
 

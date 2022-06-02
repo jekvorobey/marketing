@@ -8,7 +8,7 @@ class BonusMayBeSpentCalculator extends AbstractBonusSpentCalculator
 {
     private int $totalSpentBonusPrice = 0;
 
-    protected function needCalculateBonus(): bool
+    protected function needCalculate(): bool
     {
         return $this->bonusSettingsIsSet();
     }
