@@ -8,9 +8,6 @@ use App\Services\Calculator\AbstractCalculator;
 use App\Services\Calculator\Bonus\BonusCalculator;
 use App\Services\Calculator\CalculatorChangePrice;
 use App\Services\Calculator\Discount\DiscountCalculator;
-use App\Services\Calculator\InputCalculator;
-use App\Services\Calculator\OutputCalculator;
-use Greensight\Oms\Dto\Payment\PaymentMethod;
 use Greensight\Oms\Services\OrderService\OrderService;
 
 /**
@@ -23,24 +20,20 @@ class PromoCodeCalculator extends AbstractCalculator
      * Список промокодов
      * @var PromoCode|null
      */
-    protected $promoCode = null;
-
-    public function __construct(InputCalculator $inputCalculator, OutputCalculator $outputCalculator)
-    {
-        parent::__construct($inputCalculator, $outputCalculator);
-    }
+    protected $promoCode;
 
     public function calculate()
     {
         if (!$this->needCalculate()) {
             return;
         }
+
         $this->output->appliedPromoCode = $this->fetchPromoCode()->apply();
     }
 
     protected function needCalculate(): bool
     {
-        return $this->input->payment['method'] !== PaymentMethod::CREDITPAYMENT;
+        return $this->input->payment['isNeedCalculate'];
     }
 
     /**

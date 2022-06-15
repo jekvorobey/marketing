@@ -2,23 +2,12 @@
 
 namespace App\Services\Calculator\Bonus;
 
-use Greensight\Oms\Dto\Payment\PaymentMethod;
-
 class BonusMayBeSpentCalculator extends AbstractBonusSpentCalculator
 {
     private int $totalSpentBonusPrice = 0;
 
-    protected function needCalculate(): bool
-    {
-        return $this->bonusSettingsIsSet();
-    }
-
     public function calculate(): void
     {
-        if ($this->input->payment['method'] === PaymentMethod::CREDITPAYMENT) {
-            return;
-        }
-
         parent::calculate();
 
         $maxSpendableBonusPrice = min($this->totalSpentBonusPrice, $this->getBonusesForSpend());

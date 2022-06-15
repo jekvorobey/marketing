@@ -11,7 +11,6 @@ use App\Services\Calculator\Discount\Applier\DeliveryApplier;
 use App\Services\Calculator\Discount\Applier\OfferApplier;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
-use Greensight\Oms\Dto\Payment\PaymentMethod;
 use Illuminate\Support\Collection;
 
 /**
@@ -63,6 +62,7 @@ class DiscountCalculator extends AbstractCalculator
         if (!$this->needCalculate()) {
             return;
         }
+
         $this->fetchDiscounts();
 
         if (!empty($this->input->deliveries['items'])) {
@@ -83,7 +83,7 @@ class DiscountCalculator extends AbstractCalculator
 
     protected function needCalculate(): bool
     {
-        return $this->input->payment['method'] !== PaymentMethod::CREDITPAYMENT;
+        return $this->input->payment['isNeedCalculate'];
     }
 
     protected function fetchDiscounts(): void
