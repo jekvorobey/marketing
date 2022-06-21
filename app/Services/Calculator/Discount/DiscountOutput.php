@@ -38,66 +38,79 @@ class DiscountOutput
     public function getBasketItems(): Collection
     {
         return $this->input->basketItems->transform(function ($basketItem, $basketItemId) {
-
             if (!$this->basketItemsByDiscounts->has($basketItemId)) {
                 $basketItem['discount'] = null;
                 $basketItem['discounts'] = null;
                 return $basketItem;
             }
-            # Конечная цена товара после применения скидки всегда округляется до целого
-            $basketItem['price'] = round($basketItem['price']);
 
-            $roundOffs = collect();
-            # Погрешность после применения базовых товарных скидок (не бандлов)
-            $basicError = 0;
-            if (isset($basketItem['discount'])) {
-                # Финальная скидка, в которую входит сама скидка и ошибка округления
-                $finalDiscount = $basketItem['cost'] - $basketItem['price'];
-                $basicError = $finalDiscount - $basketItem['discount'];
-                $basicDiscountsNumber = $this->basketItemsByDiscounts[$basketItemId]->filter(function ($discount) {
-                    return !$this->input->bundles->contains($discount['id']);
-                })->count();
-                $diffPerDiscount = $basicDiscountsNumber > 0
-                    ? round($basicError / $basicDiscountsNumber, 2)
-                    : 0;
-                $correctionValue = $diffPerDiscount
-                    ? round($basicError - $diffPerDiscount * $basicDiscountsNumber, 3)
-                    : 0;
+            $basketItem['price'] = $this->roundedBasketItemPrice($basketItem['price']);
 
-                $roundOffs->put(0, [
-                    'error' => $diffPerDiscount,
-                    'correction' => $correctionValue,
-                    'affectedQty' => $basketItem['qty'],
-                ]);
-            }
-
-            $this->basketItemsByDiscounts[$basketItemId]->transform(function ($discount) use ($roundOffs) {
-                $key = $roundOffs->has($discount['id']) ? $discount['id'] : 0;
-                $roundOff = $roundOffs->get($key);
-                if (!$roundOff) {
-                    return $discount;
-                }
-
-                $resultedDiff = $roundOff['error'] + $roundOff['correction'];
-                $roundOff['correction'] = 0;
-                $roundOffs->put($key, $roundOff);
-
-                $discount['change'] = round($discount['change'] + $resultedDiff, 2);
-
-                $appliedDiscount = $this->appliedDiscounts->get($discount['id']);
-                $appliedDiscount['change'] = round($appliedDiscount['change'] + $resultedDiff * $roundOff['affectedQty'], 2);
-                $this->appliedDiscounts->put($discount['id'], $appliedDiscount);
-
-                return $discount;
-            });
-
-            $sum = round($this->basketItemsByDiscounts[$basketItemId]->sum('change'), 2);
-            $basketItem['discount'] = $sum;
-
-            $basketItem['discounts'] = $this->basketItemsByDiscounts[$basketItemId]->toArray();
+            $this->correctBasketItemDiscountsAfterRound($basketItem, $basketItemId);
 
             return $basketItem;
         });
+    }
+
+    /** Конечная цена товара после применения скидки всегда округляется до целого, в меньшую сторону */
+    private function roundedBasketItemPrice($price): int
+    {
+        return floor($price);
+    }
+
+    /** Корректируем суммы примененных скидок на величину, отброшенную после округления цены товара */
+    private function correctBasketItemDiscountsAfterRound(&$basketItem, $basketItemId): void
+    {
+        $roundOff = $this->calcRoundOffForBasketItem($basketItem, $basketItemId);
+
+        $discounts = $this->basketItemsByDiscounts[$basketItemId];
+
+        $discounts->transform(function ($discount) use (&$roundOff) {
+            $resultedDiff = $roundOff['error'] + $roundOff['correction'];
+            $roundOff['correction'] = 0;
+
+            $discount['change'] = round($discount['change'] + $resultedDiff, 2);
+
+            $appliedDiscount = $this->appliedDiscounts->get($discount['id']);
+            $appliedDiscount['change'] = round($appliedDiscount['change'] + $resultedDiff * $roundOff['affectedQty'], 2);
+            $this->appliedDiscounts->put($discount['id'], $appliedDiscount);
+
+            return $discount;
+        });
+
+        $sum = round($this->basketItemsByDiscounts[$basketItemId]->sum('change'), 2);
+        $basketItem['discount'] = $sum;
+        $basketItem['discounts'] = $this->basketItemsByDiscounts[$basketItemId]->toArray();
+    }
+
+    /** Данные по погрешности округления цены товара */
+    private function calcRoundOffForBasketItem($basketItem, $basketItemId): ?array
+    {
+        if (!isset($basketItem['discount'])) {
+            return null;
+        }
+
+        # Финальная скидка, в которую входит сама скидка и ошибка округления
+        $finalDiscount = $basketItem['cost'] - $basketItem['price'];
+        $basicError = $finalDiscount - $basketItem['discount'];
+
+        $basicDiscountsNumber = $this->basketItemsByDiscounts[$basketItemId]->filter(function ($discount) {
+            return !$this->input->bundles->contains($discount['id']);
+        })->count();
+
+        $diffPerDiscount = $basicDiscountsNumber > 0
+            ? round($basicError / $basicDiscountsNumber, 2)
+            : 0;
+
+        $correctionValue = $diffPerDiscount
+            ? round($basicError - $diffPerDiscount * $basicDiscountsNumber, 3)
+            : 0;
+
+        return [
+            'error' => $diffPerDiscount,
+            'correction' => $correctionValue,
+            'affectedQty' => $basketItem['qty'],
+        ];
     }
 
     public function getOutputFormat(): Collection

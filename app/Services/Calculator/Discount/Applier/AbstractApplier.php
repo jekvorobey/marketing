@@ -52,25 +52,25 @@ abstract class AbstractApplier
         /** @var Collection $discountIdsForBasketItem */
         $discountIdsForBasketItem = $this->basketItemsByDiscounts[$basketItemId]->pluck('id');
 
-        $discountConditions = $discount->conditions->where('type', DiscountCondition::DISCOUNT_SYNERGY);
-        /** @var DiscountCondition $condition */
-        foreach ($discountConditions as $condition) {
-            $synergyDiscountIds = $condition->getSynergy();
-            if ($discountIdsForBasketItem->intersect($synergyDiscountIds)->count() !== $discountIdsForBasketItem->count()) {
-                return false;
-            }
-
-            if ($condition->getMaxValueType()) {
-                $this->maxValueByDiscount[$discount->id] = [
-                    'value_type' => $condition->getMaxValueType(),
-                    'value' => $condition->getMaxValue(),
-                ];
-            }
-
-            return true;
+        /** @var DiscountCondition $synergyCondition */
+        $synergyCondition = $discount->conditions->firstWhere('type', DiscountCondition::DISCOUNT_SYNERGY);
+        if (!$synergyCondition) {
+            return false;
         }
 
-        return false;
+        $synergyDiscountIds = $synergyCondition->getSynergy();
+        if ($discountIdsForBasketItem->intersect($synergyDiscountIds)->count() !== $discountIdsForBasketItem->count()) {
+            return false;
+        }
+
+        if ($synergyCondition->getMaxValueType()) {
+            $this->maxValueByDiscount[$discount->id] = [
+                'value_type' => $synergyCondition->getMaxValueType(),
+                'value' => $synergyCondition->getMaxValue(),
+            ];
+        }
+
+        return true;
     }
 
     protected function addBasketItemByDiscount(int $basketItemId, Discount $discount, float $change): void
