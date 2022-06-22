@@ -69,9 +69,9 @@ class CalculatorChangePrice
         $currentCost = $item['cost'] ?? $item['price'];
         $discountValue = $this->getDiscountValue($result['price'], $currentCost, $value, $valueType, $lowestPossiblePrice);
 
-        # Конечная цена товара в бандле всегда округляется до целого
         $result['discount'] = $currentDiscount + $discountValue;
-        $result['price'] = self::round($currentCost - $result['discount'], self::ROUND);
+        // Конечная цена товара в бандле всегда округляется до целого
+        $result['price'] = self::round($currentCost - $result['discount'], self::FLOOR);
         $result['cost'] = $currentCost;
 
         $result['discountValue'] = $discountValue;
@@ -103,7 +103,7 @@ class CalculatorChangePrice
         return $result;
     }
 
-    private function getDiscountValue(int $price, int $currentCost, int $value, $valueType, $lowestPossiblePrice): int
+    private function getDiscountValue(int $price, int $currentCost, int $value, $valueType, $lowestPossiblePrice): float
     {
         $discountValue = min($price, $this->calculateDiscountByType($currentCost, $value, $valueType));
 
@@ -140,14 +140,7 @@ class CalculatorChangePrice
         }
     }
 
-    /**
-     * @param $cost
-     * @param $value
-     * @param $valueType
-     *
-     * @return float
-     */
-    public function calculateDiscountByType($cost, $value, $valueType)
+    public function calculateDiscountByType($cost, $value, $valueType): float
     {
         switch ($valueType) {
             case Discount::DISCOUNT_VALUE_TYPE_PERCENT:

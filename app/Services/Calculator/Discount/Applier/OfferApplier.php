@@ -104,16 +104,10 @@ class OfferApplier extends AbstractApplier
             $discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER
             && $bundleId === $discount->id
         ) {
-            $restOfDiscount = 0;
-            switch ($discount->value_type) {
-                case Discount::DISCOUNT_VALUE_TYPE_RUB:
-                    $restOfDiscount = max(0, $discount->value - $changed);
-                    break;
-                case Discount::DISCOUNT_VALUE_TYPE_PERCENT:
-                    $fullDiscount = CalculatorChangePrice::percent($this->input->basketItems->sum('cost') + $changedPrice['cost'], $discount->value);
-                    $restOfDiscount = max(0, $fullDiscount - $changed);
-                    break;
-            }
+            $calculatorChangePrice = new CalculatorChangePrice();
+            $fullCost = $this->input->basketItems->sum('cost') + $changedPrice['cost']; // ??
+            $fullDiscount = $calculatorChangePrice->calculateDiscountByType($fullCost, $discount->value, $discount->value_type);
+            $restOfDiscount = max(0, $fullDiscount - $changed);
 
             $diffOfDiscount = max(0, $restOfDiscount - $changedPrice['discountValue']);
 
