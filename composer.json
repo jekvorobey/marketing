@@ -50,7 +50,7 @@
         "iwengo/ibt-logistics-lib": "dev-master-ylab as dev-master",
         "iwengo/ibt-merchant-management-lib": "dev-master-ylab as dev-master",
         "iwengo/ibt-message-lib": "dev-master-ylab as dev-master",
-        "iwengo/ibt-oms-lib": "dev-feature/BX-6199-credit-payment as dev-master-ylab",
+        "iwengo/ibt-oms-lib": "dev-master-ylab as dev-master",
         "iwengo/ibt-pim-lib": "dev-master-ylab as dev-master",
         "laravel/framework": "5.8.*",
         "laravel/tinker": "^1.0",
