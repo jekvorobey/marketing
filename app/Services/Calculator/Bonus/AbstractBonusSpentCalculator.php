@@ -50,7 +50,10 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
     /**
      * Нужно ли вычислять скидку бонусами
      */
-    abstract protected function needCalculateBonus(): bool;
+    protected function needCalculate(): bool
+    {
+        return $this->bonusSettingsIsSet() && $this->input->payment['isNeedCalculate'];
+    }
 
     /**
      * Заданы ли все настройки для списания бонусов
@@ -64,7 +67,7 @@ abstract class AbstractBonusSpentCalculator extends AbstractCalculator
 
     public function calculate(): void
     {
-        if (!$this->needCalculateBonus()) {
+        if (!$this->needCalculate()) {
             return;
         }
 

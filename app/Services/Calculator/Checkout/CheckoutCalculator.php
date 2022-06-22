@@ -48,7 +48,7 @@ class CheckoutCalculator extends AbstractCalculator
      *
      * @return array
      */
-    public function calculate()
+    public function calculate(): array
     {
         $calculators = [
             PromoCodeCalculator::class,

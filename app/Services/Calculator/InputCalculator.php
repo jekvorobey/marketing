@@ -12,6 +12,7 @@ use Greensight\Customer\Services\CustomerService\CustomerService;
 use Greensight\Logistics\Dto\Lists\RegionDto;
 use Greensight\Logistics\Services\ListsService\ListsService;
 use Greensight\Oms\Services\OrderService\OrderService;
+use Greensight\Oms\Services\PaymentService\PaymentService;
 use Illuminate\Support\Collection;
 use Pim\Core\PimException;
 use Pim\Dto\CategoryDto;
@@ -127,6 +128,7 @@ class InputCalculator
 
         $this->payment = [
             'method' => isset($params['payment']['method']) ? (int) $params['payment']['method'] : null,
+            'isNeedCalculate' => true,
         ];
         $this->bonus = isset($params['bonus']) ? (int) $params['bonus'] : 0;
 
@@ -218,8 +220,10 @@ class InputCalculator
             ->flip();
 
         if (isset($this->customer['id'], $this->customer['isUserAuth']) && $this->customer['isUserAuth']) {
-            $this->customer = $this->getCustomerInfo((int) $this->customer['id']);
+            $this->customer = $this->getCustomerInfo();
         }
+
+        $this->hydratePaymentInfo();
 
         return $this;
     }
@@ -302,8 +306,9 @@ class InputCalculator
             ->pluck('price', 'offer_id');
     }
 
-    protected function getCustomerInfo(int $customerId): array
+    protected function getCustomerInfo(): array
     {
+        $customerId = $this->getCustomerId();
         $customer = $this->loadCustomer($customerId);
         if (!$customer) {
             return [];
@@ -317,7 +322,7 @@ class InputCalculator
         $ordersCount = $this->loadCustomerOrdersCount($customerId);
 
         return [
-            'id' => $customer['id'],
+            'id' => $customerId,
             'roles' => $roles,
             'segment' => 1, // todo
             'orders' => [
@@ -354,6 +359,24 @@ class InputCalculator
         $ordersCount = $orderService->ordersCount($query);
 
         return (int) $ordersCount['total'];
+    }
+
+    protected function hydratePaymentInfo(): void
+    {
+        $paymentMethodId = $this->payment['method'];
+        if (!$paymentMethodId) {
+            return;
+        }
+
+        /** @var PaymentService $paymentService */
+        $paymentService = resolve(PaymentService::class);
+
+        $paymentMethod = $paymentService->getPaymentMethod($paymentMethodId);
+
+        $this->payment = [
+            'method' => $paymentMethodId,
+            'isNeedCalculate' => $paymentMethod->is_apply_discounts,
+        ];
     }
 
     /**
