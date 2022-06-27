@@ -4,9 +4,9 @@ namespace App\Services\Calculator\Bonus;
 
 class BonusSpentCalculator extends AbstractBonusSpentCalculator
 {
-    protected function needCalculateBonus(): bool
+    protected function needCalculate(): bool
     {
-        return $this->bonusSettingsIsSet() && $this->input->bonus > 0;
+        return parent::needCalculate() && $this->getBonusesForSpend() > 0;
     }
 
     protected function getBonusesForSpend(): int

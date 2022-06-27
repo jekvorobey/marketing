@@ -59,6 +59,10 @@ class DiscountCalculator extends AbstractCalculator
 
     public function calculate()
     {
+        if (!$this->needCalculate()) {
+            return;
+        }
+
         $this->fetchDiscounts();
 
         if (!empty($this->input->deliveries['items'])) {
@@ -75,6 +79,11 @@ class DiscountCalculator extends AbstractCalculator
         $this->filter()->sort()->apply();
 
         $this->getDiscountOutput();
+    }
+
+    protected function needCalculate(): bool
+    {
+        return $this->input->payment['isNeedCalculate'];
     }
 
     protected function fetchDiscounts(): void
@@ -94,18 +103,16 @@ class DiscountCalculator extends AbstractCalculator
 
     /**
      * Полностью откатывает все примененные скидки
-     * @return $this
      */
-    public function forceRollback()
+    public function forceRollback(): self
     {
         return $this->rollback();
     }
 
     /**
      * Применяет скидки
-     * @return $this
      */
-    protected function apply()
+    protected function apply(): self
     {
         /** @var Discount $discount */
         foreach ($this->possibleDiscounts as $discount) {

@@ -53,28 +53,23 @@ class BonusCalculator extends AbstractCalculator
             $basketItem['bonus'] = $bonuses->reduce(function ($carry, $bonus) use ($basketItem) {
                 return $carry + $bonus['bonus'] * ($basketItem['qty'] ?? 1);
             }) ?? 0;
-
             $basketItem['bonuses'] = $bonuses;
+
             return $basketItem;
         });
 
         $this->output->appliedBonuses = $this->appliedBonuses;
     }
 
-    /**
-     * @return bool
-     */
-    protected function checkPermissions()
+    protected function checkPermissions(): bool
     {
         $availableRoles = $this->getOption(Option::KEY_ROLES_AVAILABLE_FOR_BONUSES) ?? [];
         $currentRoles = $this->input->customer['roles'] ?? [];
+
         return count(array_intersect($availableRoles, $currentRoles)) > 0;
     }
 
-    /**
-     * @return $this
-     */
-    protected function apply()
+    protected function apply(): self
     {
         /** @var Bonus $bonus */
         foreach ($this->bonuses as $bonus) {
