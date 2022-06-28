@@ -7,10 +7,10 @@ use App\Models\Discount\DiscountSegment;
 use App\Models\Discount\DiscountUserRole;
 use App\Models\Price\Price;
 use App\Services\Calculator\Catalog\CatalogCalculator;
+use App\Services\Price\PriceWriter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -162,33 +162,12 @@ class PriceController extends Controller
     /**
      * Установить цену для предложения мерчанта
      */
-    public function setPrice(int $offerId, Request $request): Response
+    public function setPrice(int $offerId, Request $request, PriceWriter $priceWriter): Response
     {
         $price = (float) $request->input('price');
         $nullable = (bool) $request->input('nullable');
 
-        $ok = true;
-        $priceModel = Price::query()
-            ->where('offer_id', $offerId)
-            ->first();
-
-        if (!$nullable && !$price && !is_null($priceModel)) {
-            //Удаляем цену на предложение
-            try {
-                $ok = $priceModel->delete();
-            } catch (\Throwable $e) {
-                $ok = false;
-            }
-        } else {
-            if (is_null($priceModel)) {
-                $priceModel = new Price();
-            }
-            $priceModel->updateOrCreate(['offer_id' => $offerId], ['price' => $price]);
-        }
-
-        if (!$ok) {
-            throw new HttpException(500);
-        }
+        $priceWriter->setPrices([$offerId => $price], $nullable);
 
         return response('', 204);
     }
@@ -204,7 +183,7 @@ class PriceController extends Controller
      *      ...
      * ]
      */
-    public function setPrices(Request $request): Response
+    public function setPrices(Request $request, PriceWriter $priceWriter): Response
     {
         $data = $request->validate([
             'prices' => 'required|array',
@@ -217,24 +196,7 @@ class PriceController extends Controller
         );
 
         try {
-            DB::transaction(function () use ($newPrices) {
-                $offerIds = array_keys($newPrices);
-                /** @var Collection|Price[] $prices */
-                $prices = Price::query()->whereIn('offer_id', $offerIds)->get()->keyBy('offer_id');
-                foreach ($offerIds as $offerId) {
-                    $price = $prices->has($offerId) ? $prices[$offerId] : null;
-                    if (!is_null($price) && !$newPrices[$offerId]) {
-                        $price->delete();
-                    } else {
-                        if (is_null($price)) {
-                            $price = new Price();
-                        }
-                        $price->offer_id = $offerId;
-                        $price->price = $newPrices[$price->offer_id];
-                        $price->save();
-                    }
-                }
-            });
+            DB::transaction(fn() => $priceWriter->setPrices($newPrices));
         } catch (\Throwable $e) {
             throw new HttpException(500, $e->getMessage());
         }
