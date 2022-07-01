@@ -4,8 +4,8 @@ namespace App\Services\Calculator\Discount\Applier;
 
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountCondition;
-use App\Models\Discount\DiscountCondition as DiscountConditionModel;
 use App\Services\Calculator\CalculatorChangePrice;
+use Illuminate\Support\Collection;
 
 class DeliveryApplier extends AbstractApplier
 {
@@ -50,12 +50,34 @@ class DeliveryApplier extends AbstractApplier
             return false;
         }
 
-        /** @var DiscountCondition|null $minPriceCondition */
-        $minPriceCondition = $discount->conditions->firstWhere('type', DiscountConditionModel::MIN_PRICE_ORDER);
-        if (!$minPriceCondition) {
-            return true;
+
+        /** @var Collection|DiscountCondition[] $minPriceConditions */
+        $minPriceConditions = $discount->conditions->whereIn('type', [
+            DiscountCondition::MIN_PRICE_ORDER,
+            DiscountCondition::MIN_PRICE_BRAND,
+            DiscountCondition::MIN_PRICE_CATEGORY,
+        ]);
+
+        foreach ($minPriceConditions as $minPriceCondition) {
+            if (!$this->checkMinPriceCondition($minPriceCondition)) {
+                return false;
+            }
         }
 
-        return $this->input->getPriceOrders() >= $minPriceCondition->getMinPrice();
+        return true;
+    }
+
+    private function checkMinPriceCondition(DiscountCondition $condition): bool
+    {
+        switch ($condition->type) {
+            case DiscountCondition::MIN_PRICE_ORDER:
+                return $this->input->getPriceOrders() >= $condition->getMinPrice();
+            case DiscountCondition::MIN_PRICE_BRAND:
+                return $this->input->getMaxTotalPriceForBrands($condition->getBrands()) >= $condition->getMinPrice();
+            case DiscountCondition::MIN_PRICE_CATEGORY:
+                return $this->input->getMaxTotalPriceForCategories($condition->getCategories()) >= $condition->getMinPrice();
+            default:
+                return true;
+        }
     }
 }
