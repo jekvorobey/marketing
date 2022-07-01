@@ -3,6 +3,8 @@
 namespace App\Services\Calculator\Discount\Applier;
 
 use App\Models\Discount\Discount;
+use App\Models\Discount\DiscountCondition;
+use App\Models\Discount\DiscountCondition as DiscountConditionModel;
 use App\Services\Calculator\CalculatorChangePrice;
 
 class DeliveryApplier extends AbstractApplier
@@ -21,15 +23,11 @@ class DeliveryApplier extends AbstractApplier
 
     public function apply(Discount $discount): ?float
     {
-        $calculatorChangePrice = new CalculatorChangePrice();
-
-        $isApplicableDiscount = !$this->input->basketItems->contains(function ($basketItem) use ($discount) {
-            return !$this->applicableToBasketItem($discount, $basketItem['id']);
-        });
-
-        if (!$isApplicableDiscount) {
+        if (!$this->isApplicable($discount)) {
             return 0;
         }
+
+        $calculatorChangePrice = new CalculatorChangePrice();
 
         $changedPrice = $calculatorChangePrice->changePrice(
             $this->currentDelivery,
@@ -40,5 +38,24 @@ class DeliveryApplier extends AbstractApplier
         $this->currentDelivery = $calculatorChangePrice->syncItemWithChangedPrice($this->currentDelivery, $changedPrice);
 
         return $changedPrice['discountValue'];
+    }
+
+    private function isApplicable(Discount $discount): bool
+    {
+        $isApplicableWithAllBasketItems = $this->input->basketItems->contains(function ($basketItem) use ($discount) {
+            return !$this->applicableToBasketItem($discount, $basketItem['id']);
+        });
+
+        if (!$isApplicableWithAllBasketItems) {
+            return false;
+        }
+
+        /** @var DiscountCondition|null $minPriceCondition */
+        $minPriceCondition = $discount->conditions->firstWhere('type', DiscountConditionModel::MIN_PRICE_ORDER);
+        if (!$minPriceCondition) {
+            return true;
+        }
+
+        return $this->input->getPriceOrders() >= $minPriceCondition->getMinPrice();
     }
 }
