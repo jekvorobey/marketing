@@ -42,14 +42,11 @@ class DeliveryApplier extends AbstractApplier
 
     private function isApplicable(Discount $discount): bool
     {
-        $isApplicableWithAllBasketItems = $this->input->basketItems->contains(function ($basketItem) use ($discount) {
-            return !$this->applicableToBasketItem($discount, $basketItem['id']);
-        });
-
-        if (!$isApplicableWithAllBasketItems) {
-            return false;
+        foreach ($this->input->basketItems as $basketItem) {
+            if (!$this->applicableToBasketItem($discount, $basketItem['id'])) {
+                return false;
+            }
         }
-
 
         /** @var Collection|DiscountCondition[] $minPriceConditions */
         $minPriceConditions = $discount->conditions->whereIn('type', [
