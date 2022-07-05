@@ -5,6 +5,7 @@ namespace App\Models\Discount;
 use Greensight\CommonMsa\Models\AbstractModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Hash;
+use Illuminate\Support\Collection;
 
 /**
  * Класс-модель для сущности "Элемент бандла"
@@ -29,5 +30,28 @@ class BundleItem extends AbstractModel
     public function discount(): BelongsTo
     {
         return $this->belongsTo(Discount::class);
+    }
+
+    /**
+     * Товары в бандле могут повторяться, в отличие от остальных связей скидки
+     */
+    public static function hashDiff(Collection $a, Collection $b)
+    {
+        $bHashes = $b->map(fn(self $item) => $item->getHash());
+
+        if ($bHashes->isEmpty()) {
+            return $a;
+        }
+
+        return $a->filter(function (self $item) use ($bHashes) {
+            $key = $bHashes->search($item->getHash());
+            $contains = $key !== false;
+
+            if ($contains) {
+                $bHashes->forget($key);
+            }
+
+            return !$contains;
+        });
     }
 }
