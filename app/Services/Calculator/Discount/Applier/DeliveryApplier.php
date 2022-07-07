@@ -5,7 +5,6 @@ namespace App\Services\Calculator\Discount\Applier;
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountCondition;
 use App\Services\Calculator\CalculatorChangePrice;
-use Illuminate\Support\Collection;
 
 class DeliveryApplier extends AbstractApplier
 {
@@ -51,15 +50,14 @@ class DeliveryApplier extends AbstractApplier
 //            }
         }
 
-        /** @var Collection|DiscountCondition[] $minPriceConditions */
-        $minPriceConditions = $discount->conditions->whereIn('type', [
-            DiscountCondition::MIN_PRICE_ORDER,
-            DiscountCondition::MIN_PRICE_BRAND,
-            DiscountCondition::MIN_PRICE_CATEGORY,
-        ]);
+        return $this->checkConditions($discount);
+    }
 
-        foreach ($minPriceConditions as $minPriceCondition) {
-            if (!$this->checkMinPriceCondition($minPriceCondition)) {
+    /** Проверка условий скидки на доставку */
+    private function checkConditions(Discount $discount): bool
+    {
+        foreach ($discount->conditions as $minPriceCondition) {
+            if (!$this->checkCondition($minPriceCondition)) {
                 return false;
             }
         }
@@ -67,7 +65,7 @@ class DeliveryApplier extends AbstractApplier
         return true;
     }
 
-    private function checkMinPriceCondition(DiscountCondition $condition): bool
+    private function checkCondition(DiscountCondition $condition): bool
     {
         switch ($condition->type) {
             case DiscountCondition::MIN_PRICE_ORDER:
@@ -76,6 +74,8 @@ class DeliveryApplier extends AbstractApplier
                 return $this->input->getMaxTotalPriceForBrands($condition->getBrands()) >= $condition->getMinPrice();
             case DiscountCondition::MIN_PRICE_CATEGORY:
                 return $this->input->getMaxTotalPriceForCategories($condition->getCategories()) >= $condition->getMinPrice();
+            case DiscountCondition::DELIVERY_METHOD:
+                return in_array($this->currentDelivery['method'], $condition->getDeliveryMethods());
             default:
                 return true;
         }

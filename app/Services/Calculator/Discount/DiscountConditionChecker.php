@@ -35,6 +35,7 @@ class DiscountConditionChecker
         if (!in_array($condition->type, $checkingConditionTypes)) {
             return false;
         }
+
         switch ($condition->type) {
             /** Скидка на первый заказ */
             case DiscountConditionModel::FIRST_ORDER:
@@ -51,9 +52,6 @@ class DiscountConditionChecker
             /** Скидка на заказ определенного количества товара */
             case DiscountConditionModel::EVERY_UNIT_PRODUCT:
                 return $this->checkEveryUnitProduct($condition->getOffer(), $condition->getCount());
-            /** Скидка на один из методов доставки */
-            case DiscountConditionModel::DELIVERY_METHOD:
-                return $this->checkDeliveryMethod($condition->getDeliveryMethods());
             /** Скидка на один из методов оплаты */
             case DiscountConditionModel::PAY_METHOD:
                 return $this->checkPayMethod($condition->getPaymentMethods());
@@ -69,8 +67,9 @@ class DiscountConditionChecker
                 return isset($countOrders) && (($countOrders + 1) % $condition->getOrderSequenceNumber() === 0);
             case DiscountConditionModel::BUNDLE:
                 return true; // todo
-            case DiscountConditionModel::DISCOUNT_SYNERGY:
-                return true; # Проверяет отдельно на этапе применения скидок
+            case DiscountConditionModel::DISCOUNT_SYNERGY: // Проверяется отдельно на этапе применения скидок
+            case DiscountConditionModel::DELIVERY_METHOD: // Проверяется отдельно в DeliveryApplier, т.к. надо рассчитывать возможные скидки для всех способов доставки
+                return true;
             default:
                 return false;
         }
@@ -83,17 +82,6 @@ class DiscountConditionChecker
     {
         $basketItemByOfferId = $this->input->basketItems->where('offer_id', $offerId)->where('bundle_id', 0)->first();
         return $basketItemByOfferId && $basketItemByOfferId['qty'] >= $count;
-    }
-
-    /**
-     * Способ доставки
-     */
-    public function checkDeliveryMethod($deliveryMethods): bool
-    {
-        return isset($this->input->deliveries['current']['method']) && in_array(
-            $this->input->deliveries['current']['method'],
-            $deliveryMethods
-        );
     }
 
     /**
