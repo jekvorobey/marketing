@@ -242,7 +242,7 @@ class DiscountCalculator extends AbstractCalculator
                 /**
                  * Считаются только возможные скидки.
                  * Берем все доставки, для которых необходимо посчитать только возможную скидку,
-                 * по очереди применяем скидки (откатывая предыдущие изменяния, т.к. нельзя выбрать сразу две доставки),
+                 * по очереди применяем скидки (откатывая предыдущие изменения, т.к. нельзя выбрать сразу две доставки),
                  */
                 $currentDeliveryId = $this->input->deliveries['current']['id'] ?? null;
                 $this->input->deliveries['items']->transform(function ($delivery) use ($discount, $currentDeliveryId, &$change) {
