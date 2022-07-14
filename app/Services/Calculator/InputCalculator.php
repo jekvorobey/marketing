@@ -46,6 +46,8 @@ class InputCalculator
     public $promoCodeBonus;
     /** @var array */
     public $customer;
+    /** @var string */
+    public $regionFiasId;
     /** @var array */
     public $payment;
     /** @var int */
@@ -55,10 +57,9 @@ class InputCalculator
     /** @var bool */
     public $freeDelivery;
 
-    /** @var array */
-    public $userRegion;
     /** @var Collection|CategoryDto[] */
     private static $allCategories;
+    private ?int $regionId = null;
 
     /**
      * InputPriceCalculator constructor.
@@ -100,20 +101,18 @@ class InputCalculator
         $this->categories = collect();
         $this->ticketTypeIds = collect();
         $this->promoCode = isset($params['promoCode']) ? (string) $params['promoCode'] : null;
-        $this->userRegion = $this->getUserRegion($params['regionFiasId'] ?? null);
+        $this->regionFiasId = $params['regionFiasId'] ?? null;
         $this->customer = [
             'id' => null,
             'roles' => [],
             'segment' => null,
-            'isUserAuth' => false,
         ];
 
         if (isset($params['customer'])) {
             $this->customer = [
-                'id' => $params['customer']['id'] && $params['customer']['isUserAuth'] ? $params['customer']['id'] : null,
+                'id' => $params['customer']['id'],
                 'roles' => $params['customer']['roles'] ?? [],
                 'segment' => isset($params['customer']['segment']) ? (int) $params['customer']['segment'] : null,
-                'isUserAuth' => $params['customer']['isUserAuth'],
             ];
         } else {
             if (isset($params['role_ids']) && is_array($params['role_ids'])) {
@@ -171,19 +170,6 @@ class InputCalculator
         });
     }
 
-    protected function getUserRegion($userRegionFiasId): ?RegionDto
-    {
-        if (!$userRegionFiasId) {
-            return null;
-        }
-
-        /** @var ListsService $listsService */
-        $listsService = resolve(ListsService::class);
-        $query = $listsService->newQuery()->setFilter('guid', $userRegionFiasId);
-
-        return $listsService->regions($query)->first();
-    }
-
     /**
      * Загружает все необходимые данные
      */
@@ -219,10 +205,7 @@ class InputCalculator
             })
             ->flip();
 
-        if (isset($this->customer['id'], $this->customer['isUserAuth']) && $this->customer['isUserAuth']) {
-            $this->customer = $this->getCustomerInfo();
-        }
-
+        $this->hydrateCustomerInfo();
         $this->hydratePaymentInfo();
 
         return $this;
@@ -239,7 +222,6 @@ class InputCalculator
 
         $offersDto = $this->loadOffers($offerIds);
         $prices = $this->loadPrices($offerIds);
-        $productsDto = $this->loadProducts($offersDto->pluck('product_id')->all());
 
         $hydratedBasketItems = collect();
         /** @var BasketItem $basketItem */
@@ -256,18 +238,15 @@ class InputCalculator
             /** @var float|null $price */
             $price = $prices->get($offerId);
 
-            /** @var ProductDto|null $productDto */
-            $productDto = $productsDto->get($offerDto->product_id);
-
             $hydratedBasketItems->put($basketItem->id, collect([
                 'id' => $basketItem->id,
                 'offer_id' => $offerId,
                 'price' => $price ?? null,
                 'cost' => $price ?? null,
                 'qty' => $basketItem->qty ?? 1,
-                'brand_id' => $productDto->brand_id ?? null,
-                'category_id' => $productDto->category_id ?? null,
-                'product_id' => $productDto->id ?? null,
+                'brand_id' => $offerDto->product->brand_id ?? null,
+                'category_id' => $offerDto->product->category_id ?? null,
+                'product_id' => $offerDto->product_id,
                 'merchant_id' => $offerDto->merchant_id,
                 'bundle_id' => $basketItem->bundleId,
                 'ticket_type_id' => $offerDto->ticket_type_id ?? null,
@@ -283,7 +262,9 @@ class InputCalculator
         $offerService = resolve(OfferService::class);
         $query = $offerService->newQuery()
             ->setFilter('id', $offersIds)
-            ->addFields(OfferDto::entity(), 'id', 'product_id', 'merchant_id', 'ticket_type_id');
+            ->include(ProductDto::entity())
+            ->addFields(OfferDto::entity(), 'id', 'product_id', 'merchant_id', 'ticket_type_id')
+            ->addFields(ProductDto::entity(), 'id', 'category_id', 'brand_id');
 
         return $offerService->offers($query)->keyBy('id');
     }
@@ -306,28 +287,27 @@ class InputCalculator
             ->pluck('price', 'offer_id');
     }
 
-    protected function getCustomerInfo(): array
+    protected function hydrateCustomerInfo(): void
     {
         $customerId = $this->getCustomerId();
+        if (!$customerId) {
+            return;
+        }
+
         $customer = $this->loadCustomer($customerId);
         if (!$customer) {
-            return [];
+            return;
         }
 
         $roles = $this->loadCustomerUserRoles($customer);
         if (!$roles) {
-            return [];
+            return;
         }
 
-        $ordersCount = $this->loadCustomerOrdersCount($customerId);
-
-        return [
+        $this->customer = [
             'id' => $customerId,
             'roles' => $roles,
             'segment' => 1, // todo
-            'orders' => [
-                'count' => $ordersCount,
-            ],
             'bonus' => $customer['bonus'] ?? 0,
         ];
     }
@@ -351,16 +331,6 @@ class InputCalculator
         return $userService->userRoles($customer->user_id)->pluck('id')->toArray();
     }
 
-    protected function loadCustomerOrdersCount(int $customerId): int
-    {
-        /** @var OrderService $orderService */
-        $orderService = resolve(OrderService::class);
-        $query = $orderService->newQuery()->setFilter('customer_id', $customerId);
-        $ordersCount = $orderService->ordersCount($query);
-
-        return (int) $ordersCount['total'];
-    }
-
     protected function hydratePaymentInfo(): void
     {
         $paymentMethodId = $this->payment['method'];
@@ -379,20 +349,52 @@ class InputCalculator
         ];
     }
 
-    /**
-     * @return int|null
-     */
-    public function getCustomerId()
+    public function getCustomerId(): ?int
     {
         return $this->customer['id'] ?? null;
     }
 
-    /**
-     * @return int|null
-     */
-    public function getCountOrders()
+    public function getCustomerOrdersCount(): ?int
     {
-        return $this->customer['orders']['count'] ?? null;
+        if (!$customerId = $this->getCustomerId()) {
+            return null;
+        }
+
+        $this->customer['ordersCount'] ??= $this->loadCustomerOrdersCount($customerId);
+
+        return $this->customer['ordersCount'];
+    }
+
+    protected function loadCustomerOrdersCount(int $customerId): int
+    {
+        /** @var OrderService $orderService */
+        $orderService = resolve(OrderService::class);
+        $query = $orderService->newQuery()->setFilter('customer_id', $customerId);
+        $ordersCount = $orderService->ordersCount($query);
+
+        return (int) $ordersCount['total'];
+    }
+
+    public function getUserRegionId(): ?int
+    {
+        if (!$this->regionFiasId) {
+            return null;
+        }
+
+        $this->regionId ??= $this->loadUserRegionId();
+
+        return $this->regionId;
+    }
+
+    protected function loadUserRegionId(): ?int
+    {
+        /** @var ListsService $listsService */
+        $listsService = resolve(ListsService::class);
+        $query = $listsService->newQuery()
+            ->setFilter('guid', $this->regionFiasId)
+            ->addFields('id');
+
+        return $listsService->regions($query)->first()->id ?? null;
     }
 
     /**
