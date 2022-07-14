@@ -9,7 +9,6 @@ use App\Models\Price\Price;
 use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\Customer\Dto\CustomerDto;
 use Greensight\Customer\Services\CustomerService\CustomerService;
-use Greensight\Logistics\Dto\Lists\RegionDto;
 use Greensight\Logistics\Services\ListsService\ListsService;
 use Greensight\Oms\Services\OrderService\OrderService;
 use Greensight\Oms\Services\PaymentService\PaymentService;
