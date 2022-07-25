@@ -102,15 +102,13 @@ class Basket implements \JsonSerializable
         return $basket;
     }
 
-    /**
-     * @param int|string $userId
-     */
-    public function __construct($userId, $userRegionFiasId = null, $isUserAuth = true)
+    public function __construct(int|string $userId, $userRegionFiasId = null, $isUserAuth = true)
     {
         $this->user = $userId;
         $this->userRegionFiasId = $userRegionFiasId;
         $this->isUserAuth = $isUserAuth;
 
+        /** @var Option $option */
         $option = Option::query()->where('key', Option::KEY_BONUS_PER_RUBLES)->first();
         $this->bonusPerRub = $option ? $option->value['value'] : Option::DEFAULT_BONUS_PER_RUBLES;
     }
@@ -269,7 +267,7 @@ class Basket implements \JsonSerializable
         return $response;
     }
 
-    public function jsonSerialize()
+    public function jsonSerialize(): array
     {
         return [
             'cost' => $this->cost,

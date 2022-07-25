@@ -15,10 +15,8 @@ class AggregateController extends Controller
     /**
      * Получить личную скидку в процентах, которая применяется ко всем товарам
      * (нужно для РП, чтобы вывести ему эту информацию в ЛК и в Админке)
-     * @param $customer_id
-     * @return Response
      */
-    public function getPersonalGlobalPercent(int $customer_id)
+    public function getPersonalGlobalPercent(int $customer_id): Response
     {
         /** @var PromoCode $promoCode */
         $promoCode = PromoCode::query()

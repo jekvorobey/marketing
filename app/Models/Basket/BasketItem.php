@@ -96,7 +96,7 @@ class BasketItem implements \JsonSerializable
         $this->bundleId = $bundleId;
     }
 
-    public function jsonSerialize()
+    public function jsonSerialize(): array
     {
         return [
             'id' => $this->id,

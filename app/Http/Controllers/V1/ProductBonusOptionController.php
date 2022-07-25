@@ -4,15 +4,13 @@ namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Bonus\ProductBonusOption\ProductBonusOption;
+use Exception;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 
 class ProductBonusOptionController extends Controller
 {
-    /**
-     * @param $id
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function get($productId)
+    public function get($productId): JsonResponse
     {
         $productBonusOption = ProductBonusOption::query()->where('product_id', $productId)->first();
         if (!$productBonusOption) {
@@ -22,14 +20,9 @@ class ProductBonusOptionController extends Controller
         return response()->json($productBonusOption);
     }
 
-    /**
-     * @param $productId
-     * @param $key
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function value($productId, $key)
+    public function value($productId, $key): JsonResponse
     {
+        /** @var ProductBonusOption $productBonusOption */
         $productBonusOption = ProductBonusOption::query()->where('product_id', $productId)->first();
         if (!$productBonusOption || !array_key_exists($key, $productBonusOption->value)) {
             return response()->json(null, 404);
@@ -38,13 +31,7 @@ class ProductBonusOptionController extends Controller
         return response()->json(['item' => $productBonusOption->value[$key]]);
     }
 
-    /**
-     * @param $productId
-     * @param $key
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function put($productId, $key)
+    public function put($productId, $key): Response
     {
         $value = request('value');
         $productBonusOption = ProductBonusOption::query()->where('product_id', $productId)->first();
@@ -59,22 +46,17 @@ class ProductBonusOptionController extends Controller
         $item[$key] = $value;
         $productBonusOption->value = $item;
         $productBonusOption->save();
+
         return response('', 204);
     }
 
     /**
-     * @param $productId
-     * @param $key
-     *
-     * @return \Illuminate\Http\Response
-     * @throws \Exception
+     * @throws Exception
      */
-    public function delete($productId, $key)
+    public function delete($productId, $key): Response
     {
-        $productBonusOption = ProductBonusOption::query()->where('product_id', $productId)->first();
-        if (!$productBonusOption) {
-            return response('', 204);
-        }
+        /** @var ProductBonusOption $productBonusOption */
+        $productBonusOption = ProductBonusOption::query()->where('product_id', $productId)->firstOrFail();
 
         $item = $productBonusOption->value;
         unset($item[$key]);
@@ -84,6 +66,7 @@ class ProductBonusOptionController extends Controller
         } else {
             $productBonusOption->save();
         }
+
         return response('', 204);
     }
 }

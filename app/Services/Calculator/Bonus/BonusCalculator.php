@@ -142,10 +142,7 @@ class BonusCalculator extends AbstractCalculator
         return $this;
     }
 
-    /**
-     * @return bool|int
-     */
-    protected function applyBonusToBasketItem(Bonus $bonus, Collection $basketItemsIds)
+    protected function applyBonusToBasketItem(Bonus $bonus, Collection $basketItemsIds): float|bool|int
     {
         if ($basketItemsIds->isEmpty()) {
             return false;

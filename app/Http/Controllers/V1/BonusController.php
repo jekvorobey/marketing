@@ -9,31 +9,20 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\HttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Illuminate\Http\Response;
 
 class BonusController extends Controller
 {
     public const FAILED_DEPENDENCY_CODE = 424;
 
-    /**
-     * @param $id
-     *
-     * @return JsonResponse
-     */
-    public function find($id)
+    public function find($id): JsonResponse
     {
-        $discount = Bonus::find((int) $id);
-        if (!$discount) {
-            throw new NotFoundHttpException();
-        }
+        $discount = Bonus::query()->findOrFail((int) $id);
 
         return response()->json($discount);
     }
 
-    /**
-     * @return JsonResponse
-     */
-    public function read(Request $request)
+    public function read(Request $request): JsonResponse
     {
         $id = $request->route('id');
         if ($id > 0) {
@@ -100,7 +89,7 @@ class BonusController extends Controller
         }
     }
 
-    public function create()
+    public function create(): JsonResponse
     {
         try {
             $bonus = new Bonus();
@@ -112,13 +101,10 @@ class BonusController extends Controller
         return response()->json(['id' => $bonus->id], 201);
     }
 
-    public function update($id)
+    public function update($id): Response|JsonResponse
     {
         /** @var Bonus|null $bonus */
-        $bonus = Bonus::find($id);
-        if (!$bonus) {
-            throw new NotFoundHttpException();
-        }
+        $bonus = Bonus::query()->findOrFail($id);
 
         try {
             $this->save($bonus);
@@ -129,19 +115,16 @@ class BonusController extends Controller
         return response('', 204);
     }
 
-    public function delete($id)
+    public function delete($id): Response
     {
         /** @var Bonus|null $bonus */
-        $bonus = Bonus::find($id);
-        if (!$bonus) {
-            return response('', 204);
-        }
+        $bonus = Bonus::query()->findOrFail($id);
 
         if ($bonus->promoCodes->isNotEmpty()) {
             return response('', self::FAILED_DEPENDENCY_CODE);
         }
-
         $bonus->delete();
+
         return response('', 204);
     }
 }

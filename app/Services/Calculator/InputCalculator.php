@@ -62,12 +62,8 @@ class InputCalculator
 
     /**
      * InputPriceCalculator constructor.
-     *
-     * @param Collection|array $params
-     *
-     * @throws PimException
      */
-    public function __construct($params)
+    public function __construct(array|Collection $params)
     {
         $this->parse($params);
         $this->loadData();
@@ -78,7 +74,7 @@ class InputCalculator
      * @return Collection|CategoryDto[]
      * @throws PimException
      */
-    public static function getAllCategories()
+    public static function getAllCategories(): Collection
     {
         if (isset(static::$allCategories)) {
             return static::$allCategories;
@@ -156,7 +152,7 @@ class InputCalculator
                     'price' => isset($delivery['price']) ? (int) $delivery['price'] : null,
                     'method' => isset($delivery['method']) ? (int) $delivery['method'] : null,
                     'region' => isset($delivery['region']) ? (int) $delivery['region'] : null,
-                    'selected' => isset($delivery['selected']) ? (bool) $delivery['selected'] : false,
+                    'selected' => isset($delivery['selected']) && $delivery['selected'],
                 ]);
 
                 if ($this->deliveries['items'][$id]['selected']) {
@@ -244,7 +240,7 @@ class InputCalculator
         $hydratedBasketItems = collect();
         /** @var BasketItem $basketItem */
         foreach ($basketItems as $basketItem) {
-            $offerId = (int) $basketItem->offerId;
+            $offerId = $basketItem->offerId;
 
             /** @var OfferDto|null $offerDto */
             $offerDto = $offersDto->get($offerId);
@@ -277,6 +273,9 @@ class InputCalculator
         $this->basketItems = $hydratedBasketItems;
     }
 
+    /**
+     * @throws PimException
+     */
     protected function loadOffers(array $offersIds): Collection
     {
         /** @var OfferService $offerService */
@@ -288,6 +287,9 @@ class InputCalculator
         return $offerService->offers($query)->keyBy('id');
     }
 
+    /**
+     * @throws PimException
+     */
     protected function loadProducts(array $productsIds): Collection
     {
         /** @var ProductService $productService */
@@ -379,27 +381,20 @@ class InputCalculator
         ];
     }
 
-    /**
-     * @return int|null
-     */
-    public function getCustomerId()
+    public function getCustomerId(): ?int
     {
         return $this->customer['id'] ?? null;
     }
 
-    /**
-     * @return int|null
-     */
-    public function getCountOrders()
+    public function getCountOrders(): ?int
     {
         return $this->customer['orders']['count'] ?? null;
     }
 
     /**
      * Сумма заказа без учета скидки
-     * @return int
      */
-    public function getCostOrders()
+    public function getCostOrders(): int
     {
         return $this->basketItems->map(function ($basketItem) {
             return ($basketItem['cost'] ?? $basketItem['price']) * $basketItem['qty'];
@@ -408,20 +403,15 @@ class InputCalculator
 
     /**
      * Заказ от определенной суммы
-     * @return int
      */
-    public function getPriceOrders()
+    public function getPriceOrders(): int
     {
         return $this->basketItems->map(function ($basketItem) {
             return $basketItem['price'] * $basketItem['qty'];
         })->sum();
     }
 
-    /**
-     * @param array $categories
-     * @return int
-     */
-    public function getMaxTotalPriceForCategories($categories)
+    public function getMaxTotalPriceForCategories(array $categories): int
     {
         $max = 0;
         foreach ($categories as $categoryId) {
@@ -441,10 +431,8 @@ class InputCalculator
 
     /**
      * Возвращает максимальную сумму товаров среди брендов ($brands)
-     * @param array $brands
-     * @return int
      */
-    public function getMaxTotalPriceForBrands($brands)
+    public function getMaxTotalPriceForBrands(array $brands): int
     {
         $max = 0;
         foreach ($brands as $brandId) {

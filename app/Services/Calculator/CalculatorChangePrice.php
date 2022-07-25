@@ -48,11 +48,9 @@ class CalculatorChangePrice
 
     /**
      * Получить размер скидки и новую цену для бандла
-     *
-     * @param OfferDto|array $item
      */
     private function processBundleType(
-        $item,
+        OfferDto|array $item,
         int $value,
         Discount $discount,
         int $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB,
@@ -81,11 +79,9 @@ class CalculatorChangePrice
 
     /**
      * Получить размер скидки и новую цену для офферов
-     *
-     * @param OfferDto|array $item
      */
     private function processAllTypes(
-        $item,
+        OfferDto|array $item,
         int $value,
         int $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB,
         int $lowestPossiblePrice = self::LOWEST_POSSIBLE_PRICE
@@ -117,10 +113,10 @@ class CalculatorChangePrice
 
     /**
      * Рассчитать процент от значения и округлить указанным методом.
-     * @param int|float $value - значение от которого берётся процент
-     * @param int|float $percent - процент (0-100)
+     * @param float|int $value - значение от которого берётся процент
+     * @param float|int $percent - процент (0-100)
      */
-    public static function percent($value, $percent, int $method = self::FLOOR): int
+    public static function percent(float|int $value, float|int $percent, int $method = self::FLOOR): int
     {
         return self::round($value * $percent / 100, $method);
     }
@@ -130,33 +126,23 @@ class CalculatorChangePrice
      */
     public static function round($value, $method = self::FLOOR): int
     {
-        switch ($method) {
-            case self::FLOOR:
-                return (int) floor($value);
-            case self::CEIL:
-                return (int) ceil($value);
-            default:
-                return (int) round($value);
-        }
+        return match ($method) {
+            self::FLOOR => (int) floor($value),
+            self::CEIL => (int) ceil($value),
+            default => (int) round($value),
+        };
     }
 
     public function calculateDiscountByType($cost, $value, $valueType): float
     {
-        switch ($valueType) {
-            case Discount::DISCOUNT_VALUE_TYPE_PERCENT:
-                return round($cost * $value / 100, 2);
-            case Discount::DISCOUNT_VALUE_TYPE_RUB:
-                return $value;
-            default:
-                return 0;
-        }
+        return match ($valueType) {
+            Discount::DISCOUNT_VALUE_TYPE_PERCENT => round($cost * $value / 100, 2),
+            Discount::DISCOUNT_VALUE_TYPE_RUB => $value,
+            default => 0,
+        };
     }
 
-    /**
-     * @param OfferDto|array $item
-     * @return array|object
-     */
-    public function syncItemWithChangedPrice($item, array $changedPrice)
+    public function syncItemWithChangedPrice(OfferDto|array $item, array $changedPrice): OfferDto|array
     {
         if (isset($changedPrice['discount'])) {
             $item['discount'] = $changedPrice['discount'];

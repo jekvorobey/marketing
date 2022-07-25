@@ -4,6 +4,7 @@ namespace App\Services\Price;
 
 use App\Models\Price\Price;
 use Illuminate\Database\Eloquent\Collection;
+use Pim\Core\PimException;
 use Pim\Services\SearchService\SearchService;
 
 class PriceWriter
@@ -66,6 +67,9 @@ class PriceWriter
         return $price;
     }
 
+    /**
+     * @throws PimException
+     */
     private function markOffersForIndex(array $offerIds): void
     {
         if (!$offerIds) {

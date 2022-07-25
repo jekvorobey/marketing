@@ -24,61 +24,49 @@ class CheckoutCalculatorBuilder
         $this->params->put('bonus', 0);
     }
 
-    /**
-     * @param Collection|array $customers
-     */
-    public function customer($customers): self
+    public function customer(array|Collection $customers): self
     {
         $this->params['customer'] = collect($customers);
+
         return $this;
     }
 
-    /**
-     * @param Collection|array $basketItems
-     */
-    public function basketItems($basketItems): self
+    public function basketItems(array|Collection $basketItems): self
     {
         $this->params['basketItems'] = collect($basketItems);
+
         return $this;
     }
 
-    /**
-     * @param Collection|array $bundles
-     */
-    public function bundles($bundles): self
+    public function bundles(array|Collection $bundles): self
     {
         $this->params['bundles'] = collect($bundles);
+
         return $this;
     }
 
     public function promoCode(?string $promoCode): self
     {
         $this->params['promoCode'] = $promoCode;
+
         return $this;
     }
 
-    /**
-     * @param Collection|array $deliveries
-     */
-    public function deliveries($deliveries): self
+    public function deliveries(array|Collection $deliveries): self
     {
         $this->params['deliveries'] = collect($deliveries);
+
         return $this;
     }
 
-    /**
-     * @param Collection|array $payment
-     */
-    public function payment($payment): self
+    public function payment(array|Collection $payment): self
     {
         $this->params['payment'] = collect($payment);
+
         return $this;
     }
 
-    /**
-     * @param string $id
-     */
-    public function regionFiasId($id): self
+    public function regionFiasId(string $id): self
     {
         $this->params['regionFiasId'] = $id;
         return $this;

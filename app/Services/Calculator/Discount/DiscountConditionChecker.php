@@ -97,8 +97,6 @@ class DiscountConditionChecker
      */
     public function checkRegion($regions): bool
     {
-        return !empty($this->input->userRegion)
-            ? in_array($this->input->userRegion['id'], $regions)
-            : false;
+        return !empty($this->input->userRegion) && in_array($this->input->userRegion['id'], $regions);
     }
 }
