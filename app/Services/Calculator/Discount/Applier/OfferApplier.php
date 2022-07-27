@@ -85,7 +85,7 @@ class OfferApplier extends AbstractApplier
                 continue;
             }
 
-            $this->addBasketItemByDiscount($basketItemId, $discount, $change);
+            $this->addBasketItemByDiscount($basketItemId, $discount, $change, $changedPrice['appliedDiscountPercentValue'] ?? null);
             $qty = $basketItem['qty'];
 
             $changed += $change * $qty;
