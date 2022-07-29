@@ -166,6 +166,7 @@ class PriceController extends Controller
 
     /**
      * Установить цену для предложения мерчанта
+     * @throws PimException
      */
     public function setPrice(int $offerId, Request $request, PriceWriter $priceWriter): Response
     {

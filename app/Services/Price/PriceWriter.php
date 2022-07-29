@@ -14,6 +14,7 @@ class PriceWriter
     /**
      * @param array|float[] $newPrices - массив новых цен вида [offerId => price]
      * @param bool $nullable - сохранять ли нулевую цену
+     * @throws PimException
      */
     public function setPrices(array $newPrices, bool $nullable = false): void
     {
