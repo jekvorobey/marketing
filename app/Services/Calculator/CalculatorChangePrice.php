@@ -47,10 +47,11 @@ class CalculatorChangePrice
     }
 
     /**
+     * @var OfferDto|array $item
      * Получить размер скидки и новую цену для бандла
      */
     private function processBundleType(
-        OfferDto|array $item,
+        $item,
         int $value,
         Discount $discount,
         int $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB,
@@ -78,10 +79,11 @@ class CalculatorChangePrice
     }
 
     /**
+     * @var OfferDto|array $item
      * Получить размер скидки и новую цену для офферов
      */
     private function processAllTypes(
-        OfferDto|array $item,
+        $item,
         int $value,
         int $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB,
         int $lowestPossiblePrice = self::LOWEST_POSSIBLE_PRICE
@@ -142,7 +144,11 @@ class CalculatorChangePrice
         };
     }
 
-    public function syncItemWithChangedPrice(OfferDto|array $item, array $changedPrice): OfferDto|array
+    /**
+     * @param OfferDto|array $item
+     * @return OfferDto|array
+     */
+    public function syncItemWithChangedPrice($item, array $changedPrice)
     {
         if (isset($changedPrice['discount'])) {
             $item['discount'] = $changedPrice['discount'];
