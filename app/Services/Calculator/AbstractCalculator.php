@@ -82,7 +82,7 @@ abstract class AbstractCalculator
      * Получить опцию по ключу (с кэшем в рамках процесса)
      * @param mixed $key
      */
-    protected function getOptAion($key): mixed
+    protected function getOption($key): mixed
     {
         $this->loadOptions();
 
