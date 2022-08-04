@@ -39,7 +39,7 @@ class DiscountConditionChecker
         switch ($condition->type) {
             /** Скидка на первый заказ */
             case DiscountConditionModel::FIRST_ORDER:
-                return $this->input->getCountOrders() === 0;
+                return $this->input->getCustomerOrdersCount() === 0;
             /** Скидка на заказ от заданной суммы */
             case DiscountConditionModel::MIN_PRICE_ORDER:
                 return $this->input->getCostOrders() >= $condition->getMinPrice();
@@ -63,7 +63,7 @@ class DiscountConditionChecker
                 return in_array($this->input->getCustomerId(), $condition->getCustomerIds());
             /** Скидка на каждый N-й заказ */
             case DiscountConditionModel::ORDER_SEQUENCE_NUMBER:
-                $countOrders = $this->input->getCountOrders();
+                $countOrders = $this->input->getCustomerOrdersCount();
                 return isset($countOrders) && (($countOrders + 1) % $condition->getOrderSequenceNumber() === 0);
             case DiscountConditionModel::BUNDLE:
                 return true; // todo
@@ -97,6 +97,6 @@ class DiscountConditionChecker
      */
     public function checkRegion($regions): bool
     {
-        return !empty($this->input->userRegion) && in_array($this->input->userRegion['id'], $regions);
+        return in_array($this->input->getUserRegionId(), $regions);
     }
 }

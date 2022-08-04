@@ -25,9 +25,8 @@ class Basket implements \JsonSerializable
      */
     public $discount;
 
-    /** @var int|string */
-    public $user;
-    public bool $isUserAuth;
+    /** @var int|null */
+    public $customerId;
     /** @var int */
     public $userRegionFiasId;
     /** @var string */
@@ -68,7 +67,7 @@ class Basket implements \JsonSerializable
 
     public static function fromRequestData(array $data): self
     {
-        $basket = new self($data['user'], $data['userRegionFiasId'], $data['isUserAuth']);
+        $basket = new self($data['customerId'], $data['userRegionFiasId']);
 
         @([
             'referal_code' => $basket->referalCode,
@@ -102,11 +101,10 @@ class Basket implements \JsonSerializable
         return $basket;
     }
 
-    public function __construct(int|string $userId, $userRegionFiasId = null, $isUserAuth = true)
+    public function __construct(?int $customerId, $userRegionFiasId = null)
     {
-        $this->user = $userId;
+        $this->customerId = $customerId;
         $this->userRegionFiasId = $userRegionFiasId;
-        $this->isUserAuth = $isUserAuth;
 
         /** @var Option $option */
         $option = Option::query()->where('key', Option::KEY_BONUS_PER_RUBLES)->first();
@@ -119,7 +117,7 @@ class Basket implements \JsonSerializable
     public function addPricesAndBonuses(): void
     {
         $calculation = (new CheckoutCalculatorBuilder())
-            ->customer(['id' => $this->user, 'isUserAuth' => $this->isUserAuth])
+            ->customer(['id' => $this->customerId])
             ->payment(['method' => $this->payMethod])
             ->regionFiasId($this->userRegionFiasId)
             ->deliveries($this->deliveries)
