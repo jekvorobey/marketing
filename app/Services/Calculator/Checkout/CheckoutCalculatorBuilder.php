@@ -66,15 +66,17 @@ class CheckoutCalculatorBuilder
         return $this;
     }
 
-    public function regionFiasId(string $id): self
+    public function regionFiasId(?string $id): self
     {
         $this->params['regionFiasId'] = $id;
+
         return $this;
     }
 
     public function bonus(?int $bonus): self
     {
         $this->params['bonus'] = $bonus ?? 0;
+
         return $this;
     }
 
