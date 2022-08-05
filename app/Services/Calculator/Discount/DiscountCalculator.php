@@ -369,22 +369,27 @@ class DiscountCalculator extends AbstractCalculator
      */
     protected function sort(): self
     {
-        $possibleDiscounts = $this->possibleDiscounts->sortBy(fn(Discount $discount) => $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB);
+        /** @var Collection|Discount[] $discounts */
+        $discounts = $this->possibleDiscounts->sortBy(fn(Discount $discount) => $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB);
 
-        [$deliveryDiscounts, $possibleDiscounts] = $possibleDiscounts->partition('type', Discount::DISCOUNT_TYPE_DELIVERY);
-        [$promocodeDiscounts, $possibleDiscounts] = $possibleDiscounts->partition('promo_code_only', true);
-        [$bundleDiscounts, $possibleDiscounts] = $possibleDiscounts->partition(
+        if ($promoCodeDiscountId = $this->input->promoCodeDiscount->id ?? null) {
+            [$appliedPromocodeDiscounts, $discounts] = $discounts->partition('id', $promoCodeDiscountId);
+        }
+        [$deliveryDiscounts, $discounts] = $discounts->partition('type', Discount::DISCOUNT_TYPE_DELIVERY);
+        [$promocodeDiscounts, $discounts] = $discounts->partition('promo_code_only', true);
+        [$bundleDiscounts, $discounts] = $discounts->partition(
             fn($discount) => in_array($discount->type, [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS])
         );
-        [$cartTotalDiscounts, $possibleDiscounts] = $possibleDiscounts->partition('type', Discount::DISCOUNT_TYPE_CART_TOTAL);
-        [$discountsWithConditions, $possibleDiscounts] = $possibleDiscounts->partition(function (Discount $discount) {
+        [$cartTotalDiscounts, $discounts] = $discounts->partition('type', Discount::DISCOUNT_TYPE_CART_TOTAL);
+        [$nonCatalogDiscounts, $catalogDiscounts] = $discounts->partition(function (Discount $discount) {
             return $discount->conditions->where('type', '!=', DiscountCondition::DISCOUNT_SYNERGY)->isNotEmpty();
         });
 
-        $this->possibleDiscounts = $possibleDiscounts
-            ->merge($bundleDiscounts)
+        $this->possibleDiscounts = $bundleDiscounts
+            ->merge($appliedPromocodeDiscounts ?? [])
+            ->merge($catalogDiscounts)
             ->merge($promocodeDiscounts)
-            ->merge($discountsWithConditions)
+            ->merge($nonCatalogDiscounts)
             ->merge($cartTotalDiscounts)
             ->merge($deliveryDiscounts);
 
