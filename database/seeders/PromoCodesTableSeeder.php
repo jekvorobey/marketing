@@ -1,8 +1,11 @@
 <?php
 
+namespace Database\Seeders;
+
 use App\Models\Discount\Discount;
 use App\Models\PromoCode\PromoCode;
 use App\Models\Bonus\Bonus;
+use Faker\Factory;
 use Greensight\CommonMsa\Dto\RoleDto;
 use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\Customer\Services\CustomerService\CustomerService;
@@ -44,13 +47,13 @@ class PromoCodesTableSeeder extends Seeder
     protected $names;
 
     /**
-     * Run the database seeds.
+     * Run the database seeders.
      *
      * @return void
      */
     public function run()
     {
-        $this->faker = Faker\Factory::create('ru_RU');
+        $this->faker = Factory::create('ru_RU');
         $this->faker->seed(self::FAKER_SEED);
 
         $this->loadData();

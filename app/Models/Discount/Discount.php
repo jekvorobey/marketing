@@ -8,15 +8,15 @@ use Greensight\CommonMsa\Models\AbstractModel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Eloquent;
-use DB;
 use Greensight\CommonMsa\Dto\UserDto;
 use Greensight\CommonMsa\Rest\RestQuery;
 use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\Customer\Services\CustomerService\CustomerService;
 use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationService;
+use Illuminate\Support\Facades\DB;
 use MerchantManagement\Services\OperatorService\OperatorService;
 use MerchantManagement\Dto\OperatorDto;
+use Pim\Core\PimException;
 use Pim\Services\SearchService\SearchService;
 
 /**
@@ -35,7 +35,6 @@ use Pim\Services\SearchService\SearchService;
  * @property Carbon $end_date
  * @property bool $promo_code_only
  * @property string $comment
- * @mixin Eloquent
  *
  * @property-read Collection|DiscountOffer[] $offers
  * @property-read Collection|BundleItem[] $bundleItems
@@ -387,10 +386,8 @@ class Discount extends AbstractModel
 
     /**
      * Сделать скидку совместимой с другой скидкой
-     * @param Discount|int $other
-     * @return bool
      */
-    public function makeCompatible($other)
+    public function makeCompatible(int|Discount $other): bool
     {
         $otherId = is_int($other) ? $other : $other->id;
         if ($this->id === $otherId) {
@@ -400,7 +397,7 @@ class Discount extends AbstractModel
         try {
             DB::beginTransaction();
 
-            /** @var DiscountCondition[] $conditions */
+            /** @var Collection|DiscountCondition[] $conditions */
             $conditions = DiscountCondition::query()
                 ->whereIn('discount_id', [$this->id, $otherId])
                 ->where('type', DiscountCondition::DISCOUNT_SYNERGY)
@@ -426,23 +423,24 @@ class Discount extends AbstractModel
                 $conditions[$otherId]->condition = [DiscountCondition::FIELD_SYNERGY => $otherSynergy];
                 $conditions[$otherId]->update();
             } elseif (!$conditions->has($this->id)) {
-                DiscountCondition::create([
+                DiscountCondition::query()->create([
                     'discount_id' => $this->id,
                     'type' => DiscountCondition::DISCOUNT_SYNERGY,
                     'condition' => [DiscountCondition::FIELD_SYNERGY => $thisSynergy],
                 ]);
             } else {
-                DiscountCondition::create([
+                DiscountCondition::query()->create([
                     'discount_id' => $otherId,
                     'type' => DiscountCondition::DISCOUNT_SYNERGY,
                     'condition' => [DiscountCondition::FIELD_SYNERGY => $otherSynergy],
                 ]);
             }
-
             DB::commit();
+
             return true;
-        } catch (\Throwable $ex) {
+        } catch (\Throwable) {
             DB::rollBack();
+
             return false;
         }
     }
@@ -516,36 +514,28 @@ class Discount extends AbstractModel
             );
 
             [$type, $data] = (function () use ($discount) {
-                switch ($discount->status) {
-                    case self::STATUS_CREATED:
-                        return ['marketingskidka_sozdana', []];
-                    case self::STATUS_SENT:
-                        return ['marketingskidka_otpravlena_na_soglasovanie', []];
-                    case self::STATUS_ON_CHECKING:
-                        return ['marketingskidka_na_soglasovanii', []];
-                    case self::STATUS_ACTIVE:
-                        return ['marketingskidka_aktivna', [
-                            'NAME_DISCOUNT' => $discount->name,
-                        ],
-                        ];
-                    case self::STATUS_REJECTED:
-                        return ['marketingskidka_otklonena', [
-                            'NAME_DISCOUNT' => $discount->name,
-                        ],
-                        ];
-                    case self::STATUS_PAUSED:
-                        return ['marketingskidka_priostanovlena', [
-                            'NAME_DISCOUNT' => $discount->name,
-                        ],
-                        ];
-                    case self::STATUS_EXPIRED:
-                        return ['marketingskidka_zavershena', [
-                            'NAME_DISCOUNT' => $discount->name,
-                        ],
-                        ];
-                    default:
-                        return ['', []];
-                }
+                return match ($discount->status) {
+                    self::STATUS_CREATED => ['marketingskidka_sozdana', []],
+                    self::STATUS_SENT => ['marketingskidka_otpravlena_na_soglasovanie', []],
+                    self::STATUS_ON_CHECKING => ['marketingskidka_na_soglasovanii', []],
+                    self::STATUS_ACTIVE => ['marketingskidka_aktivna', [
+                        'NAME_DISCOUNT' => $discount->name,
+                    ],
+                    ],
+                    self::STATUS_REJECTED => ['marketingskidka_otklonena', [
+                        'NAME_DISCOUNT' => $discount->name,
+                    ],
+                    ],
+                    self::STATUS_PAUSED => ['marketingskidka_priostanovlena', [
+                        'NAME_DISCOUNT' => $discount->name,
+                    ],
+                    ],
+                    self::STATUS_EXPIRED => ['marketingskidka_zavershena', [
+                        'NAME_DISCOUNT' => $discount->name,
+                    ],
+                    ],
+                    default => ['', []],
+                };
             })();
 
             if ($discount->status == self::STATUS_CREATED) {
@@ -650,6 +640,9 @@ class Discount extends AbstractModel
         });
     }
 
+    /**
+     * @throws PimException
+     */
     public function updatePimContents(): void
     {
         static $actionPerformed = false;

@@ -9,19 +9,16 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Illuminate\Http\Response;
 
 class PromoCodeController extends Controller
 {
-    /**
-     * @param $id
-     *
-     * @return JsonResponse
-     */
-    public function find($id)
+    public function find($id): JsonResponse
     {
-        $discount = PromoCode::find((int) $id);
+        $discount = PromoCode::query()->findOrFail((int) $id);
         if (!$discount) {
             throw new NotFoundHttpException();
         }
@@ -29,7 +26,7 @@ class PromoCodeController extends Controller
         return response()->json($discount);
     }
 
-    public function read(Request $request)
+    public function read(Request $request): JsonResponse
     {
         $id = $request->route('id');
         if ($id > 0) {
@@ -43,7 +40,7 @@ class PromoCodeController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(): JsonResponse
     {
         try {
             $promoCode = new PromoCode();
@@ -55,13 +52,10 @@ class PromoCodeController extends Controller
         return response()->json(['id' => $promoCode->id], 201);
     }
 
-    public function update($id)
+    public function update($id): Response|JsonResponse
     {
         /** @var PromoCode|null $promoCode */
-        $promoCode = PromoCode::query()->where('id', $id)->first();
-        if (!$promoCode) {
-            throw new NotFoundHttpException();
-        }
+        $promoCode = PromoCode::query()->where('id', $id)->firstOrFail();
 
         try {
             $this->save($promoCode);
@@ -109,7 +103,6 @@ class PromoCodeController extends Controller
             throw new HttpException(400, $e->getMessage());
         }
 
-
         try {
             DB::beginTransaction();
             $promoCode->fill($data);
@@ -125,32 +118,25 @@ class PromoCodeController extends Controller
         }
     }
 
-    public function delete($id)
+    public function delete($id): Response
     {
         /** @var PromoCode|null $promoCode */
-        $promoCode = PromoCode::query()->where('id', $id)->first();
-        if (!$promoCode) {
-            return response('', 204);
-        }
-
+        $promoCode = PromoCode::query()->where('id', $id)->firstOrFail();
         $promoCode->delete();
+
         return response('', 204);
     }
 
-    /**
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function generate()
+    public function generate(): JsonResponse
     {
         return response()->json(['code' => PromoCode::generate()]);
     }
 
     /**
      * Проверяется уникальность промокода по коду
-     * @return JsonResponse
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
-    public function check()
+    public function check(): JsonResponse
     {
         $data = $this->validate(request(), [
             'code' => 'required|string|max:32',
@@ -160,13 +146,10 @@ class PromoCodeController extends Controller
 
         return response()->json([
             'status' => $status,
-        ], 200);
+        ]);
     }
 
-    /**
-     * @return Builder
-     */
-    protected function modifyQuery(Request $request, Builder $query)
+    protected function modifyQuery(Request $request, Builder $query): Builder
     {
         $params['page'] = $request->get('page', null);
         $params['perPage'] = $request->get('perPage', null);

@@ -27,6 +27,7 @@ use Pim\Services\SearchService\SearchService;
  * @property-read Collection|BonusOffer[] $offers
  * @property-read Collection|BonusBrand[] $brands
  * @property-read Collection|BonusCategory[] $categories
+ * @property-read Collection|PromoCode[] $promoCodes
  */
 class Bonus extends AbstractModel
 {
@@ -110,9 +111,8 @@ class Bonus extends AbstractModel
 
     /**
      * Доступные типы бонусов
-     * @return array
      */
-    public static function availableTypes()
+    public static function availableTypes(): array
     {
         return [
             self::TYPE_OFFER,
@@ -129,9 +129,8 @@ class Bonus extends AbstractModel
 
     /**
      * Доступные статусы бонусов
-     * @return array
      */
-    public static function availableStatuses()
+    public static function availableStatuses(): array
     {
         return [
             self::STATUS_CREATED,
@@ -141,10 +140,7 @@ class Bonus extends AbstractModel
         ];
     }
 
-    /**
-     * @return array
-     */
-    public static function availableRelations()
+    public static function availableRelations(): array
     {
         return [
             Bonus::BONUS_OFFER_RELATION,
@@ -153,10 +149,7 @@ class Bonus extends AbstractModel
         ];
     }
 
-    /**
-     * @return array
-     */
-    public function getMappingRelations()
+    public function getMappingRelations(): array
     {
         return [
             Bonus::BONUS_OFFER_RELATION => ['class' => BonusOffer::class, 'items' => $this->offers],
@@ -165,34 +158,22 @@ class Bonus extends AbstractModel
         ];
     }
 
-    /**
-     * @return HasMany
-     */
-    public function offers()
+    public function offers(): HasMany
     {
         return $this->hasMany(BonusOffer::class, 'bonus_id');
     }
 
-    /**
-     * @return HasMany
-     */
-    public function brands()
+    public function brands(): HasMany
     {
         return $this->hasMany(BonusBrand::class, 'bonus_id');
     }
 
-    /**
-     * @return HasMany
-     */
-    public function categories()
+    public function categories(): HasMany
     {
         return $this->hasMany(BonusCategory::class, 'bonus_id');
     }
 
-    /**
-     * @return HasMany
-     */
-    public function promoCodes()
+    public function promoCodes(): HasMany
     {
         return $this->hasMany(PromoCode::class, 'bonus_id');
     }

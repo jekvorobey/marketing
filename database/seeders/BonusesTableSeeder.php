@@ -1,11 +1,15 @@
 <?php
 
+namespace Database\Seeders;
+
+use Faker\Factory;
 use Illuminate\Database\Seeder;
 use App\Models\Bonus\Bonus;
 use App\Models\Bonus\BonusOffer;
 use App\Models\Bonus\BonusBrand;
 use App\Models\Bonus\BonusCategory;
 use Greensight\CommonMsa\Rest\RestQuery;
+use Pim\Core\PimException;
 use Pim\Services\OfferService\OfferService;
 use Pim\Services\BrandService\BrandService;
 use Pim\Services\CategoryService\CategoryService;
@@ -30,13 +34,14 @@ class BonusesTableSeeder extends Seeder
     protected $categoryIds;
 
     /**
-     * Run the database seeds.
+     * Run the database seeders.
      *
      * @return void
+     * @throws PimException
      */
     public function run()
     {
-        $this->faker = Faker\Factory::create('ru_RU');
+        $this->faker = Factory::create('ru_RU');
         $this->faker->seed(self::FAKER_SEED);
 
         $this->loadData();
@@ -117,6 +122,9 @@ class BonusesTableSeeder extends Seeder
         }
     }
 
+    /**
+     * @throws PimException
+     */
     protected function loadData()
     {
         $this->names = [

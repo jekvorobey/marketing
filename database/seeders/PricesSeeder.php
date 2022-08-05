@@ -1,17 +1,24 @@
 <?php
 
+namespace Database\Seeders;
+
 use App\Models\Price\Price;
+use Faker\Factory;
 use Greensight\CommonMsa\Rest\RestQuery;
 use Illuminate\Database\Seeder;
+use Pim\Core\PimException;
 use Pim\Services\OfferService\OfferService;
 
 class PricesSeeder extends Seeder
 {
     public const FAKER_SEED = 123456;
 
+    /**
+     * @throws PimException
+     */
     public function run()
     {
-        $faker = Faker\Factory::create('ru_RU');
+        $faker = Factory::create('ru_RU');
         $faker->seed(self::FAKER_SEED);
 
         /** @var OfferService $offerService */

@@ -18,12 +18,12 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
+use Pim\Core\PimException;
 use Pim\Dto\Offer\OfferDto;
 use Pim\Dto\Product\ProductDto;
 use Pim\Services\OfferService\OfferService;
 use Pim\Services\ProductService\ProductService;
 use Symfony\Component\HttpKernel\Exception\HttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Class DiscountController
@@ -43,22 +43,14 @@ class DiscountController extends Controller
         ];
     }
 
-    /**
-     * @return JsonResponse
-     */
-    public function count(Request $request)
+    public function count(Request $request): JsonResponse
     {
         $query = Discount::query();
         $total = $this->modifyQuery($request, $query)->count();
         return response()->json(['total' => $total]);
     }
 
-    /**
-     * @param $id
-     *
-     * @return JsonResponse
-     */
-    public function find($id)
+    public function find($id): JsonResponse
     {
         $discount = Discount::query()
             ->with([
@@ -71,19 +63,12 @@ class DiscountController extends Controller
                 'conditions',
             ])
             ->where('id', (int) $id)
-            ->first();
-
-        if (!$discount) {
-            throw new NotFoundHttpException();
-        }
+            ->firstOrFail();
 
         return response()->json($discount);
     }
 
-    /**
-     * @return JsonResponse
-     */
-    public function read(Request $request)
+    public function read(Request $request): JsonResponse
     {
         $id = $request->route('id');
         if ($id > 0) {
@@ -97,10 +82,7 @@ class DiscountController extends Controller
         ]);
     }
 
-    /**
-     * @return Response
-     */
-    public function updateStatus(Request $request)
+    public function updateStatus(Request $request): Response
     {
         $data = $request->validate([
             'ids' => 'array|required',
@@ -147,16 +129,10 @@ class DiscountController extends Controller
         return response('', 204);
     }
 
-    /**
-     * @return Response
-     */
-    public function update(int $id, Request $request)
+    public function update(int $id, Request $request): Response
     {
         /** @var Discount $discount */
-        $discount = Discount::find($id);
-        if (!$discount) {
-            throw new NotFoundHttpException();
-        }
+        $discount = Discount::query()->findOrFail($id);
 
         $data = $request->validate([
             'name' => 'string',
@@ -204,10 +180,7 @@ class DiscountController extends Controller
         return response('', 204);
     }
 
-    /**
-     * @return JsonResponse
-     */
-    public function create(Request $request, RequestInitiator $client)
+    public function create(Request $request, RequestInitiator $client): JsonResponse
     {
         try {
             $data = $request->validate([
@@ -264,30 +237,24 @@ class DiscountController extends Controller
 
     /**
      * Возвращаент IDs авторов создания скидок
-     *
-     * @return JsonResponse
      */
-    public function getAuthors(Request $request)
+    public function getAuthors(Request $request): JsonResponse
     {
         return response()->json($this->authors($request));
     }
 
     /**
      * Возвращаент IDs инициаторов (спонсоров) скидок
-     *
-     * @return array
      */
-    public function getInitiators(Request $request)
+    public function getInitiators(Request $request): JsonResponse
     {
         return response()->json($this->initiators($request));
     }
 
     /**
      * Возвращаент IDs авторов и инициаторов скидок
-     *
-     * @return JsonResponse
      */
-    public function getUsers(Request $request)
+    public function getUsers(Request $request): JsonResponse
     {
         return response()->json([
             'authors' => $this->authors($request),
@@ -297,6 +264,7 @@ class DiscountController extends Controller
 
     /**
      * Возвращает данные о примененных скидках
+     * @throws PimException
      */
     public function calculate(Request $request): JsonResponse
     {
@@ -319,10 +287,7 @@ class DiscountController extends Controller
         return response()->json($result);
     }
 
-    /**
-     * @return array
-     */
-    protected function initiators(Request $request)
+    protected function initiators(Request $request): array
     {
         return $this->modifyQuery($request, Discount::query())
             ->select(['merchant_id'])
@@ -332,10 +297,7 @@ class DiscountController extends Controller
             ->toArray();
     }
 
-    /**
-     * @return array
-     */
-    protected function authors(Request $request)
+    protected function authors(Request $request): array
     {
         return $this->modifyQuery($request, Discount::query())
             ->select(['user_id'])
@@ -365,9 +327,9 @@ class DiscountController extends Controller
     }
 
     /**
-     * @return Builder
+     * @throws PimException
      */
-    protected function modifyQuery(Request $request, Builder $query)
+    protected function modifyQuery(Request $request, Builder $query): Builder
     {
         $params['page'] = $request->get('page', null);
         $params['perPage'] = $request->get('perPage', null);
@@ -507,7 +469,7 @@ class DiscountController extends Controller
 
     /**
      * Добавить условие на принадрежность скидки к мерчанту
-     * @param $value
+     * @throws PimException
      */
     protected function modifyQueryRelateToMerchant(Builder $query, $value)
     {
@@ -540,7 +502,7 @@ class DiscountController extends Controller
                 }
                 if ($product->category_id) {
                     $categoryIds[$product->category_id] = $product->category_id;
-                    foreach ($product->category()->ancestors() as $ancestor) {
+                    foreach ($product->category->ancestors() as $ancestor) {
                         $categoryIds[$ancestor->id] = $ancestor->id;
                     }
                 }
@@ -635,13 +597,10 @@ class DiscountController extends Controller
                     ;
                 });
 
-                $segmentCondition = $segmentIds && !$discount->segments->isEmpty() ?
-                    !($discount->segments->pluck('segment_id')->intersect($segmentIds)->isEmpty()) :
-                    true;
+                $segmentCondition = !($segmentIds && !$discount->segments->isEmpty())
+                    || !($discount->segments->pluck('segment_id')->intersect($segmentIds)->isEmpty());
 
-                $roleCondition = $roleIds && !$discount->roles->isEmpty() ?
-                    !($discount->roles->pluck('role_id')->intersect($roleIds)->isEmpty()) :
-                    true;
+                $roleCondition = !($roleIds && !$discount->roles->isEmpty()) || !($discount->roles->pluck('role_id')->intersect($roleIds)->isEmpty());
 
                 return $customerCondition && $segmentCondition && $roleCondition;
             })

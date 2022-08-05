@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Pim\Core\PimException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -21,7 +22,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  */
 class PriceController extends Controller
 {
-    protected function read(Request $request)
+    protected function read(Request $request): JsonResponse
     {
         try {
             $params = $request->validate([
@@ -74,6 +75,7 @@ class PriceController extends Controller
     /**
      * Получить цену на предложение мерчанта
      * @param int $offerId - id предложения
+     * @throws PimException
      */
     public function price(int $offerId, Request $request): JsonResponse
     {
@@ -107,7 +109,10 @@ class PriceController extends Controller
         ]);
     }
 
-    public function catalogCombinations(Request $request)
+    /**
+     * @throws PimException
+     */
+    public function catalogCombinations(Request $request): JsonResponse
     {
         $offerIds = $request->get('offer_ids');
         if (!$offerIds) {
@@ -161,6 +166,7 @@ class PriceController extends Controller
 
     /**
      * Установить цену для предложения мерчанта
+     * @throws PimException
      */
     public function setPrice(int $offerId, Request $request, PriceWriter $priceWriter): Response
     {
@@ -210,15 +216,9 @@ class PriceController extends Controller
      */
     public function deletePriceByOffer(int $offerId)
     {
-        try {
-            $ok = Price::query()->where('offer_id', $offerId)->delete();
-        } catch (\Throwable $e) {
-            $ok = false;
-        }
-
-        if (!$ok) {
-            throw new HttpException(500);
-        }
+        /** @var Price $price */
+        $price = Price::query()->where('offer_id', $offerId)->firstOrFail();
+        $price->delete();
 
         return response('', 204);
     }

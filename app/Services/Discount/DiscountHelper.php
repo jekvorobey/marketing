@@ -9,15 +9,15 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Pim\Core\PimException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class DiscountHelper
 {
     /**
      * @param array $data
-     * @return bool
      */
-    public static function validate(array $data)
+    public static function validate(array $data): bool
     {
         if (!in_array($data['type'], Discount::availableTypes())) {
             throw new HttpException(400, 'Discount type error');
@@ -55,9 +55,8 @@ class DiscountHelper
 
     /**
      * @param array $relations
-     * @return bool
      */
-    public static function validateRelations(Discount $discount, array $relations)
+    public static function validateRelations(Discount $discount, array $relations): bool
     {
         /** @var Collection $offers */
         $offers = $relations[Discount::DISCOUNT_OFFER_RELATION] ?? $discount->offers;
@@ -68,63 +67,50 @@ class DiscountHelper
         /** @var Collection $publicEvents */
         $publicEvents = $relations[Discount::DISCOUNT_PUBLIC_EVENT_RELATION] ?? $discount->publicEvents;
 
-        switch ($discount->type) {
-            case Discount::DISCOUNT_TYPE_OFFER:
-                return $offers->isNotEmpty()
-                    && $brands->isEmpty()
-                    && $categories->isEmpty()
-                    && $publicEvents->isEmpty()
-                    && $offers->filter(function (DiscountOffer $offer) {
-                        return $offer->except;
-                    })->isEmpty();
-            case Discount::DISCOUNT_TYPE_BRAND:
-                return $offers->filter(function (DiscountOffer $offer) {
+        return match ($discount->type) {
+            Discount::DISCOUNT_TYPE_OFFER => $offers->isNotEmpty()
+                && $brands->isEmpty()
+                && $categories->isEmpty()
+                && $publicEvents->isEmpty()
+                && $offers->filter(function (DiscountOffer $offer) {
+                    return $offer->except;
+                })->isEmpty(),
+            Discount::DISCOUNT_TYPE_BRAND => $offers->filter(function (DiscountOffer $offer) {
                     return !$offer->except;
-                })->isEmpty()
-                    && $brands->isNotEmpty()
-                    && $categories->isEmpty()
-                    && $publicEvents->isEmpty()
-                    && $brands->filter(function (DiscountBrand $brand) {
-                        return $brand->except;
-                    })->isEmpty();
-            case Discount::DISCOUNT_TYPE_CATEGORY:
-                return $offers->filter(function (DiscountOffer $offer) {
+            })->isEmpty()
+                && $brands->isNotEmpty()
+                && $categories->isEmpty()
+                && $publicEvents->isEmpty()
+                && $brands->filter(function (DiscountBrand $brand) {
+                    return $brand->except;
+                })->isEmpty(),
+            Discount::DISCOUNT_TYPE_CATEGORY => $offers->filter(function (DiscountOffer $offer) {
                     return !$offer->except;
+            })->isEmpty()
+                && $brands->filter(function (DiscountBrand $brand) {
+                    return !$brand->except;
                 })->isEmpty()
-                    && $brands->filter(function (DiscountBrand $brand) {
-                        return !$brand->except;
-                    })->isEmpty()
-                    && $publicEvents->isEmpty()
-                    && $categories->isNotEmpty();
-            case Discount::DISCOUNT_TYPE_MASTERCLASS:
-                return $offers->isEmpty()
-                    && $brands->isEmpty()
-                    && $categories->isEmpty()
-                    && $publicEvents->isNotEmpty();
-            case Discount::DISCOUNT_TYPE_BUNDLE_OFFER:
-            case Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS:
-            case Discount::DISCOUNT_TYPE_ANY_OFFER:
-            case Discount::DISCOUNT_TYPE_ANY_BUNDLE:
-            case Discount::DISCOUNT_TYPE_ANY_BRAND:
-            case Discount::DISCOUNT_TYPE_ANY_CATEGORY:
-                return true; // todo
-            case Discount::DISCOUNT_TYPE_ANY_MASTERCLASS:
-            case Discount::DISCOUNT_TYPE_DELIVERY:
-            case Discount::DISCOUNT_TYPE_CART_TOTAL:
-                return $offers->isEmpty()
-                    && $brands->isEmpty()
-                    && $categories->isEmpty()
-                    && $publicEvents->isEmpty();
-            default:
-                return false;
-        }
+                && $publicEvents->isEmpty()
+                && $categories->isNotEmpty(),
+            Discount::DISCOUNT_TYPE_MASTERCLASS => $offers->isEmpty()
+                && $brands->isEmpty()
+                && $categories->isEmpty()
+                && $publicEvents->isNotEmpty(),
+            Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS,
+            Discount::DISCOUNT_TYPE_ANY_OFFER, Discount::DISCOUNT_TYPE_ANY_BUNDLE, Discount::DISCOUNT_TYPE_ANY_BRAND,
+            Discount::DISCOUNT_TYPE_ANY_CATEGORY => true,
+            Discount::DISCOUNT_TYPE_ANY_MASTERCLASS, Discount::DISCOUNT_TYPE_DELIVERY, Discount::DISCOUNT_TYPE_CART_TOTAL => $offers->isEmpty()
+                && $brands->isEmpty()
+                && $categories->isEmpty()
+                && $publicEvents->isEmpty(),
+            default => false,
+        };
     }
 
     /**
-     * @param array $data
-     * @return int
+     * @throws PimException
      */
-    public static function create(array $data)
+    public static function create(array $data): int
     {
         $discount = new Discount();
         $discount->user_id = $data['user_id'];
@@ -194,11 +180,7 @@ class DiscountHelper
         });
     }
 
-    /**
-     * @param array $relations
-     * @return bool
-     */
-    public static function updateRelations(Discount $discount, array $relations)
+    public static function updateRelations(Discount $discount, array $relations): bool
     {
         $diffs = collect();
         foreach (Discount::availableRelations() as $relation) {

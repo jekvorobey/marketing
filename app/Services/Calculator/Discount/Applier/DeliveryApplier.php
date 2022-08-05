@@ -67,17 +67,12 @@ class DeliveryApplier extends AbstractApplier
 
     private function checkCondition(DiscountCondition $condition): bool
     {
-        switch ($condition->type) {
-            case DiscountCondition::MIN_PRICE_ORDER:
-                return $this->input->getPriceOrders() >= $condition->getMinPrice();
-            case DiscountCondition::MIN_PRICE_BRAND:
-                return $this->input->getMaxTotalPriceForBrands($condition->getBrands()) >= $condition->getMinPrice();
-            case DiscountCondition::MIN_PRICE_CATEGORY:
-                return $this->input->getMaxTotalPriceForCategories($condition->getCategories()) >= $condition->getMinPrice();
-            case DiscountCondition::DELIVERY_METHOD:
-                return in_array($this->currentDelivery['method'], $condition->getDeliveryMethods());
-            default:
-                return true;
-        }
+        return match ($condition->type) {
+            DiscountCondition::MIN_PRICE_ORDER => $this->input->getPriceOrders() >= $condition->getMinPrice(),
+            DiscountCondition::MIN_PRICE_BRAND => $this->input->getMaxTotalPriceForBrands($condition->getBrands()) >= $condition->getMinPrice(),
+            DiscountCondition::MIN_PRICE_CATEGORY => $this->input->getMaxTotalPriceForCategories($condition->getCategories()) >= $condition->getMinPrice(),
+            DiscountCondition::DELIVERY_METHOD => in_array($this->currentDelivery['method'], $condition->getDeliveryMethods()),
+            default => true,
+        };
     }
 }

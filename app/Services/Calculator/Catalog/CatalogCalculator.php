@@ -44,10 +44,7 @@ class CatalogCalculator extends AbstractCalculator
         parent::__construct($input, $output);
     }
 
-    /**
-     * @return array
-     */
-    public function calculate(bool $checkPermissions = true)
+    public function calculate(bool $checkPermissions = true): array
     {
         $calculators = [
             DiscountCatalogCalculator::class,

@@ -4,6 +4,7 @@ namespace App\Services\Price;
 
 use App\Models\Price\Price;
 use Illuminate\Database\Eloquent\Collection;
+use Pim\Core\PimException;
 use Pim\Services\SearchService\SearchService;
 
 class PriceWriter
@@ -13,6 +14,7 @@ class PriceWriter
     /**
      * @param array|float[] $newPrices - массив новых цен вида [offerId => price]
      * @param bool $nullable - сохранять ли нулевую цену
+     * @throws PimException
      */
     public function setPrices(array $newPrices, bool $nullable = false): void
     {
@@ -66,6 +68,9 @@ class PriceWriter
         return $price;
     }
 
+    /**
+     * @throws PimException
+     */
     private function markOffersForIndex(array $offerIds): void
     {
         if (!$offerIds) {

@@ -10,12 +10,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class BonusHelper
 {
-    /**
-     * @param array $data
-     *
-     * @return bool
-     */
-    public static function validate(array $data)
+    public static function validate(array $data): bool
     {
         if (!in_array($data['type'], Bonus::availableTypes())) {
             throw new HttpException(400, 'Bonus type error');
@@ -47,10 +42,7 @@ class BonusHelper
         return true;
     }
 
-    /**
-     * @return bool
-     */
-    public static function validateRelations(Bonus $bonus)
+    public static function validateRelations(Bonus $bonus): bool
     {
         $bonus->refresh();
         $data['type'] = $bonus->type;
@@ -58,50 +50,36 @@ class BonusHelper
         $data['brands'] = $bonus->brands;
         $data['categories'] = $bonus->categories;
 
-        switch ($data['type']) {
-            case Bonus::TYPE_OFFER:
-                return $data['offers']->isNotEmpty()
-                    && $data['brands']->isEmpty()
-                    && $data['categories']->isEmpty()
-                    && $data['offers']->filter(function ($offer) {
-                        return $offer['except'];
-                    })->isEmpty();
-            case Bonus::TYPE_BRAND:
-                return $data['offers']->filter(function ($offer) {
-                        return !$offer['except'];
+        return match ($data['type']) {
+            Bonus::TYPE_OFFER => $data['offers']->isNotEmpty()
+                && $data['brands']->isEmpty()
+                && $data['categories']->isEmpty()
+                && $data['offers']->filter(function ($offer) {
+                    return $offer['except'];
+                })->isEmpty(),
+            Bonus::TYPE_BRAND => $data['offers']->filter(function ($offer) {
+                    return !$offer['except'];
+            })->isEmpty()
+                && $data['brands']->isNotEmpty()
+                && $data['categories']->isEmpty()
+                && $data['brands']->filter(function ($brand) {
+                    return $brand['except'];
+                })->isEmpty(),
+            Bonus::TYPE_CATEGORY => $data['offers']->filter(function ($offer) {
+                    return !$offer['except'];
+            })->isEmpty()
+                && $data['brands']->filter(function ($brand) {
+                    return !$brand['except'];
                 })->isEmpty()
-                    && $data['brands']->isNotEmpty()
-                    && $data['categories']->isEmpty()
-                    && $data['brands']->filter(function ($brand) {
-                        return $brand['except'];
-                    })->isEmpty();
-            case Bonus::TYPE_CATEGORY:
-                return $data['offers']->filter(function ($offer) {
-                        return !$offer['except'];
-                })->isEmpty()
-                    && $data['brands']->filter(function ($brand) {
-                        return !$brand['except'];
-                    })->isEmpty()
-                    && $data['categories']->isNotEmpty();
-            case Bonus::TYPE_SERVICE:
-                return false; // todo
-                break;
-            case Bonus::TYPE_ANY_OFFER:
-            case Bonus::TYPE_ANY_BRAND:
-            case Bonus::TYPE_ANY_CATEGORY:
-            case Bonus::TYPE_ANY_SERVICE:
-            case Bonus::TYPE_CART_TOTAL:
-                return $data['offers']->isEmpty() && $data['brands']->isEmpty() && $data['categories']->isEmpty();
-            default:
-                return false;
-        }
+                && $data['categories']->isNotEmpty(),
+            Bonus::TYPE_SERVICE => false,
+            Bonus::TYPE_ANY_OFFER, Bonus::TYPE_ANY_BRAND, Bonus::TYPE_ANY_CATEGORY, Bonus::TYPE_ANY_SERVICE,
+            Bonus::TYPE_CART_TOTAL => $data['offers']->isEmpty() && $data['brands']->isEmpty() && $data['categories']->isEmpty(),
+            default => false,
+        };
     }
 
-    /**
-     * @param array $relations
-     * @return bool
-     */
-    public static function updateRelations(Bonus $bonus, array $data)
+    public static function updateRelations(Bonus $bonus, array $data): bool
     {
         $diffs = collect();
         foreach ($bonus->getMappingRelations() as $k => $relation) {

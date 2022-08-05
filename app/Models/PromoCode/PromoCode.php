@@ -2,7 +2,6 @@
 
 namespace App\Models\PromoCode;
 
-use Str;
 use App\Models\Bonus\Bonus;
 use App\Models\Discount\Discount;
 use Carbon\Carbon;
@@ -12,6 +11,7 @@ use Greensight\Customer\Services\CustomerService\CustomerService;
 use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 /**
  * Class PromoCode
@@ -32,7 +32,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $gift_id
  * @property int|null $bonus_id
  * @property array $conditions
- * @mixin Eloquent
  *
  * @property-read Discount|null $discount
  * @property-read Bonus|null $bonus
@@ -133,9 +132,8 @@ class PromoCode extends AbstractModel
 
     /**
      * Доступные статусы промокодов
-     * @return array
      */
-    public static function availableStatuses()
+    public static function availableStatuses(): array
     {
         return [
             self::STATUS_CREATED,
@@ -151,9 +149,8 @@ class PromoCode extends AbstractModel
 
     /**
      * Типы промокодов
-     * @return array
      */
-    public static function availableTypes()
+    public static function availableTypes(): array
     {
         return [
             self::TYPE_DISCOUNT,
@@ -163,10 +160,7 @@ class PromoCode extends AbstractModel
         ];
     }
 
-    /**
-     * @return array
-     */
-    public static function availableTypesForMerchant()
+    public static function availableTypesForMerchant(): array
     {
         return [
             self::TYPE_DISCOUNT,
@@ -201,11 +195,7 @@ class PromoCode extends AbstractModel
         return $this->belongsTo(Bonus::class);
     }
 
-    /**
-     * @param array $customerIds
-     * @return PromoCode
-     */
-    public function setCustomerIds(array $customerIds)
+    public function setCustomerIds(array $customerIds): self
     {
         $conditions = $this->conditions ?? [];
         $conditions[self::CONDITION_TYPE_CUSTOMER_IDS] = $customerIds;
@@ -213,11 +203,7 @@ class PromoCode extends AbstractModel
         return $this;
     }
 
-    /**
-     * @param array $segmentIds
-     * @return PromoCode
-     */
-    public function setSegmentIds(array $segmentIds)
+    public function setSegmentIds(array $segmentIds): self
     {
         $conditions = $this->conditions ?? [];
         $conditions[self::CONDITION_TYPE_SEGMENT_IDS] = $segmentIds;
@@ -225,11 +211,7 @@ class PromoCode extends AbstractModel
         return $this;
     }
 
-    /**
-     * @param array $roleIds
-     * @return PromoCode
-     */
-    public function setRoleIds(array $roleIds)
+    public function setRoleIds(array $roleIds): self
     {
         $conditions = $this->conditions ?? [];
         $conditions[self::CONDITION_TYPE_ROLE_IDS] = $roleIds;
@@ -237,26 +219,17 @@ class PromoCode extends AbstractModel
         return $this;
     }
 
-    /**
-     * @return array
-     */
-    public function getCustomerIds()
+    public function getCustomerIds(): array
     {
         return $this->conditions[self::CONDITION_TYPE_CUSTOMER_IDS] ?? [];
     }
 
-    /**
-     * @return array
-     */
-    public function getSegmentIds()
+    public function getSegmentIds(): array
     {
         return $this->conditions[self::CONDITION_TYPE_SEGMENT_IDS] ?? [];
     }
 
-    /**
-     * @return array
-     */
-    public function getRoleIds()
+    public function getRoleIds(): array
     {
         return $this->conditions[self::CONDITION_TYPE_ROLE_IDS] ?? [];
     }
@@ -291,7 +264,7 @@ class PromoCode extends AbstractModel
              */
             if ($item->discount_id) {
                 /** @var Discount $discount */
-                $discount = Discount::find($item->discount_id);
+                $discount = Discount::query()->find($item->discount_id);
                 if ($discount && !$discount->promo_code_only) {
                     $discount->promo_code_only = true;
                     $discount->save();
@@ -330,14 +303,11 @@ class PromoCode extends AbstractModel
                         break;
                 }
 
-                switch ($item->status) {
-                    case self::STATUS_CREATED:
-                        return $serviceNotificationService->sendToAdmin('aozpromokodpromokod_sformirovan');
-                    case self::STATUS_EXPIRED:
-                        return $serviceNotificationService->sendToAdmin('aozpromokodpromokod_otklyuchen');
-                    default:
-                        return $serviceNotificationService->sendToAdmin('aozpromokodpromokod_izmenen');
-                }
+                return match ($item->status) {
+                    self::STATUS_CREATED => $serviceNotificationService->sendToAdmin('aozpromokodpromokod_sformirovan'),
+                    self::STATUS_EXPIRED => $serviceNotificationService->sendToAdmin('aozpromokodpromokod_otklyuchen'),
+                    default => $serviceNotificationService->sendToAdmin('aozpromokodpromokod_izmenen'),
+                };
             }
         });
     }

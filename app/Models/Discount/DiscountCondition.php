@@ -19,7 +19,6 @@ use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationSe
  * @property int $type
  * @property array $condition
  * @property-read Discount $discount
- * @mixin \Eloquent
  */
 class DiscountCondition extends AbstractModel
 {
@@ -96,114 +95,72 @@ class DiscountCondition extends AbstractModel
     /** @var array */
     protected $fillable = self::FILLABLE;
 
-    /**
-     * @return float|null
-     */
-    public function getMinPrice()
+    public function getMinPrice(): ?float
     {
         return $this->condition[self::FIELD_MIN_PRICE] ?? null;
     }
 
-    /**
-     * @return array
-     */
-    public function getBrands()
+    public function getBrands(): array
     {
         return $this->condition[self::FIELD_BRANDS] ?? [];
     }
 
-    /**
-     * @return array
-     */
-    public function getCategories()
+    public function getCategories(): array
     {
         return $this->condition[self::FIELD_CATEGORIES] ?? [];
     }
 
-    /**
-     * @return int|null
-     */
-    public function getOffer()
+    public function getOffer(): ?int
     {
         return $this->condition[self::FIELD_OFFER] ?? null;
     }
 
-    /**
-     * @return int|null
-     */
-    public function getCount()
+    public function getCount(): ?int
     {
         return $this->condition[self::FIELD_COUNT] ?? null;
     }
 
-    /**
-     * @return array
-     */
-    public function getDeliveryMethods()
+    public function getDeliveryMethods(): array
     {
         return $this->condition[self::FIELD_DELIVERY_METHODS] ?? [];
     }
 
-    /**
-     * @return array
-     */
-    public function getPaymentMethods()
+    public function getPaymentMethods(): array
     {
         return $this->condition[self::FIELD_PAYMENT_METHODS] ?? [];
     }
 
-    /**
-     * @return array
-     */
-    public function getRegions()
+    public function getRegions(): array
     {
         return $this->condition[self::FIELD_REGIONS] ?? [];
     }
 
-    /**
-     * @return int|null
-     */
-    public function getOrderSequenceNumber()
+    public function getOrderSequenceNumber(): ?int
     {
         return $this->condition[self::FIELD_ORDER_SEQUENCE_NUMBER] ?? null;
     }
 
-    /**
-     * @return array
-     */
-    public function getBundles()
+    public function getBundles(): array
     {
         return $this->condition[self::FIELD_BUNDLES] ?? [];
     }
 
-    /**
-     * @return array
-     */
-    public function getCustomerIds()
+    public function getCustomerIds(): array
     {
         return $this->condition[self::FIELD_CUSTOMER_IDS] ?? [];
     }
 
-    /**
-     * @return array
-     */
-    public function getSynergy()
+    public function getSynergy(): array
     {
         return $this->condition[self::FIELD_SYNERGY] ?? [];
     }
 
-    /**
-     * @return int|null
-     */
-    public function getMaxValueType()
+    public function getMaxValueType(): ?int
     {
         return $this->condition[self::FIELD_MAX_VALUE_TYPE] ?? null;
     }
 
-    /**
-     * @return int|null
-     */
-    public function getMaxValue()
+    public function getMaxValue(): ?int
     {
         return $this->condition[self::FIELD_MAX_VALUE] ?? null;
     }
