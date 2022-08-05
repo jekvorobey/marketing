@@ -122,10 +122,7 @@ class DiscountCalculator extends AbstractCalculator
         return $this;
     }
 
-    /**
-     * @return int|bool – На сколько изменилась цена (false – скидку невозможно применить)
-     */
-    protected function applyDiscount(Discount $discount): bool|int
+    protected function applyDiscount(Discount $discount): float|false
     {
         if (!$this->isCompatibleDiscount($discount)) {
             return false;
@@ -302,7 +299,7 @@ class DiscountCalculator extends AbstractCalculator
             ]);
         }
 
-        return $change;
+        return $change ?: false;
     }
 
     protected function getExceptOffersForDiscount(Discount $discount): Collection
