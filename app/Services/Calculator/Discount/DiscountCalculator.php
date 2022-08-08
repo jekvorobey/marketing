@@ -375,7 +375,7 @@ class DiscountCalculator extends AbstractCalculator
         /** @var Collection|Discount[] $discounts */
         $discounts = $this->possibleDiscounts->sortBy(fn(Discount $discount) => $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB);
 
-        if ($promoCodeDiscountId = $this->input->promoCodeDiscount->id ?? null) {
+        if ($promoCodeDiscountId = $this->promoCode->discount->id ?? null) {
             [$appliedPromocodeDiscounts, $discounts] = $discounts->partition('id', $promoCodeDiscountId);
         }
         [$deliveryDiscounts, $discounts] = $discounts->partition('type', Discount::DISCOUNT_TYPE_DELIVERY);
