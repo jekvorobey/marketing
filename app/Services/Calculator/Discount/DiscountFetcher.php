@@ -28,10 +28,11 @@ class DiscountFetcher
 
     /**
      * Получаем все скидки
+     * @throws PimException
      */
     private function fetchDiscounts(array $filterTypes = []): void
     {
-        $query = Discount::select([
+        $query = Discount::query()->select([
             'id',
             'type',
             'name',
@@ -117,7 +118,6 @@ class DiscountFetcher
 
     /**
      * Получаем все возможные категории из DiscountCategory
-     * @throws PimException
      */
     private function withCategories(): array
     {

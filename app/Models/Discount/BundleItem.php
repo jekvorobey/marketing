@@ -35,7 +35,7 @@ class BundleItem extends AbstractModel
     /**
      * Товары в бандле могут повторяться, в отличие от остальных связей скидки
      */
-    public static function hashDiff(Collection $a, Collection $b)
+    public static function hashDiff(Collection $a, Collection $b): Collection
     {
         $bHashes = $b->map(fn(self $item) => $item->getHash());
 

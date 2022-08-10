@@ -9,11 +9,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class PromoCodeHelper
 {
-    /**
-     * @param array $data
-     * @return bool
-     */
-    public static function validate(array $data)
+    public static function validate(array $data): bool
     {
         if (!in_array($data['type'], PromoCode::availableTypes())) {
             throw new HttpException(400, 'PromoCode type error');

@@ -25,13 +25,7 @@ trait Hash
         return md5(implode('-', $key));
     }
 
-    /**
-     * @param self[] $oldItems
-     * @param self[] $newItems
-     *
-     * @return array
-     */
-    public static function hashDiffItems(Collection $oldItems, Collection $newItems)
+    public static function hashDiffItems(Collection $oldItems, Collection $newItems): array
     {
         return [
             'added' => static::hashDiff($newItems, $oldItems),
@@ -39,11 +33,7 @@ trait Hash
         ];
     }
 
-    /**
-     * @param Collection|self[] $a
-     * @param Collection|self[] $b
-     */
-    public static function hashDiff(Collection $a, Collection $b)
+    public static function hashDiff(Collection $a, Collection $b): Collection|self
     {
         $bHashes = $b->map(fn(self $item) => $item->getHash());
 
@@ -54,12 +44,7 @@ trait Hash
         return $a->filter(fn(self $item) => !$bHashes->contains($item->getHash()));
     }
 
-    /**
-     * @param $data
-     *
-     * @return array
-     */
-    protected static function deepSort($data)
+    protected static function deepSort($data): array
     {
         if (!is_object($data) && !is_array($data)) {
             return $data;

@@ -1,6 +1,11 @@
 <?php
 
+namespace Database\Seeders;
+
+use Faker\Factory;
 use Greensight\CommonMsa\Dto\RoleDto;
+use Greensight\Oms\Dto\Payment\PaymentMethod;
+use Greensight\Oms\Services\PaymentService\PaymentService;
 use Illuminate\Database\Seeder;
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountOffer;
@@ -16,7 +21,6 @@ use Pim\Services\BrandService\BrandService;
 use Pim\Services\OfferService\OfferService;
 use Greensight\Customer\Services\CustomerService\CustomerService;
 use MerchantManagement\Services\MerchantService\MerchantService;
-use Greensight\Oms\Dto\PaymentMethod;
 use Greensight\Logistics\Dto\Lists\DeliveryMethod;
 use Greensight\Logistics\Services\ListsService\ListsService;
 use Greensight\CommonMsa\Services\AuthService\UserService;
@@ -68,12 +72,12 @@ class DiscountsTableSeeder extends Seeder
     protected $discounts;
 
     /**
-     * Run the database seeds.
+     * Run the database seeders.
      * @throws PimException
      */
     public function run()
     {
-        $this->faker = Faker\Factory::create('ru_RU');
+        $this->faker = Factory::create('ru_RU');
         $this->faker->seed(self::FAKER_SEED);
 
         /** @var OfferService $offerService */
@@ -106,7 +110,12 @@ class DiscountsTableSeeder extends Seeder
         $this->customerIds = $customerService->customers($customerService->newQuery())->pluck('id')->toArray();
 
         $this->deliveryMethods = array_keys(DeliveryMethod::allMethods());
-        $this->paymentMethods = array_keys(PaymentMethod::allMethods());
+        /** @var PaymentService $paymentService */
+        $paymentService = resolve(PaymentService::class);
+        $paymentMethods = $paymentService->getPaymentMethods(
+            (new RestQuery())->addFields(PaymentMethod::entity(), 'id', 'name')
+        )->keyBy('id')->all();
+        $this->paymentMethods = array_keys($paymentMethods);
         $this->discounts = [];
         $this->discountIds = [];
 
@@ -397,93 +406,78 @@ class DiscountsTableSeeder extends Seeder
         }
     }
 
-    /**
-     * @param array|null $condition
-     * @return bool
-     */
-    protected function createDiscountCondition(int $discountId, int $type, ?array $condition = null)
+    protected function createDiscountCondition(int $discountId, int $type, ?array $condition = null): bool
     {
         $discountCondition = new DiscountCondition();
         $discountCondition->discount_id = $discountId;
         $discountCondition->type = $type;
         $discountCondition->condition = $condition;
+
         return $discountCondition->save();
     }
 
-    /**
-     * @return bool
-     */
-    protected function createDiscountUserRole(int $discountId, int $roleId)
+    protected function createDiscountUserRole(int $discountId, int $roleId): bool
     {
         $discountUserRole = new DiscountUserRole();
         $discountUserRole->discount_id = $discountId;
         $discountUserRole->role_id = $roleId;
+
         return $discountUserRole->save();
     }
 
-    /**
-     * @return bool
-     */
-    protected function createDiscountSegment(int $discountId, int $segmentId)
+    protected function createDiscountSegment(int $discountId, int $segmentId): bool
     {
         $discountSegment = new DiscountSegment();
         $discountSegment->discount_id = $discountId;
         $discountSegment->segment_id = $segmentId;
+
         return $discountSegment->save();
     }
 
     /**
-     * @param $discountId
-     * @param $offerId
      * @param int $except
-     * @return bool
      */
-    protected function createDiscountOffer($discountId, $offerId, $except = 0)
+    protected function createDiscountOffer($discountId, $offerId, $except = 0): bool
     {
         $discountOffer = new DiscountOffer();
         $discountOffer->discount_id = $discountId;
         $discountOffer->offer_id = $offerId;
         $discountOffer->except = $except;
+
         return $discountOffer->save();
     }
 
     /**
      * @param int $itemId - id оффера или мастеркласса
-     * @return bool
      */
-    protected function createBundleItem(int $discountId, int $itemId)
+    protected function createBundleItem(int $discountId, int $itemId): bool
     {
         $bundleItem = new BundleItem();
         $bundleItem->discount_id = $discountId;
         $bundleItem->item_id = $itemId;
+
         return $bundleItem->save();
     }
 
     /**
-     * @param $discountId
-     * @param $brandId
      * @param int $except
-     * @return bool
      */
-    protected function createDiscountBrand($discountId, $brandId, $except = 0)
+    protected function createDiscountBrand($discountId, $brandId, $except = 0): bool
     {
         $discountBrand = new DiscountBrand();
         $discountBrand->discount_id = $discountId;
         $discountBrand->brand_id = $brandId;
         $discountBrand->except = $except;
+
         return $discountBrand->save();
     }
 
-    /**
-     * @param $discountId
-     * @param $categoryId
-     * @return bool
-     */
-    protected function createDiscountCategory($discountId, $categoryId)
+    protected function createDiscountCategory($discountId, $categoryId): bool
     {
         $discountCategory = new DiscountCategory();
         $discountCategory->discount_id = $discountId;
         $discountCategory->category_id = $categoryId;
+
         return $discountCategory->save();
     }
 }

@@ -14,7 +14,6 @@ use App\Models\Hash;
  * @property int $offer_id
  * @property bool $except
  * @property-read Discount $discount
- * @mixin \Eloquent
  */
 class DiscountOffer extends AbstractModel
 {

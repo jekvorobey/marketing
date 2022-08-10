@@ -24,9 +24,6 @@ class DiscountCatalogCalculator extends DiscountCalculator
         $this->discounts = $discountFetcher->getDiscounts(self::DISCOUNT_TYPES_OF_CATALOG);
     }
 
-    /**
-     * @inheritDoc
-     */
     protected function getCheckingConditions(): array
     {
         return [DiscountConditionModel::DISCOUNT_SYNERGY];

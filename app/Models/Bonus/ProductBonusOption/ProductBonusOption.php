@@ -10,6 +10,7 @@ use Greensight\CommonMsa\Models\AbstractModel;
  *
  * @property int $product_id
  * @property int $max_percentage_payment
+ * @property array $value
  */
 class ProductBonusOption extends AbstractModel
 {

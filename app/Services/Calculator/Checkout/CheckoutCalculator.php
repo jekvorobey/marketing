@@ -22,8 +22,6 @@ class CheckoutCalculator extends AbstractCalculator
 {
     /**
      * DiscountCalculator constructor.
-     *
-     * @param Collection|array $params
      *      Формат:
      *      {
      *      'customer': ['id' => int],
@@ -45,8 +43,6 @@ class CheckoutCalculator extends AbstractCalculator
 
     /**
      * Возвращает данные о примененных скидках
-     *
-     * @return array
      */
     public function calculate(): array
     {

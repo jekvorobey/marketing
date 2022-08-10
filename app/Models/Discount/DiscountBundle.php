@@ -15,7 +15,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $except
  *
  * @property-read Discount $discount
- * @mixin \Eloquent
  */
 class DiscountBundle extends AbstractModel
 {

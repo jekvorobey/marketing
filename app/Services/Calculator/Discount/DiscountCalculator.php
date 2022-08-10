@@ -122,10 +122,7 @@ class DiscountCalculator extends AbstractCalculator
         return $this;
     }
 
-    /**
-     * @return int|bool – На сколько изменилась цена (false – скидку невозможно применить)
-     */
-    protected function applyDiscount(Discount $discount)
+    protected function applyDiscount(Discount $discount): float|false
     {
         if (!$this->isCompatibleDiscount($discount)) {
             return false;
@@ -302,7 +299,7 @@ class DiscountCalculator extends AbstractCalculator
             ]);
         }
 
-        return $change;
+        return $change ?: false;
     }
 
     protected function getExceptOffersForDiscount(Discount $discount): Collection
@@ -375,7 +372,7 @@ class DiscountCalculator extends AbstractCalculator
         /** @var Collection|Discount[] $discounts */
         $discounts = $this->possibleDiscounts->sortBy(fn(Discount $discount) => $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB);
 
-        if ($promoCodeDiscountId = $this->promoCode->discount->id ?? null) {
+        if ($promoCodeDiscountId = $this->input->promoCodeDiscount->id ?? null) {
             [$appliedPromocodeDiscounts, $discounts] = $discounts->partition('id', $promoCodeDiscountId);
         }
         [$deliveryDiscounts, $discounts] = $discounts->partition('type', Discount::DISCOUNT_TYPE_DELIVERY);
@@ -456,31 +453,19 @@ class DiscountCalculator extends AbstractCalculator
      */
     protected function checkType(Discount $discount): bool
     {
-        switch ($discount->type) {
-            case Discount::DISCOUNT_TYPE_OFFER:
-                return $this->checkOffers($discount);
-            case Discount::DISCOUNT_TYPE_BUNDLE_OFFER:
-            case Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS:
-                return $this->checkBundles($discount);
-            case Discount::DISCOUNT_TYPE_BRAND:
-                return $this->checkBrands($discount);
-            case Discount::DISCOUNT_TYPE_CATEGORY:
-                return $this->checkCategories($discount);
-            case Discount::DISCOUNT_TYPE_DELIVERY:
-                return isset($this->input->deliveries['current']['price']);
-            case Discount::DISCOUNT_TYPE_MASTERCLASS:
-                return $this->input->ticketTypeIds->isNotEmpty()
-                    && $this->checkPublicEvents($discount);
-            case Discount::DISCOUNT_TYPE_CART_TOTAL:
-            case Discount::DISCOUNT_TYPE_ANY_OFFER:
-            case Discount::DISCOUNT_TYPE_ANY_BUNDLE:
-            case Discount::DISCOUNT_TYPE_ANY_BRAND:
-            case Discount::DISCOUNT_TYPE_ANY_CATEGORY:
-            case Discount::DISCOUNT_TYPE_ANY_MASTERCLASS:
-                return $this->input->basketItems->isNotEmpty();
-            default:
-                return false;
-        }
+        return match ($discount->type) {
+            Discount::DISCOUNT_TYPE_OFFER => $this->checkOffers($discount),
+            Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS => $this->checkBundles($discount),
+            Discount::DISCOUNT_TYPE_BRAND => $this->checkBrands($discount),
+            Discount::DISCOUNT_TYPE_CATEGORY => $this->checkCategories($discount),
+            Discount::DISCOUNT_TYPE_DELIVERY => isset($this->input->deliveries['current']['price']),
+            Discount::DISCOUNT_TYPE_MASTERCLASS => $this->input->ticketTypeIds->isNotEmpty()
+                && $this->checkPublicEvents($discount),
+            Discount::DISCOUNT_TYPE_CART_TOTAL, Discount::DISCOUNT_TYPE_ANY_OFFER, Discount::DISCOUNT_TYPE_ANY_BUNDLE,
+            Discount::DISCOUNT_TYPE_ANY_BRAND, Discount::DISCOUNT_TYPE_ANY_CATEGORY,
+            Discount::DISCOUNT_TYPE_ANY_MASTERCLASS => $this->input->basketItems->isNotEmpty(),
+            default => false,
+        };
     }
 
     /**

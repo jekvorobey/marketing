@@ -13,7 +13,6 @@ use App\Models\Hash;
  * @property int $discount_id - ID скидки
  * @property int $ticket_type_id - ID типа билета на мастер-класс
  * @property-read Discount $discount
- * @mixin \Eloquent
  */
 class DiscountPublicEvent extends AbstractModel
 {

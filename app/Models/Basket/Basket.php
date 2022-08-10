@@ -106,6 +106,7 @@ class Basket implements \JsonSerializable
         $this->customerId = $customerId;
         $this->userRegionFiasId = $userRegionFiasId;
 
+        /** @var Option $option */
         $option = Option::query()->where('key', Option::KEY_BONUS_PER_RUBLES)->first();
         $this->bonusPerRub = $option ? $option->value['value'] : Option::DEFAULT_BONUS_PER_RUBLES;
     }
@@ -264,7 +265,7 @@ class Basket implements \JsonSerializable
         return $response;
     }
 
-    public function jsonSerialize()
+    public function jsonSerialize(): array
     {
         return [
             'cost' => $this->cost,
