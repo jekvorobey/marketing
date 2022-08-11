@@ -98,7 +98,7 @@ class CalculatorChangePrice
 
         $result['discountValue'] = $discountValue;
         //процентный размер примененной скидки (может отличаться от $value когда переданная скида применилась не полностью)
-        $result['appliedDiscountPercentValue'] = self::round($discountValue / $currentCost * 100);
+        $result['appliedDiscountPercentValue'] = (float) $currentCost > 0 ? self::round($discountValue / $currentCost * 100) : 0;
 
         return $result;
     }
