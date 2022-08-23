@@ -10,35 +10,35 @@
     "repositories": [
         {
             "type": "vcs",
-            "url": "git@git.yiilab.com:maxim.kyprov/laravel-health-check.git"
+            "url": "git@gitlab.com:iBT.studio/laravel-health-check.git"
         },
         {
             "type": "vcs",
-            "url": "git@git.yiilab.com:ibt.studio/ibt-common-ms-code.git"
+            "url": "git@gitlab.com:iBT.studio/ibt-common-ms-code.git"
         },
         {
             "type": "vcs",
-            "url": "git@git.yiilab.com:ibt.studio/ibt-pim-lib"
+            "url": "git@gitlab.com:iBT.studio/ibt-pim-lib"
         },
         {
             "type": "vcs",
-            "url": "git@git.yiilab.com:ibt.studio/ibt-oms-lib"
+            "url": "git@gitlab.com:iBT.studio/ibt-oms-lib"
         },
         {
             "type": "vcs",
-            "url": "git@git.yiilab.com:ibt.studio/ibt-cm-lib"
+            "url": "git@gitlab.com:iBT.studio/ibt-cm-lib"
         },
         {
             "type": "vcs",
-            "url": "git@git.yiilab.com:ibt.studio/ibt-logistics-lib"
+            "url": "git@gitlab.com:iBT.studio/ibt-logistics-lib"
         },
         {
             "type": "vcs",
-            "url": "git@git.yiilab.com:ibt.studio/ibt-merchant-management-lib"
+            "url": "git@gitlab.com:iBT.studio/ibt-merchant-management-lib"
         },
         {
             "type": "vcs",
-            "url": "git@git.yiilab.com:ibt.studio/ibt-message-lib"
+            "url": "git@gitlab.com:iBT.studio/ibt-message-lib"
         }
     ],
     "require": {

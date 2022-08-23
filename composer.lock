@@ -1349,7 +1349,7 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "git@git.yiilab.com:ibt.studio/ibt-cm-lib",
+                "url": "git@gitlab.com:iBT.studio/ibt-cm-lib",
                 "reference": "d901c4a33a77a70ef06f5d66838d645fc5d240b0"
             },
             "require": {
@@ -1392,7 +1392,7 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "git@git.yiilab.com:ibt.studio/ibt-common-ms-code.git",
+                "url": "git@gitlab.com:iBT.studio/ibt-common-ms-code.git",
                 "reference": "978627b11fedaab40728a4b96c3cb58b9c19b324"
             },
             "require": {
@@ -1451,7 +1451,7 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "git@git.yiilab.com:ibt.studio/ibt-logistics-lib",
+                "url": "git@gitlab.com:iBT.studio/ibt-logistics-lib",
                 "reference": "5bdd0b946145a99d22ab5ed7fa19609335157052"
             },
             "require": {
@@ -1494,7 +1494,7 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "git@git.yiilab.com:ibt.studio/ibt-merchant-management-lib",
+                "url": "git@gitlab.com:iBT.studio/ibt-merchant-management-lib",
                 "reference": "84631faf108785f739ddbe173254dfffd5a21d65"
             },
             "require": {
@@ -1526,7 +1526,7 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "git@git.yiilab.com:ibt.studio/ibt-message-lib",
+                "url": "git@gitlab.com:iBT.studio/ibt-message-lib",
                 "reference": "6cf86a8d20da58db0c6f06dfefca314c4b8074fb"
             },
             "require": {
@@ -1569,7 +1569,7 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "git@git.yiilab.com:ibt.studio/ibt-oms-lib",
+                "url": "git@gitlab.com:iBT.studio/ibt-oms-lib",
                 "reference": "dd824ca15d139c39328e012c5a3210ed1cb3b10b"
             },
             "require": {
@@ -1613,7 +1613,7 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "git@git.yiilab.com:ibt.studio/ibt-pim-lib",
+                "url": "git@gitlab.com:iBT.studio/ibt-pim-lib",
                 "reference": "4ee7ac13b8f52571972d55095245de2351748320"
             },
             "require": {
@@ -2344,7 +2344,7 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "git@git.yiilab.com:maxim.kyprov/laravel-health-check.git",
+                "url": "git@gitlab.com:iBT.studio/laravel-health-check.git",
                 "reference": "19d2d933b87362ebf4b75c5f0078b7e87885b6e0"
             },
             "require": {
