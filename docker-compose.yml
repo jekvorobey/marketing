@@ -1,0 +1,19 @@
+services:
+  ibt-marketing-ms:
+    container_name: ibt-marketing-ms
+    image: registry.ibt.ru:5050/ibt.studio/ibt-marketing-ms/ibt-marketing-ms:v1.19.1
+    restart: always
+    env_file:
+      - ./svc/ibt-marketing-ms/.env
+    environment:
+      - PHP_SOCK_FILE=/sockets/ibt-marketing-ms_php
+    volumes:
+      - /sockets/:/sockets/
+      - ./svc/ibt-marketing-ms/.env:/var/www/.env
+    hostname: ibt-marketing-ms.prod
+    networks:
+      prod.svc.cluster.local:
+        aliases:
+          - ibt-marketing-ms.prod.svc.cluster.local
+    extra_hosts:
+      - "mysql-master:host-gateway"
