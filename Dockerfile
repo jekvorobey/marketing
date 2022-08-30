@@ -15,7 +15,7 @@ COPY . ./
 
 RUN composer install --no-interaction --no-progress --prefer-dist --no-scripts --optimize-autoloader --ignore-platform-reqs --no-dev
 
-FROM registry.ibt.ru:5050/php:7.4-redis
+FROM registry.ibt.ru:5050/php:8.1-redis
 
 #RUN apt-get update && apt-get install -y --no-install-recommends --no-install-suggests && rm -rf /var/lib/apt/lists/*
 WORKDIR /var/www
