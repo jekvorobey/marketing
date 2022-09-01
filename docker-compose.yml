@@ -9,6 +9,7 @@ services:
       - PHP_SOCK_FILE=/sockets/ENV-ibt-marketing-ms_php
     volumes:
       - /sockets/:/sockets/
+      - /home/iBT.studio/ENV/data/jwt_key/:/var/www/jwt_key/
       - /home/iBT.studio/ENV/svc/ibt-marketing-ms/.env:/var/www/.env
     hostname: ibt-marketing-ms.ENV
     networks:
