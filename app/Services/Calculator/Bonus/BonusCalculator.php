@@ -152,11 +152,7 @@ class BonusCalculator extends AbstractCalculator
         foreach ($basketItemsIds as $basketItemId) {
             $basketItem = $this->input->basketItems->get($basketItemId);
             //$bonusValue = $this->priceToBonusValue($offer['price'], $bonus);
-            $basketItemPriceWithDiscount = isset($basketItem['cost'])
-                ? $basketItem['discounts']
-                    ? $basketItem['cost'] - array_sum(array_column($basketItem['discounts'], 'change'))
-                    : $basketItem['cost']
-                : $basketItem['price'];
+            $basketItemPriceWithDiscount = $basketItem['price'];
             $bonusValue = $this->priceToBonusValue($basketItemPriceWithDiscount, $bonus);
 
             if (!$this->basketItemsByBonuses->has($basketItemId)) {

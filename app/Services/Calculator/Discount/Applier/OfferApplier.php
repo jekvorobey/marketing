@@ -98,7 +98,7 @@ class OfferApplier extends AbstractApplier
         Discount $discount,
         int $bundleId,
         array $changedPrice,
-        int $changed
+        float $changed
     ): array {
         if (
             $discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER

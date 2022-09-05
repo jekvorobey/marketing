@@ -103,8 +103,13 @@ class CalculatorChangePrice
         return $result;
     }
 
-    private function getDiscountValue(int $price, int $currentCost, int $value, $valueType, $lowestPossiblePrice): float
-    {
+    private function getDiscountValue(
+        float $price,
+        float $currentCost,
+        float $value,
+        $valueType,
+        $lowestPossiblePrice
+    ): float {
         $discountValue = min($price, $this->calculateDiscountByType($currentCost, $value, $valueType));
 
         /** Цена не может быть меньше $lowestPossiblePrice */
