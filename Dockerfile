@@ -17,6 +17,9 @@ RUN composer install --no-interaction --no-progress --prefer-dist --no-scripts -
 
 FROM registry.ibt.ru:5050/php:8.1-1.0-redis
 
+RUN docker-php-ext-configure opcache --enable-opcache \
+    && docker-php-ext-install opcache
+
 #RUN apt-get update && apt-get install -y --no-install-recommends --no-install-suggests && rm -rf /var/lib/apt/lists/*
 WORKDIR /var/www
 
