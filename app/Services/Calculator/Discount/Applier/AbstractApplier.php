@@ -79,8 +79,7 @@ abstract class AbstractApplier
     protected function addBasketItemByDiscount(
         int $basketItemId,
         Discount $discount,
-        float $change,
-        ?float $appliedDiscountPercentValue = null
+        float $change
     ): void {
         if (!$this->basketItemsByDiscounts->has($basketItemId)) {
             $this->basketItemsByDiscounts->put($basketItemId, collect());
@@ -89,10 +88,7 @@ abstract class AbstractApplier
         $this->basketItemsByDiscounts[$basketItemId]->push([
             'id' => $discount->id,
             'change' => $change,
-            'value' => $discount->value_type == Discount::DISCOUNT_VALUE_TYPE_PERCENT
-                && $appliedDiscountPercentValue && $appliedDiscountPercentValue != $discount->value
-                ? $appliedDiscountPercentValue
-                : $discount->value,
+            'value' => $discount,
             'value_type' => $discount->value_type,
         ]);
     }
