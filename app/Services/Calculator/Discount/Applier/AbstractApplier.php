@@ -88,7 +88,7 @@ abstract class AbstractApplier
         $this->basketItemsByDiscounts[$basketItemId]->push([
             'id' => $discount->id,
             'change' => $change,
-            'value' => $discount,
+            'value' => $discount->value,
             'value_type' => $discount->value_type,
         ]);
     }
