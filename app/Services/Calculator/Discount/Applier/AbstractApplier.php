@@ -73,9 +73,6 @@ abstract class AbstractApplier
         return true;
     }
 
-    /**
-     * @param float|null $appliedDiscountPercentValue если применился другой % (при суммировании скидок с ограничением в %), отличный от % в скидке, то сохраняем новый %
-     */
     protected function addBasketItemByDiscount(
         int $basketItemId,
         Discount $discount,
