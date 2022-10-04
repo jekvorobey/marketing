@@ -74,9 +74,13 @@ class OfferApplier extends AbstractApplier
 
             $changedPrice = $calculatorChangePrice->changePrice($basketItem, $valueOfLimitDiscount ?? $value, $valueType, $lowestPossiblePrice, $discount);
 
-            if ($basketItems->keys()->last() === $basketItemId) {
-                $changedPrice = $this->getChangedPriceForLastBundleItem($discount, $basketItem['bundle_id'], $changedPrice, $changed);
-            }
+            /**
+             * @todo Этот код ломает корзину с бандлами, не понятно для чего он. Закомментил.
+             * @todo Нужно протестить на всех вариантах бандлов без этого кода
+             */
+//            if ($basketItems->keys()->last() === $basketItemId) {
+//                $changedPrice = $this->getChangedPriceForLastBundleItem($discount, $basketItem['bundle_id'], $changedPrice, $changed);
+//            }
 
             $basketItem = $calculatorChangePrice->syncItemWithChangedPrice($basketItem, $changedPrice);
 

@@ -15,7 +15,7 @@ COPY . ./
 
 RUN composer install --no-interaction --no-progress --prefer-dist --no-scripts --optimize-autoloader --ignore-platform-reqs --no-dev
 
-FROM registry.ibt.ru:5050/php81:1.5
+FROM registry.ibt.ru:5050/php81:1.6
 
 RUN docker-php-ext-configure opcache --enable-opcache \
     && docker-php-ext-install opcache
