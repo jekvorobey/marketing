@@ -52,7 +52,7 @@ class DiscountOutput
         });
     }
 
-    /** Конечная цена товара после применения скидки всегда округляется до целого, в меньшую сторону */
+    /** Округление конечной цены */
     private function roundedBasketItemPrice($price): int
     {
         return $price > 1 ? floor($price) : ceil($price);
