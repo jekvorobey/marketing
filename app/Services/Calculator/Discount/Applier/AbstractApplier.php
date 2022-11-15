@@ -73,11 +73,8 @@ abstract class AbstractApplier
         return true;
     }
 
-    protected function addBasketItemByDiscount(
-        int $basketItemId,
-        Discount $discount,
-        float $change
-    ): void {
+    protected function addBasketItemByDiscount(int $basketItemId, Discount $discount, float $change): void
+    {
         if (!$this->basketItemsByDiscounts->has($basketItemId)) {
             $this->basketItemsByDiscounts->put($basketItemId, collect());
         }

@@ -26,9 +26,11 @@ WORKDIR /var/www
 COPY --from=composer /var/www/ ./
 
 RUN chown -R www-data:www-data ./
-RUN echo "if [ -d \"database/migrations\" ]; then\n php artisan migrate --force \nfi \nphp artisan optimize \n/cron.sh 2>&1 & \n/entrypoint.sh" > /run.sh
+RUN echo "if [ -d \"database/migrations\" ]; then\n php artisan migrate --force \nfi \nphp artisan optimize \n/queue.sh 2>&1 & \n/cron.sh 2>&1 & \n/entrypoint.sh" > /run.sh
 RUN echo "while [ true ]\ndo\n  php /var/www/artisan schedule:run --verbose --no-interaction &\n  sleep 60\ndone" > /cron.sh
+RUN echo "php artisan queue:work redis --sleep=10 --tries=5 2>&1 &" > /queue.sh
 RUN chmod +x /cron.sh
+RUN chmod +x /queue.sh
 RUN chmod +x /run.sh
 
 ENV NGINX_WEB_ROOT=/var/www/public

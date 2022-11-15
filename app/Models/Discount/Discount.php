@@ -2,6 +2,7 @@
 
 namespace App\Models\Discount;
 
+use App\Jobs\UpdatePimContent;
 use Carbon\Carbon;
 use Greensight\CommonMsa\Dto\RoleDto;
 use Greensight\CommonMsa\Models\AbstractModel;
@@ -17,7 +18,6 @@ use Illuminate\Support\Facades\DB;
 use MerchantManagement\Services\OperatorService\OperatorService;
 use MerchantManagement\Dto\OperatorDto;
 use Pim\Core\PimException;
-use Pim\Services\SearchService\SearchService;
 
 /**
  * Класс-модель для сущности "Скидка"
@@ -645,53 +645,42 @@ class Discount extends AbstractModel
      */
     public function updatePimContents(): void
     {
-        static $actionPerformed = false;
+        $reindexRelations = function (string $function, string $relationName, string $column) {
+            /** @var Collection $oldRelations */
+            $oldRelations = $this->{$relationName};
 
-        if (!$actionPerformed) {
+            /** @var Collection $newRelations */
+            $newRelations = $this->fresh()->{$relationName};
 
-            /** @var SearchService $searchService */
-            $searchService = resolve(SearchService::class);
-
-            $reindexRelations = function (string $function, string $relationName, string $column, bool &$actionPerformed) use ($searchService) {
-                /** @var Collection $oldRelations */
-                $oldRelations = $this->{$relationName};
-
-                /** @var Collection $newRelations */
-                $newRelations = $this->fresh()->{$relationName};
-
-                $relations = array_unique(array_merge($oldRelations->pluck($column)->all(), $newRelations->pluck($column)->all()));
-                if (!empty($relations)) {
-                    call_user_func([$searchService, $function], $relations);
-                    $actionPerformed = true;
-                }
-            };
-
-            switch ($this->type) {
-                case self::DISCOUNT_TYPE_OFFER:
-                    $reindexRelations('markProductsForIndexByOfferIds', 'offers', 'offer_id', $actionPerformed);
-                    break;
-                case self::DISCOUNT_TYPE_BRAND:
-                    $reindexRelations('markProductsForIndexByBrandIds', 'brands', 'brand_id', $actionPerformed);
-                    break;
-                case self::DISCOUNT_TYPE_CATEGORY:
-                    $reindexRelations('markProductsForIndexByCategoryIds', 'categories', 'category_id', $actionPerformed);
-                    break;
-                case self::DISCOUNT_TYPE_ANY_OFFER:
-                case self::DISCOUNT_TYPE_ANY_BRAND:
-                case self::DISCOUNT_TYPE_ANY_CATEGORY:
-                    $searchService->markAllProductsForIndex();
-                    $actionPerformed = true;
-                    break;
-                case self::DISCOUNT_TYPE_MASTERCLASS:
-                    $reindexRelations('markPublicEventsForIndexByTicketTypeIds', 'publicEvents', 'ticket_type_id', $actionPerformed);
-                    break;
-                case self::DISCOUNT_TYPE_ANY_MASTERCLASS:
-                    $searchService->markAllPublicEventsForIndex();
-                    $actionPerformed = true;
-                    break;
-                default:
-                    break;
+            $relations = array_unique(array_merge($oldRelations->pluck($column)->all(), $newRelations->pluck($column)->all()));
+            if (!empty($relations)) {
+                UpdatePimContent::dispatch($function, $relations);
             }
+        };
+
+        switch ($this->type) {
+            case self::DISCOUNT_TYPE_OFFER:
+                $reindexRelations('markProductsForIndexByOfferIds', 'offers', 'offer_id');
+                break;
+            case self::DISCOUNT_TYPE_BRAND:
+                $reindexRelations('markProductsForIndexByBrandIds', 'brands', 'brand_id');
+                break;
+            case self::DISCOUNT_TYPE_CATEGORY:
+                $reindexRelations('markProductsForIndexByCategoryIds', 'categories', 'category_id');
+                break;
+            case self::DISCOUNT_TYPE_ANY_OFFER:
+            case self::DISCOUNT_TYPE_ANY_BRAND:
+            case self::DISCOUNT_TYPE_ANY_CATEGORY:
+                UpdatePimContent::dispatch('markAllProductsForIndex');
+                break;
+            case self::DISCOUNT_TYPE_MASTERCLASS:
+                $reindexRelations('markPublicEventsForIndexByTicketTypeIds', 'publicEvents', 'ticket_type_id');
+                break;
+            case self::DISCOUNT_TYPE_ANY_MASTERCLASS:
+                UpdatePimContent::dispatch('markAllPublicEventsForIndex');
+                break;
+            default:
+                break;
         }
     }
 }
