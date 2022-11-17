@@ -145,7 +145,7 @@ class CalculatorChangePrice
     public function calculateDiscountByType($cost, $value, $valueType): float
     {
         return match ($valueType) {
-            Discount::DISCOUNT_VALUE_TYPE_PERCENT => round($cost * $value / 100, 2),
+            Discount::DISCOUNT_VALUE_TYPE_PERCENT => round($cost * $value / 100, 4),
             Discount::DISCOUNT_VALUE_TYPE_RUB => $value,
             default => 0,
         };
