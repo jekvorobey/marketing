@@ -93,7 +93,7 @@ class CalculatorChangePrice
         $discountValue = $this->getDiscountValue($item['price'], $currentCost, $value, $valueType, $lowestPossiblePrice);
 
         $result['discount'] = $currentDiscount + $discountValue;
-        $result['price'] = round($currentCost - $result['discount'], 2);
+        $result['price'] = round($currentCost - $result['discount'], 4);
         $result['cost'] = $currentCost;
 
         $result['discountValue'] = $discountValue;
