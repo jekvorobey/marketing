@@ -28,7 +28,7 @@ class CalculatorChangePrice
      */
     public function changePrice(
         $item,
-        int $value,
+        float $value,
         int $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB,
         int $lowestPossiblePrice = self::LOWEST_POSSIBLE_PRICE,
         ?Discount $discount = null
@@ -52,7 +52,7 @@ class CalculatorChangePrice
      */
     private function processBundleType(
         $item,
-        int $value,
+        float $value,
         Discount $discount,
         int $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB,
         int $lowestPossiblePrice = self::LOWEST_POSSIBLE_PRICE
@@ -84,7 +84,7 @@ class CalculatorChangePrice
      */
     private function processAllTypes(
         $item,
-        int $value,
+        float $value,
         int $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB,
         int $lowestPossiblePrice = self::LOWEST_POSSIBLE_PRICE
     ): array {
@@ -93,12 +93,12 @@ class CalculatorChangePrice
         $discountValue = $this->getDiscountValue($item['price'], $currentCost, $value, $valueType, $lowestPossiblePrice);
 
         $result['discount'] = $currentDiscount + $discountValue;
-        $result['price'] = round($currentCost - $result['discount'], 2);
+        $result['price'] = round($currentCost - $result['discount'], 4);
         $result['cost'] = $currentCost;
 
         $result['discountValue'] = $discountValue;
         //процентный размер примененной скидки (может отличаться от $value когда переданная скида применилась не полностью)
-        $result['appliedDiscountPercentValue'] = (float) $currentCost > 0 ? self::round($discountValue / $currentCost * 100) : 0;
+        $result['appliedDiscountPercentValue'] = (float) $currentCost > 0 ? round($discountValue / $currentCost * 100, 2) : 0;
 
         return $result;
     }
@@ -145,7 +145,7 @@ class CalculatorChangePrice
     public function calculateDiscountByType($cost, $value, $valueType): float
     {
         return match ($valueType) {
-            Discount::DISCOUNT_VALUE_TYPE_PERCENT => round($cost * $value / 100, 2),
+            Discount::DISCOUNT_VALUE_TYPE_PERCENT => round($cost * $value / 100, 4),
             Discount::DISCOUNT_VALUE_TYPE_RUB => $value,
             default => 0,
         };

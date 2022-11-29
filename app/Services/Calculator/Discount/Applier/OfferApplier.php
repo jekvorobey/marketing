@@ -67,7 +67,7 @@ class OfferApplier extends AbstractApplier
 
                 $valueType = $discount->value_type;
                 $maxDiscountValue = $calculatorChangePrice->calculateDiscountByType($basketItem['price'], $value, $valueType);
-                $valueOfLimitDiscount = ceil($maxDiscountValue * min($basketItem['qty'], $restProductQtyLimit) / $basketItem['qty']);
+                $valueOfLimitDiscount = round($maxDiscountValue * min($basketItem['qty'], $restProductQtyLimit) / $basketItem['qty'], 4);
                 $valueType = Discount::DISCOUNT_VALUE_TYPE_RUB;
                 $restProductQtyLimit -= $basketItem['qty'];
             }
