@@ -40,6 +40,15 @@ class PriceWriter
         }
     }
 
+    public function pricesByOffers(array $offerIds): ?Collection
+    {
+        return Price::query()
+            ->select('offer_id', 'price')
+            ->whereIn('offer_id', $offerIds)
+            ->get()
+            ->keyBy('offer_id');
+    }
+
     private function loadPrices(array $newPrices): void
     {
         $offerIds = array_keys($newPrices);
