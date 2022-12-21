@@ -75,6 +75,7 @@ Route::namespace('V1')->prefix('v1')->group(function () {
             Route::post('', [PriceController::class, 'read']);
             Route::put('', [PriceController::class, 'setPrices']);
             Route::post('offers-ids-by-prices-conditions-and-offer', [PriceController::class, 'offersIdsByPricesConditionsAndOffer']);
+            Route::post('list', [PriceController::class, 'list']);
         });
 
         Route::prefix('{offerId}')->group(function () {

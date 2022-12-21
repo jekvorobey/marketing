@@ -41,6 +41,24 @@ class PriceController extends Controller
         }
     }
 
+    protected function list(Request $request, PriceWriter $priceWriter): JsonResponse
+    {
+        try {
+            $params = $request->validate([
+                'offer_ids' => 'array',
+                'offer_ids.*' => 'integer',
+            ]);
+
+            $prices = $priceWriter->pricesByOffers($params['offer_ids']);
+
+            return response()->json([
+                'items' => $prices,
+            ]);
+        } catch (\Throwable $ex) {
+            return response()->json(['error' => $ex->getMessage()], 400);
+        }
+    }
+
     /**
      * Получить список полей, которые можно редактировать через стандартные rest действия.
      * Пример return ['name', 'status'];
