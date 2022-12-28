@@ -177,6 +177,7 @@ class Discount extends AbstractModel
     /** @var array */
     protected $casts = [
         'promo_code_only' => 'bool',
+        'summarizable_with_all' => 'bool',
     ];
 
     /** Индикатор, обозначающий что связи были обновлены. Нужен для вызова переиндесации в pim */
