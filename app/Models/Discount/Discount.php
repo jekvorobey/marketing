@@ -34,6 +34,7 @@ use Pim\Core\PimException;
  * @property Carbon $start_date
  * @property Carbon $end_date
  * @property bool $promo_code_only
+ * @property bool $summarizble_with_all
  * @property string $comment
  *
  * @property-read Collection|DiscountOffer[] $offers
@@ -166,6 +167,7 @@ class Discount extends AbstractModel
         'start_date',
         'end_date',
         'promo_code_only',
+        'summarizable_with_all',
         'comment',
     ];
 
