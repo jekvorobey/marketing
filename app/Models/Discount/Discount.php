@@ -34,7 +34,7 @@ use Pim\Core\PimException;
  * @property Carbon $start_date
  * @property Carbon $end_date
  * @property bool $promo_code_only
- * @property bool $summarizble_with_all
+ * @property bool $summarizable_with_all
  * @property string $comment
  *
  * @property-read Collection|DiscountOffer[] $offers

@@ -49,6 +49,11 @@ abstract class AbstractApplier
             return true;
         }
 
+        //если суммируется со всеми остальными скидками
+        if ($discount->summarizable_with_all) {
+            return true;
+        }
+
         /** @var Collection $discountIdsForBasketItem */
         $discountIdsForBasketItem = $this->basketItemsByDiscounts[$basketItemId]->pluck('id');
 
