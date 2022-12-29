@@ -45,7 +45,9 @@ abstract class AbstractApplier
      */
     protected function applicableToBasketItem(Discount $discount, $basketItemId): bool
     {
-        if ($this->appliedDiscounts->isEmpty() || !$this->basketItemsByDiscounts->has($basketItemId)) {
+        //не проверяем примененные скидки, которые суммируются со всеми остальными скидками
+        $filteredAppliedDiscounts = $this->appliedDiscounts->filter(fn($appliedDiscount) => !$appliedDiscount['summarizable_with_all']);
+        if ($filteredAppliedDiscounts->isEmpty() || !$this->basketItemsByDiscounts->has($basketItemId)) {
             return true;
         }
 

@@ -296,6 +296,7 @@ class DiscountCalculator extends AbstractCalculator
                 'discountId' => $discount->id,
                 'change' => $change,
                 'conditions' => $discount->conditions->pluck('type') ?? collect(),
+                'summarizable_with_all' => $discount->summarizable_with_all,
             ]);
         }
 
