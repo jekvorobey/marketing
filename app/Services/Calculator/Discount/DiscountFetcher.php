@@ -40,6 +40,7 @@ class DiscountFetcher
             'value',
             'value_type',
             'promo_code_only',
+            'summarizable_with_all',
             'merchant_id',
             'product_qty_limit',
         ])
