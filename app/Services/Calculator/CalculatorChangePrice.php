@@ -8,7 +8,7 @@ use Pim\Dto\Offer\OfferDto;
 class CalculatorChangePrice
 {
     /** Самая низкая возможная цена (1 рубль) */
-    public const LOWEST_POSSIBLE_PRICE = 0;
+    public const LOWEST_POSSIBLE_PRICE = 1;
 
     /** Наименьшая возможная цена на мастер-класс */
     public const LOWEST_MASTERCLASS_PRICE = 0;

@@ -67,7 +67,7 @@ class DiscountCalculator extends AbstractCalculator
 
         if (!empty($this->input->deliveries['items'])) {
             if (!$this->input->freeDelivery) {
-                $this->filter()->sort()->apply()->rollback();
+                $this->filter()->compileSynegry()->sort()->apply()->rollback();
             }
 
             $this->input->deliveries['current'] = $this->input->deliveries['items']->filter(function ($item) {
@@ -76,7 +76,7 @@ class DiscountCalculator extends AbstractCalculator
         }
 
         /** Считаются окончательные скидки + бонусы */
-        $this->filter()->sort()->apply();
+        $this->filter()->compileSynegry()->sort()->apply();
 
         $this->getDiscountOutput();
     }
@@ -414,6 +414,40 @@ class DiscountCalculator extends AbstractCalculator
 
             return true;
         })->values();
+
+        return $this;
+    }
+
+    /**
+     * Генерирует временные DiscountCondition для скидок, которые суммируются со всеми (summarizable_with_all)
+     */
+    protected function compileSynegry(): self
+    {
+        [$summarizableWithAll, $otherDiscounts] = $this->possibleDiscounts->partition('summarizable_with_all', true);
+        if ($summarizableWithAll->count() == 0) {
+            return $this;
+        }
+
+        /** @var Discount $summarizableDiscount */
+        foreach ($summarizableWithAll as $summarizableDiscount) {
+            /** @var Discount $discount */
+            foreach ($otherDiscounts as $discount) {
+
+                /** @var DiscountCondition $condition */
+                $condition = $discount->conditions->firstWhere('type', DiscountCondition::DISCOUNT_SYNERGY);
+
+                if (!$condition) {
+                    /** @var DiscountCondition $condition */
+                    $condition = new DiscountCondition();
+                    $condition->type = DiscountCondition::DISCOUNT_SYNERGY;
+                    $discount->conditions->add($condition);
+                }
+
+                $condition->condition = array_merge($condition->condition ?? [], [
+                    DiscountCondition::FIELD_SYNERGY => [$summarizableDiscount->id],
+                ]);
+            }
+        }
 
         return $this;
     }
