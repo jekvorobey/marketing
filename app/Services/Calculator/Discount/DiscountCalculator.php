@@ -67,7 +67,7 @@ class DiscountCalculator extends AbstractCalculator
 
         if (!empty($this->input->deliveries['items'])) {
             if (!$this->input->freeDelivery) {
-                $this->filter()->compileSynegry()->sort()->apply()->rollback();
+                $this->filter()->sort()->apply()->rollback();
             }
 
             $this->input->deliveries['current'] = $this->input->deliveries['items']->filter(function ($item) {
@@ -76,7 +76,7 @@ class DiscountCalculator extends AbstractCalculator
         }
 
         /** Считаются окончательные скидки + бонусы */
-        $this->filter()->compileSynegry()->sort()->apply();
+        $this->filter()->sort()->apply();
 
         $this->getDiscountOutput();
     }
@@ -117,6 +117,29 @@ class DiscountCalculator extends AbstractCalculator
         /** @var Discount $discount */
         foreach ($this->possibleDiscounts as $discount) {
             $this->applyDiscount($discount);
+        }
+
+        return $this->processFreeProducts();
+    }
+
+    /**
+     * Делает товар бесплатным, если была применена только одна скидка на 100% или равная сумме товара в рублях
+     */
+    protected function processFreeProducts(): self
+    {
+        foreach ($this->input->basketItems as $basketItem) {
+            if ($this->basketItemsByDiscounts->has($basketItem['id'])) {
+                [$freeProductDiscounts, $otherDiscounts] = $this->basketItemsByDiscounts->get($basketItem['id'])
+                    ->partition(fn($discount) =>
+                        $discount['value_type'] == Discount::DISCOUNT_VALUE_TYPE_PERCENT && $discount['value'] == 100 ||
+                        $discount['value_type'] == Discount::DISCOUNT_VALUE_TYPE_RUB && $discount['value'] == $basketItem['cost']
+                    );
+
+                // Если применена 100% скидка на товар и нет других скидок, то делаем этот товар бесплатным
+                if ($freeProductDiscounts->count() > 0 && $otherDiscounts->count() == 0) {
+                    $basketItem['price'] = 0;
+                }
+            }
         }
 
         return $this;
@@ -291,14 +314,16 @@ class DiscountCalculator extends AbstractCalculator
                 break;
         }
 
-        if ($change > 0) {
+        // Добавляем все скидки к примененным.
+        // Даже те, что не повлияли на цену, т.к. они тоже участвовали в подсчете общей скидки
+//        if ($change > 0) {
             $this->appliedDiscounts->put($discount->id, [
                 'discountId' => $discount->id,
                 'change' => $change,
                 'conditions' => $discount->conditions->pluck('type') ?? collect(),
                 'summarizable_with_all' => $discount->summarizable_with_all,
             ]);
-        }
+//        }
 
         return $change ?: false;
     }
@@ -415,7 +440,7 @@ class DiscountCalculator extends AbstractCalculator
             return true;
         })->values();
 
-        return $this;
+        return $this->compileSynegry();
     }
 
     /**
@@ -443,7 +468,7 @@ class DiscountCalculator extends AbstractCalculator
                     $discount->conditions->add($condition);
                 }
 
-                $condition->condition = array_merge($condition->condition ?? [], [
+                $condition->condition = array_merge_recursive($condition->condition ?? [], [
                     DiscountCondition::FIELD_SYNERGY => [$summarizableDiscount->id],
                 ]);
             }
