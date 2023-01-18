@@ -83,15 +83,15 @@ class OfferApplier extends AbstractApplier
 //            }
 
             $basketItem = $calculatorChangePrice->syncItemWithChangedPrice($basketItem, $changedPrice);
-
             $change = $changedPrice['discountValue'];
+
+            $this->addBasketItemByDiscount($basketItemId, $discount, $change);
+
             if ($change <= 0) {
                 continue;
             }
 
-            $this->addBasketItemByDiscount($basketItemId, $discount, $change);
             $qty = $basketItem['qty'];
-
             $changed += $change * $qty;
         }
 
