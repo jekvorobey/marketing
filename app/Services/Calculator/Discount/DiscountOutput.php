@@ -116,7 +116,7 @@ class DiscountOutput
     public function getOutputFormat(): Collection
     {
         $discounts = $this->discounts->filter(function ($discount) {
-            return $this->appliedDiscounts->has($discount->id);
+            return $this->appliedDiscounts->has($discount->id) && !empty($this->appliedDiscounts[$discount->id]['change']);
         })->keyBy('id');
 
         $items = collect();
