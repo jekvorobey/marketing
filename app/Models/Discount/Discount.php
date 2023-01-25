@@ -34,6 +34,7 @@ use Pim\Core\PimException;
  * @property Carbon $start_date
  * @property Carbon $end_date
  * @property bool $promo_code_only
+ * @property bool $summarizable_with_all
  * @property string $comment
  *
  * @property-read Collection|DiscountOffer[] $offers
@@ -166,6 +167,7 @@ class Discount extends AbstractModel
         'start_date',
         'end_date',
         'promo_code_only',
+        'summarizable_with_all',
         'comment',
     ];
 
@@ -175,6 +177,7 @@ class Discount extends AbstractModel
     /** @var array */
     protected $casts = [
         'promo_code_only' => 'bool',
+        'summarizable_with_all' => 'bool',
     ];
 
     /** Индикатор, обозначающий что связи были обновлены. Нужен для вызова переиндесации в pim */

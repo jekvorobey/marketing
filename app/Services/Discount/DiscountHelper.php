@@ -124,6 +124,7 @@ class DiscountHelper
         $discount->status = $data['status'];
         $discount->product_qty_limit = $data['product_qty_limit'] ?? null;
         $discount->promo_code_only = $data['promo_code_only'];
+        $discount->summarizable_with_all = $data['summarizable_with_all'] ?? false;
         $discount->comment = $data['comment'] ?? null;
 
         $ok = $discount->save();

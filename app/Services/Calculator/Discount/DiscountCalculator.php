@@ -119,6 +119,29 @@ class DiscountCalculator extends AbstractCalculator
             $this->applyDiscount($discount);
         }
 
+        return $this->processFreeProducts();
+    }
+
+    /**
+     * Делает товар бесплатным, если была применена только одна скидка на 100% или равная сумме товара в рублях
+     */
+    protected function processFreeProducts(): self
+    {
+        foreach ($this->input->basketItems as $basketItem) {
+            if ($this->basketItemsByDiscounts->has($basketItem['id'])) {
+                [$freeProductDiscounts, $otherDiscounts] = $this->basketItemsByDiscounts->get($basketItem['id'])
+                    ->partition(fn($discount) =>
+                        $discount['value_type'] == Discount::DISCOUNT_VALUE_TYPE_PERCENT && $discount['value'] == 100 ||
+                        $discount['value_type'] == Discount::DISCOUNT_VALUE_TYPE_RUB && $discount['value'] == $basketItem['cost']
+                    );
+
+                // Если применена 100% скидка на товар и нет других скидок, то делаем этот товар бесплатным
+                if ($freeProductDiscounts->count() > 0 && $otherDiscounts->count() == 0) {
+                    $basketItem['price'] = 0;
+                }
+            }
+        }
+
         return $this;
     }
 
@@ -291,13 +314,16 @@ class DiscountCalculator extends AbstractCalculator
                 break;
         }
 
-        if ($change > 0) {
+        // Добавляем все скидки к примененным.
+        // Даже те, что не повлияли на цену, т.к. они тоже участвовали в подсчете общей скидки
+//        if ($change > 0) {
             $this->appliedDiscounts->put($discount->id, [
                 'discountId' => $discount->id,
                 'change' => $change,
                 'conditions' => $discount->conditions->pluck('type') ?? collect(),
+                'summarizable_with_all' => $discount->summarizable_with_all,
             ]);
-        }
+//        }
 
         return $change ?: false;
     }
@@ -413,6 +439,40 @@ class DiscountCalculator extends AbstractCalculator
 
             return true;
         })->values();
+
+        return $this->compileSynegry();
+    }
+
+    /**
+     * Генерирует временные DiscountCondition для скидок, которые суммируются со всеми (summarizable_with_all)
+     */
+    protected function compileSynegry(): self
+    {
+        [$summarizableWithAll, $otherDiscounts] = $this->possibleDiscounts->partition('summarizable_with_all', true);
+        if ($summarizableWithAll->count() == 0) {
+            return $this;
+        }
+
+        /** @var Discount $summarizableDiscount */
+        foreach ($summarizableWithAll as $summarizableDiscount) {
+            /** @var Discount $discount */
+            foreach ($otherDiscounts as $discount) {
+
+                /** @var DiscountCondition $condition */
+                $condition = $discount->conditions->firstWhere('type', DiscountCondition::DISCOUNT_SYNERGY);
+
+                if (!$condition) {
+                    /** @var DiscountCondition $condition */
+                    $condition = new DiscountCondition();
+                    $condition->type = DiscountCondition::DISCOUNT_SYNERGY;
+                    $discount->conditions->add($condition);
+                }
+
+                $condition->condition = array_merge_recursive($condition->condition ?? [], [
+                    DiscountCondition::FIELD_SYNERGY => [$summarizableDiscount->id],
+                ]);
+            }
+        }
 
         return $this;
     }

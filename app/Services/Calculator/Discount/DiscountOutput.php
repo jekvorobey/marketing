@@ -116,7 +116,7 @@ class DiscountOutput
     public function getOutputFormat(): Collection
     {
         $discounts = $this->discounts->filter(function ($discount) {
-            return $this->appliedDiscounts->has($discount->id);
+            return $this->appliedDiscounts->has($discount->id) && !empty($this->appliedDiscounts[$discount->id]['change']);
         })->keyBy('id');
 
         $items = collect();
@@ -137,6 +137,7 @@ class DiscountOutput
                 'merchant_id' => $discount->merchant_id,
                 'visible_in_catalog' => $extType === Discount::EXT_TYPE_OFFER,
                 'promo_code_only' => $discount->promo_code_only,
+                'summarizable_with_all' => $discount->summarizable_with_all,
                 'promo_code' => $isPromoCodeDiscount ? $this->input->promoCode : null,
             ]);
         }
