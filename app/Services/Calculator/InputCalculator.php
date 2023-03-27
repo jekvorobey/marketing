@@ -442,15 +442,14 @@ class InputCalculator
     public function getMaxTotalPriceForBrands(array $brands): int
     {
         $max = 0;
+        $sum = 0;
         foreach ($brands as $brandId) {
-            $sum = $this->basketItems->filter(function ($basketItem) use ($brandId) {
+            $sum += $this->basketItems->filter(function ($basketItem) use ($brandId) {
                 return (int) $basketItem['brand_id'] === (int) $brandId;
             })->map(function ($basketItem) {
                 return $basketItem['price'] * $basketItem['qty'];
             })->sum();
-            $max = max($sum, $max);
         }
-
-        return $max;
+        return max($sum, $max);
     }
 }
