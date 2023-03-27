@@ -421,8 +421,9 @@ class InputCalculator
     public function getMaxTotalPriceForCategories(array $categories): int
     {
         $max = 0;
+        $sum = 0;
         foreach ($categories as $categoryId) {
-            $sum = $this->basketItems->filter(function ($basketItem) use ($categoryId) {
+            $sum += $this->basketItems->filter(function ($basketItem) use ($categoryId) {
                 $allCategories = static::getAllCategories();
                 return $allCategories->has($categoryId)
                     && $allCategories->has($basketItem['category_id'])
@@ -430,10 +431,9 @@ class InputCalculator
             })->map(function ($basketItem) {
                 return $basketItem['price'] * $basketItem['qty'];
             })->sum();
-            $max = max($sum, $max);
         }
 
-        return $max;
+        return max($sum, $max);
     }
 
     /**
@@ -450,6 +450,7 @@ class InputCalculator
                 return $basketItem['price'] * $basketItem['qty'];
             })->sum();
         }
+
         return max($sum, $max);
     }
 }
