@@ -141,8 +141,12 @@ class PromoCodeController extends Controller
         $data = $this->validate(request(), [
             'code' => 'required|string|max:32',
         ]);
-        $item = PromoCode::query()->where('code', $data['code'])->first();
-        $item ? $status = 'error' : $status = 'ok';
+        $item = PromoCode::query()
+            ->where('code', $data['code'])
+            ->where('start_date', '<=', now())
+            ->where('end_date', '>=', now())
+            ->first();
+        $status = $item ? 'error' : 'ok';
 
         return response()->json([
             'status' => $status,
