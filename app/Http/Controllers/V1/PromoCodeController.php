@@ -143,8 +143,14 @@ class PromoCodeController extends Controller
         ]);
         $item = PromoCode::query()
             ->where('code', $data['code'])
-            ->where('start_date', '<=', now())
-            ->where('end_date', '>=', now())
+            ->where(function ($query) {
+                $query->whereNull('start_date')
+                    ->orWhere('start_date', '<=', now());
+            })
+            ->where(function ($query) {
+                $query->whereNull('end_date')
+                    ->orWhere('end_date', '>=', now());
+            })
             ->first();
         $status = $item ? 'error' : 'ok';
 
