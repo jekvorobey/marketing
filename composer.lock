@@ -1523,12 +1523,12 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.com:iBT.studio/ibt-merchant-management-lib.git",
-                "reference": "d007dc347a851da9b09fd48f6a5af631f0022c52"
+                "reference": "c4ee75dd15abc9b19dc85eeb49d501f9938e3d19"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://gitlab.com/api/v4/projects/iBT%2Estudio%2Fibt-merchant-management-lib/repository/archive.zip?sha=d007dc347a851da9b09fd48f6a5af631f0022c52",
-                "reference": "d007dc347a851da9b09fd48f6a5af631f0022c52",
+                "url": "https://gitlab.com/api/v4/projects/iBT%2Estudio%2Fibt-merchant-management-lib/repository/archive.zip?sha=c4ee75dd15abc9b19dc85eeb49d501f9938e3d19",
+                "reference": "c4ee75dd15abc9b19dc85eeb49d501f9938e3d19",
                 "shasum": ""
             },
             "require": {
@@ -1556,7 +1556,7 @@
             "support": {
                 "issues": "https://gitlab.com/api/v4/projects/37965528/issues"
             },
-            "time": "2023-03-29T10:41:57+00:00"
+            "time": "2023-04-24T05:31:27+00:00"
         },
         {
             "name": "ibt/message-lib",
