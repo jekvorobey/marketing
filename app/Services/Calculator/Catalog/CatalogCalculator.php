@@ -32,7 +32,7 @@ class CatalogCalculator extends AbstractCalculator
     public function __construct(array $params = [])
     {
         if (isset($params['offer_ids'])) {
-            $params['basketItems'] = array_map(function (int $offerId) {
+            $params['basketItems'] = array_map(static function (int $offerId) {
                 return new BasketItem($offerId, 1, $offerId, 0, 0, 0);
             }, $params['offer_ids']);
             unset($params['offer_ids']);
