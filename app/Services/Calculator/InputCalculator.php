@@ -10,6 +10,7 @@ use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\Customer\Dto\CustomerDto;
 use Greensight\Customer\Services\CustomerService\CustomerService;
 use Greensight\Logistics\Services\ListsService\ListsService;
+use Greensight\Oms\Dto\OrderStatus;
 use Greensight\Oms\Services\OrderService\OrderService;
 use Greensight\Oms\Services\PaymentService\PaymentService;
 use Illuminate\Support\Collection;
@@ -370,7 +371,9 @@ class InputCalculator
     {
         /** @var OrderService $orderService */
         $orderService = resolve(OrderService::class);
-        $query = $orderService->newQuery()->setFilter('customer_id', $customerId);
+        $query = $orderService->newQuery()
+            ->setFilter('customer_id', $customerId)
+            ->setFilter('status', [OrderStatus::DELIVERING, OrderStatus::READY_FOR_RECIPIENT, OrderStatus::DONE]);
         $ordersCount = $orderService->ordersCount($query);
 
         return (int) $ordersCount['total'];
