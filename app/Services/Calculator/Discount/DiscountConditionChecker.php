@@ -64,7 +64,7 @@ class DiscountConditionChecker
             /** Скидка на каждый N-й заказ */
             case DiscountConditionModel::ORDER_SEQUENCE_NUMBER:
                 $countOrders = $this->input->getCustomerOrdersCount();
-                return isset($countOrders) && (($countOrders + 1) % $condition->getOrderSequenceNumber() === 0);
+                return isset($countOrders) && ((($countOrders + 1) % $condition->getOrderSequenceNumber()) === 0);
             case DiscountConditionModel::BUNDLE:
                 return true; // todo
             case DiscountConditionModel::DISCOUNT_SYNERGY: // Проверяется отдельно на этапе применения скидок
