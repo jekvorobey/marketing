@@ -1,17 +1,10 @@
 FROM composer:2.1.3 AS composer
 
-RUN mkdir -p /root/.ssh && \
-    chmod 0700 /root/.ssh
-
-COPY gitlab_key/id_rsa /root/.ssh/
-
-RUN chmod 600 /root/.ssh/id_rsa && \
-    echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
-RUN cat /root/.ssh/id_rsa
-
 WORKDIR /var/www
 
 COPY . ./
+COPY .ssh/ /root/.ssh/
+RUN chmod 600 ~/.ssh/*
 
 RUN composer install --no-interaction --no-progress --prefer-dist --no-scripts --optimize-autoloader --ignore-platform-reqs --no-dev
 
