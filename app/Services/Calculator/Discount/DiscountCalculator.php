@@ -419,6 +419,16 @@ class DiscountCalculator extends AbstractCalculator
             ->merge($cartTotalDiscounts)
             ->merge($deliveryDiscounts);
 
+        // сортируем скидки таким образом, чтобы первыми были скидки с максимальным приоритетом,
+        // а затем скидки по убыванию значения(value)
+        $this->possibleDiscounts = $this->possibleDiscounts->sort(function ($a, $b) {
+            if ($a['max_priority'] == $b['max_priority']) {
+                return $b['value'] - $a['value'];
+            }
+
+            return $b['max_priority'] - $a['max_priority'];
+        });
+
         return $this;
     }
 

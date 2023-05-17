@@ -34,6 +34,7 @@ use Pim\Core\PimException;
  * @property Carbon $start_date
  * @property Carbon $end_date
  * @property bool $promo_code_only
+ * @property bool $max_priority
  * @property bool $summarizable_with_all
  * @property string $comment
  *
@@ -167,6 +168,7 @@ class Discount extends AbstractModel
         'start_date',
         'end_date',
         'promo_code_only',
+        'max_priority',
         'summarizable_with_all',
         'comment',
     ];
@@ -177,6 +179,7 @@ class Discount extends AbstractModel
     /** @var array */
     protected $casts = [
         'promo_code_only' => 'bool',
+        'max_priority' => 'bool',
         'summarizable_with_all' => 'bool',
     ];
 
