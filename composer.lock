@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9b65544d35c2765f1fbd319290d2d924",
+    "content-hash": "b738f228f8f5c9de052ac6e057427e72",
     "packages": [
         {
             "name": "brick/math",
@@ -1350,14 +1350,8 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "git@gitlab.com:iBT.studio/ibt-cm-lib.git",
-                "reference": "ebf94f04469b63d09ccfef511eeff00c977c58e5"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://gitlab.com/api/v4/projects/iBT%2Estudio%2Fibt-cm-lib/repository/archive.zip?sha=ebf94f04469b63d09ccfef511eeff00c977c58e5",
-                "reference": "ebf94f04469b63d09ccfef511eeff00c977c58e5",
-                "shasum": ""
+                "url": "git@gitlab.ibt.ru:iBT.studio/ibt-cm-lib",
+                "reference": "501faf5184469d208145ac1c892db6442db4a068"
             },
             "require": {
                 "ext-json": "*",
@@ -1392,24 +1386,15 @@
                 }
             ],
             "description": "iBT Customer management client",
-            "support": {
-                "issues": "https://gitlab.com/api/v4/projects/37965343/issues"
-            },
-            "time": "2023-03-31T03:17:05+00:00"
+            "time": "2023-05-02T09:52:04+00:00"
         },
         {
             "name": "ibt/common-lib",
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "git@gitlab.com:iBT.studio/ibt-common-ms-code.git",
-                "reference": "a45ee122bf7a6e4060e262617f9d562d4c0e38dc"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://gitlab.com/api/v4/projects/iBT%2Estudio%2Fibt-common-ms-code/repository/archive.zip?sha=a45ee122bf7a6e4060e262617f9d562d4c0e38dc",
-                "reference": "a45ee122bf7a6e4060e262617f9d562d4c0e38dc",
-                "shasum": ""
+                "url": "git@gitlab.ibt.ru:iBT.studio/ibt-common-ms-code.git",
+                "reference": "b913b646c06f4572039724057c877ea96eb32516"
             },
             "require": {
                 "ext-json": "*",
@@ -1460,24 +1445,15 @@
                 }
             ],
             "description": "iBT common code for all microservices",
-            "support": {
-                "issues": "https://gitlab.com/api/v4/projects/37965392/issues"
-            },
-            "time": "2023-04-04T09:19:38+03:00"
+            "time": "2023-05-02T09:52:13+00:00"
         },
         {
             "name": "ibt/logistics-lib",
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "git@gitlab.com:iBT.studio/ibt-logistics-lib.git",
+                "url": "git@gitlab.ibt.ru:iBT.studio/ibt-logistics-lib",
                 "reference": "85894079d70ea5cf89fef0a2dafc56b23232c50e"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://gitlab.com/api/v4/projects/iBT%2Estudio%2Fibt-logistics-lib/repository/archive.zip?sha=85894079d70ea5cf89fef0a2dafc56b23232c50e",
-                "reference": "85894079d70ea5cf89fef0a2dafc56b23232c50e",
-                "shasum": ""
             },
             "require": {
                 "ext-json": "*",
@@ -1512,9 +1488,6 @@
                 }
             ],
             "description": "iBT logistics client",
-            "support": {
-                "issues": "https://gitlab.com/api/v4/projects/37965501/issues"
-            },
             "time": "2023-04-11T08:49:19+00:00"
         },
         {
@@ -1522,14 +1495,8 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "git@gitlab.com:iBT.studio/ibt-merchant-management-lib.git",
+                "url": "git@gitlab.ibt.ru:iBT.studio/ibt-merchant-management-lib",
                 "reference": "c4ee75dd15abc9b19dc85eeb49d501f9938e3d19"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://gitlab.com/api/v4/projects/iBT%2Estudio%2Fibt-merchant-management-lib/repository/archive.zip?sha=c4ee75dd15abc9b19dc85eeb49d501f9938e3d19",
-                "reference": "c4ee75dd15abc9b19dc85eeb49d501f9938e3d19",
-                "shasum": ""
             },
             "require": {
                 "ext-json": "*",
@@ -1553,9 +1520,6 @@
                 }
             ],
             "description": "iBT Merchant Management service client",
-            "support": {
-                "issues": "https://gitlab.com/api/v4/projects/37965528/issues"
-            },
             "time": "2023-04-24T05:31:27+00:00"
         },
         {
@@ -1563,14 +1527,8 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "git@gitlab.com:iBT.studio/ibt-message-lib.git",
+                "url": "git@gitlab.ibt.ru:iBT.studio/ibt-message-lib",
                 "reference": "93290e6e2c473a9204fb13a6a353ad4e33f64735"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://gitlab.com/api/v4/projects/iBT%2Estudio%2Fibt-message-lib/repository/archive.zip?sha=93290e6e2c473a9204fb13a6a353ad4e33f64735",
-                "reference": "93290e6e2c473a9204fb13a6a353ad4e33f64735",
-                "shasum": ""
             },
             "require": {
                 "ext-json": "*",
@@ -1605,24 +1563,15 @@
                 }
             ],
             "description": "iBT message client",
-            "support": {
-                "issues": "https://gitlab.com/api/v4/projects/37965533/issues"
-            },
-            "time": "2022-09-08T19:02:35+07:00"
+            "time": "2022-09-08T12:02:35+00:00"
         },
         {
             "name": "ibt/oms-lib",
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "git@gitlab.com:iBT.studio/ibt-oms-lib.git",
-                "reference": "a59a06802f34a24e2e5476e8a705145e3189a999"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://gitlab.com/api/v4/projects/iBT%2Estudio%2Fibt-oms-lib/repository/archive.zip?sha=a59a06802f34a24e2e5476e8a705145e3189a999",
-                "reference": "a59a06802f34a24e2e5476e8a705145e3189a999",
-                "shasum": ""
+                "url": "git@gitlab.ibt.ru:iBT.studio/ibt-oms-lib",
+                "reference": "fc1eaef0e5b3f640d2b7885b1dd918b463bc4fbc"
             },
             "require": {
                 "ext-json": "*",
@@ -1658,24 +1607,15 @@
                 }
             ],
             "description": "iBT oms client",
-            "support": {
-                "issues": "https://gitlab.com/api/v4/projects/37965542/issues"
-            },
-            "time": "2023-04-11T09:15:41+00:00"
+            "time": "2023-05-03T05:25:56+00:00"
         },
         {
             "name": "ibt/pim-lib",
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "git@gitlab.com:iBT.studio/ibt-pim-lib.git",
-                "reference": "d8076ae2779cf54cd682c9478ea416c959d3e4cd"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://gitlab.com/api/v4/projects/iBT%2Estudio%2Fibt-pim-lib/repository/archive.zip?sha=d8076ae2779cf54cd682c9478ea416c959d3e4cd",
-                "reference": "d8076ae2779cf54cd682c9478ea416c959d3e4cd",
-                "shasum": ""
+                "url": "git@gitlab.ibt.ru:iBT.studio/ibt-pim-lib",
+                "reference": "d11e26b2a645649e48cd5242d81074e94a9db0dc"
             },
             "require": {
                 "ext-json": "*",
@@ -1699,10 +1639,7 @@
                 }
             ],
             "description": "iBT PIM service client",
-            "support": {
-                "issues": "https://gitlab.com/api/v4/projects/37965556/issues"
-            },
-            "time": "2023-03-31T03:16:51+00:00"
+            "time": "2023-04-28T08:30:35+00:00"
         },
         {
             "name": "jean85/pretty-package-versions",
@@ -2409,14 +2346,8 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "git@gitlab.com:iBT.studio/laravel-health-check.git",
+                "url": "git@gitlab.ibt.ru:iBT.studio/laravel-health-check.git",
                 "reference": "19d2d933b87362ebf4b75c5f0078b7e87885b6e0"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://gitlab.com/api/v4/projects/iBT%2Estudio%2Flaravel-health-check/repository/archive.zip?sha=19d2d933b87362ebf4b75c5f0078b7e87885b6e0",
-                "reference": "19d2d933b87362ebf4b75c5f0078b7e87885b6e0",
-                "shasum": ""
             },
             "require": {
                 "ext-json": "*",
@@ -2477,9 +2408,6 @@
                 "laravel",
                 "letsgoi"
             ],
-            "support": {
-                "issues": "https://gitlab.com/api/v4/projects/37965595/issues"
-            },
             "time": "2022-03-18T10:28:46+00:00"
         },
         {
