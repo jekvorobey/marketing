@@ -66,6 +66,9 @@ class DiscountCondition extends AbstractModel
      */
     public const BUNDLE = 12;
 
+    /** @var int - условие на количество разных товаров в корзине */
+    const DIFFERENT_PRODUCTS_COUNT  = 13;
+
     /** Свойства условий скидки (для поля condition) */
     public const FIELD_MIN_PRICE = 'minPrice';
     public const FIELD_BRANDS = 'brands';
@@ -81,6 +84,7 @@ class DiscountCondition extends AbstractModel
     public const FIELD_SYNERGY = 'synergy';
     public const FIELD_MAX_VALUE_TYPE = 'maxValueType';
     public const FIELD_MAX_VALUE = 'maxValue';
+    public const FIELD_ADDITIONAL_DISCOUNT = 'additionalDiscount';
 
     /**
      * Заполняемые поля модели
@@ -163,6 +167,11 @@ class DiscountCondition extends AbstractModel
     public function getMaxValue(): ?int
     {
         return $this->condition[self::FIELD_MAX_VALUE] ?? null;
+    }
+
+    public function getAdditionalDiscount(): ?float
+    {
+        return $this->condition[self::FIELD_ADDITIONAL_DISCOUNT] ?? null;
     }
 
     public function discount(): BelongsTo
