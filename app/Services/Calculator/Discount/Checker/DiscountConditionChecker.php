@@ -1,27 +1,20 @@
 <?php
 
-namespace App\Services\Calculator\Discount;
+namespace App\Services\Calculator\Discount\Checker;
 
-use App\Services\Calculator\InputCalculator;
-use Illuminate\Support\Collection;
+use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountCondition as DiscountConditionModel;
+use Illuminate\Support\Collection;
 
-class DiscountConditionChecker
+class DiscountConditionChecker extends BaseDiscountConditionChecker
 {
-    protected InputCalculator $input;
-
-    public function __construct(InputCalculator $inputCalculator)
-    {
-        $this->input = $inputCalculator;
-    }
-
     /**
      * Проверяет доступность применения скидки на все соответствующие условия
      */
-    public function check(Collection $conditions, array $checkingConditionTypes = []): bool
+    public function check(Discount $discount, array $checkingConditionTypes = []): bool
     {
         /** @var DiscountConditionModel $condition */
-        foreach ($conditions as $condition) {
+        foreach ($discount->conditions as $condition) {
             if (!$this->checkByType($condition, $checkingConditionTypes)) {
                 return false;
             }
@@ -69,6 +62,7 @@ class DiscountConditionChecker
                 return true; // todo
             case DiscountConditionModel::DISCOUNT_SYNERGY: // Проверяется отдельно на этапе применения скидок
             case DiscountConditionModel::DELIVERY_METHOD: // Проверяется отдельно в DeliveryApplier, т.к. надо рассчитывать возможные скидки для всех способов доставки
+            case DiscountConditionModel::DIFFERENT_PRODUCTS_COUNT: //Проверяется отдельно, т.к. нужно учитывать несколько условий одновременно и менять сумму скидки
                 return true;
             default:
                 return false;
