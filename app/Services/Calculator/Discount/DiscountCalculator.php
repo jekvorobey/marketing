@@ -433,10 +433,6 @@ class DiscountCalculator extends AbstractCalculator
             return $this->checkDiscount($discount);
         })->values();
 
-        $this->possibleDiscounts = $this->discounts->filter(function (Discount $discount) {
-            return $discount->id == 1705;
-        })->values();
-
         $conditionCheckers = [
             new DiscountConditionChecker($this->input),
             new DifferentProductsCountChecker($this->input),
