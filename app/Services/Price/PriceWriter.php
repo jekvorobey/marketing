@@ -31,12 +31,12 @@ class PriceWriter
         $updatedOfferIds = [];
 
         foreach ($newPrices as $offerId => $newPrice) {
-            //try {
+            try {
                 $price = $this->syncPrice($offerId, $newPrice, $nullable);
-            //} catch (\Throwable $e) {
-                //report($e);
-                //continue;
-            //}
+            } catch (\Throwable $e) {
+                report($e);
+                continue;
+            }
 
             if (!$price->exists || $price->wasRecentlyCreated || $price->wasChanged()) {
                 $updatedOfferIds[] = $price->offer_id;
