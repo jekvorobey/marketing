@@ -4,6 +4,7 @@ namespace App\Services\Price;
 
 use App\Models\Price\Price;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\ItemNotFoundException;
 use MerchantManagement\Dto\MerchantPricesDto;
 use MerchantManagement\Services\MerchantService\Dto\GetMerchantPricesDto;
 use MerchantManagement\Services\MerchantService\MerchantService;
@@ -30,12 +31,12 @@ class PriceWriter
         $updatedOfferIds = [];
 
         foreach ($newPrices as $offerId => $newPrice) {
-            try {
+            //try {
                 $price = $this->syncPrice($offerId, $newPrice, $nullable);
-            } catch (\Throwable $e) {
-                report($e);
-                continue;
-            }
+            //} catch (\Throwable $e) {
+                //report($e);
+                //continue;
+            //}
 
             if (!$price->exists || $price->wasRecentlyCreated || $price->wasChanged()) {
                 $updatedOfferIds[] = $price->offer_id;
@@ -75,8 +76,9 @@ class PriceWriter
             /** @var MerchantPricesDto|null $baseOfferPrice */
             $baseOfferPrice = $merchantOfferPrices['sku'] ?? $merchantOfferPrices['category'] ?? $merchantOfferPrices['brand'] ?? $merchantOfferPrices['personal'] ?? null;
             $merchantId = $merchantOfferPrices['merchant_id'] ?? null;
-        } catch (PimException) {
+        } catch (PimException|ItemNotFoundException) {
             $baseOfferPrice = null;
+            $merchantId = null;
         }
 
         $priceBase = $newPrice;
@@ -124,7 +126,7 @@ class PriceWriter
 
     /**
      * Получить ценообразование конкретного оффера
-     * @throws PimException
+     * @throws PimException|ItemNotFoundException
      */
     protected function getMerchantOfferPrices(int $offerId): array
     {
