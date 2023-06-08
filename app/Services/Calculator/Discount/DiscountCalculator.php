@@ -439,13 +439,14 @@ class DiscountCalculator extends AbstractCalculator
         ];
 
         foreach ($conditionCheckers as $conditionChecker) {
-            $this->possibleDiscounts = $this->possibleDiscounts->filter(function (Discount $discount) use ($conditionChecker) {
-                if ($discount->conditions) {
-                    return $conditionChecker->check($discount, $this->getCheckingConditions());
-                }
+            $this->possibleDiscounts = $this->possibleDiscounts
+                ->filter(function (Discount $discount) use ($conditionChecker) {
+                    if ($discount->conditions->isNotEmpty()) {
+                        return $conditionChecker->check($discount, $this->getCheckingConditions());
+                    }
 
-                return true;
-            })->values();
+                    return true;
+                })->values();
         }
 
         return $this->compileSynegry();
@@ -514,6 +515,7 @@ class DiscountCalculator extends AbstractCalculator
             DiscountConditionModel::BUNDLE,
             DiscountConditionModel::DISCOUNT_SYNERGY,
             DiscountConditionModel::DIFFERENT_PRODUCTS_COUNT,
+            DiscountConditionModel::MERCHANT,
         ];
     }
 

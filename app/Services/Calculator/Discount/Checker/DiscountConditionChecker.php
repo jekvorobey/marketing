@@ -51,6 +51,8 @@ class DiscountConditionChecker extends BaseDiscountConditionChecker
             /** Скидка при заказе из региона */
             case DiscountConditionModel::REGION:
                 return $this->checkRegion($condition->getRegions());
+            case DiscountConditionModel::MERCHANT:
+                return $this->checkMerchant($condition->getMerchants());
             /** Скидка для определенных покупателей */
             case DiscountConditionModel::CUSTOMER:
                 return in_array($this->input->getCustomerId(), $condition->getCustomerIds());
@@ -92,5 +94,17 @@ class DiscountConditionChecker extends BaseDiscountConditionChecker
     public function checkRegion($regions): bool
     {
         return in_array($this->input->getUserRegionId(), $regions);
+    }
+
+    /** Поставщик
+     * @param array $merchants
+     * @return bool
+     */
+    public function checkMerchant(array $merchants)
+    {
+        return $this->input
+            ->basketItems
+            ->whereNotIn('merchant_id', $merchants)
+            ->isEmpty();
     }
 }
