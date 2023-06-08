@@ -15,6 +15,7 @@ use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\Customer\Services\CustomerService\CustomerService;
 use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection as IlluminateCollection;
 use MerchantManagement\Services\OperatorService\OperatorService;
 use MerchantManagement\Dto\OperatorDto;
 use Pim\Core\PimException;
@@ -182,6 +183,19 @@ class Discount extends AbstractModel
 
     /** Индикатор, обозначающий что связи были обновлены. Нужен для вызова переиндесации в pim */
     public bool $relationsWasRecentlyUpdated = false;
+
+    /**
+     * DiscountCondition которые меняют размер скидки.
+     * Добавляются в момент проверки условий скидки
+     * @todo подумать где лучше их хранить
+     */
+    public ?IlluminateCollection $relevantConditionsWithAdditionalDiscount = null;
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+        $this->relevantConditionsWithAdditionalDiscount = collect();
+    }
 
     /**
      * Доступные типы скидок

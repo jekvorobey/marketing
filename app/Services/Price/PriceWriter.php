@@ -51,7 +51,7 @@ class PriceWriter
     public function pricesByOffers(array $offerIds): ?Collection
     {
         return Price::query()
-            ->select('offer_id', 'price')
+            ->select('offer_id', 'price', 'updated_at')
             ->whereIn('offer_id', $offerIds)
             ->get()
             ->keyBy('offer_id');

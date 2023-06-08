@@ -9,6 +9,8 @@ use App\Services\Calculator\AbstractCalculator;
 use App\Services\Calculator\Discount\Applier\BasketApplier;
 use App\Services\Calculator\Discount\Applier\DeliveryApplier;
 use App\Services\Calculator\Discount\Applier\OfferApplier;
+use App\Services\Calculator\Discount\Checker\DifferentProductsCountChecker;
+use App\Services\Calculator\Discount\Checker\DiscountConditionChecker;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
 use Illuminate\Support\Collection;
@@ -431,14 +433,20 @@ class DiscountCalculator extends AbstractCalculator
             return $this->checkDiscount($discount);
         })->values();
 
-        $conditionChecker = new DiscountConditionChecker($this->input);
-        $this->possibleDiscounts = $this->possibleDiscounts->filter(function (Discount $discount) use ($conditionChecker) {
-            if ($conditions = $discount->conditions) {
-                return $conditionChecker->check($conditions, $this->getCheckingConditions());
-            }
+        $conditionCheckers = [
+            new DiscountConditionChecker($this->input),
+            new DifferentProductsCountChecker($this->input),
+        ];
 
-            return true;
-        })->values();
+        foreach ($conditionCheckers as $conditionChecker) {
+            $this->possibleDiscounts = $this->possibleDiscounts->filter(function (Discount $discount) use ($conditionChecker) {
+                if ($discount->conditions) {
+                    return $conditionChecker->check($discount, $this->getCheckingConditions());
+                }
+
+                return true;
+            })->values();
+        }
 
         return $this->compileSynegry();
     }
@@ -505,6 +513,7 @@ class DiscountCalculator extends AbstractCalculator
             DiscountConditionModel::ORDER_SEQUENCE_NUMBER,
             DiscountConditionModel::BUNDLE,
             DiscountConditionModel::DISCOUNT_SYNERGY,
+            DiscountConditionModel::DIFFERENT_PRODUCTS_COUNT,
         ];
     }
 
