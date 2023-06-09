@@ -14,7 +14,7 @@ class DifferentProductsCountChecker extends BaseDiscountConditionChecker
             ->filter(fn($condition) => $condition->type == DiscountCondition::DIFFERENT_PRODUCTS_COUNT && $condition->getCount() !== null)
             ->sortByDesc(fn($condition) => $condition->getCount());
 
-        if (empty($conditions)) {
+        if ($conditions->isEmpty()) {
             return true;
         }
 

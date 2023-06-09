@@ -435,12 +435,12 @@ class DiscountCalculator extends AbstractCalculator
 
         $conditionCheckers = [
             new DiscountConditionChecker($this->input),
-//            new DifferentProductsCountChecker($this->input),
+            new DifferentProductsCountChecker($this->input),
         ];
 
         foreach ($conditionCheckers as $conditionChecker) {
             $this->possibleDiscounts = $this->possibleDiscounts->filter(function (Discount $discount) use ($conditionChecker) {
-                if ($discount->conditions) {
+                if ($discount->conditions->isNotEmpty()) {
                     return $conditionChecker->check($discount, $this->getCheckingConditions());
                 }
 
