@@ -669,7 +669,10 @@ class Discount extends AbstractModel
             /** @var Collection $newRelations */
             $newRelations = $this->fresh()->{$relationName};
 
-            $relations = array_unique(array_merge($oldRelations->pluck($column)->all(), $newRelations->pluck($column)->all()));
+            $relations = array_unique(array_merge(
+                $oldRelations->pluck($column)->all(),
+                $newRelations->pluck($column)->all()
+            ));
             if (!empty($relations)) {
                 UpdatePimContent::dispatch($function, $relations);
             }
