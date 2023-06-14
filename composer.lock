@@ -1453,7 +1453,7 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.ibt.ru:iBT.studio/ibt-logistics-lib",
-                "reference": "85894079d70ea5cf89fef0a2dafc56b23232c50e"
+                "reference": "26cd1ac219c9dffbaf5877da9eabc383b7f523d2"
             },
             "require": {
                 "ext-json": "*",
@@ -1488,7 +1488,7 @@
                 }
             ],
             "description": "iBT logistics client",
-            "time": "2023-04-11T08:49:19+00:00"
+            "time": "2023-05-22T10:58:44+00:00"
         },
         {
             "name": "ibt/merchant-management-lib",
@@ -1496,7 +1496,7 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.ibt.ru:iBT.studio/ibt-merchant-management-lib",
-                "reference": "c4ee75dd15abc9b19dc85eeb49d501f9938e3d19"
+                "reference": "b44527855e966fe7d5ed6da7a77c24d5a66351d6"
             },
             "require": {
                 "ext-json": "*",
@@ -1520,7 +1520,7 @@
                 }
             ],
             "description": "iBT Merchant Management service client",
-            "time": "2023-04-24T05:31:27+00:00"
+            "time": "2023-06-14T12:22:44+00:00"
         },
         {
             "name": "ibt/message-lib",
@@ -1571,7 +1571,7 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.ibt.ru:iBT.studio/ibt-oms-lib",
-                "reference": "fc1eaef0e5b3f640d2b7885b1dd918b463bc4fbc"
+                "reference": "241cb7160745810b699fe0bf4d924c9603d49321"
             },
             "require": {
                 "ext-json": "*",
@@ -1607,7 +1607,7 @@
                 }
             ],
             "description": "iBT oms client",
-            "time": "2023-05-03T05:25:56+00:00"
+            "time": "2023-06-14T12:22:58+00:00"
         },
         {
             "name": "ibt/pim-lib",
