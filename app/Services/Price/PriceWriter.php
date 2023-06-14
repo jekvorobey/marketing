@@ -83,12 +83,13 @@ class PriceWriter
 
         $priceBase = $newPrice;
         $priceRetail = $newPrice;
+
         if ($baseOfferPrice instanceof MerchantPricesDto) {
             if ($baseOfferPrice->valueProf) {
-                $newPrice = round($newPrice + $newPrice * $baseOfferPrice->valueProf / 100, 2);
+                $newPrice = ceil($newPrice + $newPrice * $baseOfferPrice->valueProf / 100);
             }
             if ($baseOfferPrice->valueRetail) {
-                $priceRetail = round($newPrice + $newPrice * $baseOfferPrice->valueRetail / 100, 2);
+                $priceRetail = ceil($newPrice + $newPrice * $baseOfferPrice->valueRetail / 100);
             }
         }
 
