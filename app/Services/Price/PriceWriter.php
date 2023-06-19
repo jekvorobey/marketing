@@ -18,6 +18,7 @@ use Pim\Services\SearchService\SearchService;
 class PriceWriter
 {
     private Collection $prices;
+    private ?array $merchantPrices = [];
 
     /**
      * @param array|float[] $newPrices - массив новых цен вида [offerId => price]
@@ -86,10 +87,10 @@ class PriceWriter
 
         if ($baseOfferPrice instanceof MerchantPricesDto) {
             if ($baseOfferPrice->valueProf) {
-                $newPrice = ceil($newPrice + $newPrice * $baseOfferPrice->valueProf / 100);
+                $newPrice = ceil($priceBase + $priceBase * $baseOfferPrice->valueProf / 100);
             }
             if ($baseOfferPrice->valueRetail) {
-                $priceRetail = ceil($newPrice + $newPrice * $baseOfferPrice->valueRetail / 100);
+                $priceRetail = ceil($priceBase + $priceBase * $baseOfferPrice->valueRetail / 100);
             }
         }
 
@@ -135,8 +136,6 @@ class PriceWriter
         $offerService = resolve(OfferService::class);
         /** @var ProductService $productService */
         $productService = resolve(ProductService::class);
-        /** @var MerchantService $merchantService */
-        $merchantService = resolve(MerchantService::class);
 
         $offersQuery = $offerService->newQuery()
             ->setFilter('id', $offerId)
@@ -152,14 +151,21 @@ class PriceWriter
         /** @var ProductDto $product */
         $product = $products->firstOrFail();
 
-        $merchantPrices = $merchantService->merchantPrices(
-            (new GetMerchantPricesDto())
-                ->addType(MerchantPricesDto::TYPE_MERCHANT)
-                ->addType(MerchantPricesDto::TYPE_BRAND)
-                ->addType(MerchantPricesDto::TYPE_CATEGORY)
-                ->addType(MerchantPricesDto::TYPE_SKU)
-                ->setMerchantId($offer->merchant_id)
-        );
+        if (!isset($this->merchantPrices[$offer->merchant_id])) {
+            /** @var MerchantService $merchantService */
+            $merchantService = resolve(MerchantService::class);
+            $merchantPrices = $merchantService->merchantPrices(
+                (new GetMerchantPricesDto())
+                    ->addType(MerchantPricesDto::TYPE_MERCHANT)
+                    ->addType(MerchantPricesDto::TYPE_BRAND)
+                    ->addType(MerchantPricesDto::TYPE_CATEGORY)
+                    ->addType(MerchantPricesDto::TYPE_SKU)
+                    ->setMerchantId($offer->merchant_id)
+            );
+            $this->merchantPrices[$offer->merchant_id] = $merchantPrices;
+        } else {
+            $merchantPrices = $this->merchantPrices[$offer->merchant_id];
+        }
 
         $merchantOfferPrices = [
             'offer_id' => $offer->id,
