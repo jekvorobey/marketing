@@ -16,7 +16,7 @@ class BasketApplier extends AbstractApplier
     public function apply(Discount $discount): ?float
     {
         $basketItemIds = $this->input->basketItems->filter(function ($basketItem) use ($discount) {
-            return $this->applicableToBasketItem($discount, $basketItem['id']);
+            return $this->applicableToBasketItem($discount, $basketItem);
         })->pluck('id');
 
         if ($basketItemIds->isEmpty()) {

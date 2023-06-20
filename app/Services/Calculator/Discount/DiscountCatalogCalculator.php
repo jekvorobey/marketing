@@ -26,6 +26,9 @@ class DiscountCatalogCalculator extends DiscountCalculator
 
     protected function getCheckingConditions(): array
     {
-        return [DiscountConditionModel::DISCOUNT_SYNERGY];
+        return [
+            DiscountConditionModel::DISCOUNT_SYNERGY,
+            DiscountConditionModel::MERCHANT,
+        ];
     }
 }

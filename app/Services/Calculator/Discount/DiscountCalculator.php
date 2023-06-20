@@ -524,6 +524,7 @@ class DiscountCalculator extends AbstractCalculator
             DiscountConditionModel::BUNDLE,
             DiscountConditionModel::DISCOUNT_SYNERGY,
             DiscountConditionModel::DIFFERENT_PRODUCTS_COUNT,
+            DiscountConditionModel::MERCHANT
         ];
     }
 

@@ -9,7 +9,8 @@ class DifferentProductsCountChecker extends BaseDiscountConditionChecker
 {
     public function check(Discount $discount, array $checkingConditionTypes = []): bool
     {
-        //ищем все условия скидки с типом DiscountCondition::DIFFERENT_PRODUCTS_COUNT (их может быть несколько в одной скидке)
+        //ищем все условия скидки с типом DiscountCondition::DIFFERENT_PRODUCTS_COUNT
+        // (их может быть несколько в одной скидке)
         $conditions = $discount->conditions
             ->filter(fn($condition) => $condition->type == DiscountCondition::DIFFERENT_PRODUCTS_COUNT && $condition->getCount() !== null)
             ->sortByDesc(fn($condition) => $condition->getCount());

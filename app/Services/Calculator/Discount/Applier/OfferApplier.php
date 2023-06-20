@@ -21,7 +21,7 @@ class OfferApplier extends AbstractApplier
             ->whereIn('offer_id', $this->offerIds->toArray())
             ->filter(fn($basketItem) => $basketItem['qty'] > 0)     //иногда приходят запросы с qty=0 в корзине
             ->filter(function ($basketItem) use ($discount) {
-                return $this->applicableToBasketItem($discount, $basketItem['id']);
+                return $this->applicableToBasketItem($discount, $basketItem);
             });
 
         if ($basketItems->isEmpty()) {
