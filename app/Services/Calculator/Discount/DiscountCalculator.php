@@ -421,6 +421,16 @@ class DiscountCalculator extends AbstractCalculator
             ->merge($cartTotalDiscounts)
             ->merge($deliveryDiscounts);
 
+        // сортируем скидки таким образом, чтобы первыми были скидки с максимальным приоритетом,
+        // а затем скидки по убыванию значения(value)
+        $this->possibleDiscounts = $this->possibleDiscounts->sort(function ($a, $b) {
+            if ($a['max_priority'] == $b['max_priority']) {
+                return $b['value'] - $a['value'];
+            }
+
+            return $b['max_priority'] - $a['max_priority'];
+        });
+
         return $this;
     }
 
@@ -439,14 +449,13 @@ class DiscountCalculator extends AbstractCalculator
         ];
 
         foreach ($conditionCheckers as $conditionChecker) {
-            $this->possibleDiscounts = $this->possibleDiscounts
-                ->filter(function (Discount $discount) use ($conditionChecker) {
-                    if ($discount->conditions->isNotEmpty()) {
-                        return $conditionChecker->check($discount, $this->getCheckingConditions());
-                    }
+            $this->possibleDiscounts = $this->possibleDiscounts->filter(function (Discount $discount) use ($conditionChecker) {
+                if ($discount->conditions->isNotEmpty()) {
+                    return $conditionChecker->check($discount, $this->getCheckingConditions());
+                }
 
-                    return true;
-                })->values();
+                return true;
+            })->values();
         }
 
         return $this->compileSynegry();
@@ -515,7 +524,7 @@ class DiscountCalculator extends AbstractCalculator
             DiscountConditionModel::BUNDLE,
             DiscountConditionModel::DISCOUNT_SYNERGY,
             DiscountConditionModel::DIFFERENT_PRODUCTS_COUNT,
-            DiscountConditionModel::MERCHANT,
+            DiscountConditionModel::MERCHANT
         ];
     }
 

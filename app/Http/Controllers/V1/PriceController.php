@@ -8,11 +8,15 @@ use App\Models\Discount\DiscountUserRole;
 use App\Models\Price\Price;
 use App\Services\Calculator\Catalog\CatalogCalculator;
 use App\Services\Price\PriceWriter;
+use Greensight\CommonMsa\Rest\RestQuery;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Pim\Core\PimException;
+use Pim\Dto\Offer\OfferDto;
+use Pim\Services\OfferService\OfferService;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -237,6 +241,55 @@ class PriceController extends Controller
         /** @var Price $price */
         $price = Price::query()->where('offer_id', $offerId)->firstOrFail();
         $price->delete();
+
+        return response('', 204);
+    }
+
+    /**
+     * Пересчитать все цены на товары мерчанта
+     * @return mixed
+     */
+    public function updatePriceByMerchant(int $merchantId, PriceWriter $priceWriter)
+    {
+        /** @var OfferService $offerService */
+        $offerService = resolve(OfferService::class);
+
+        $offersId = $offerService->offers(
+            (new RestQuery())
+                ->setFilter('merchant_id', $merchantId)
+                ->addFields(OfferDto::entity(), 'id')
+        )->pluck('id')->toArray();
+
+        /** @var Collection|Price[] $prices */
+        $prices = Price::select('id', 'offer_id', 'merchant_id', 'price_base', 'price', 'price_retail')->whereIn('offer_id', $offersId)->get();
+
+        $newPrices = [];
+
+        foreach ($prices as $price) {
+            if (!$price->price_base || !$price->price_retail || !$price->merchant_id) {
+                if (!$price->price_base && $price->price) {
+                    $price->price_base = $price->price;
+                }
+                if (!$price->price_retail && $price->price) {
+                    $price->price_retail = $price->price;
+                }
+                if (!$price->merchant_id) {
+                    $price->merchant_id = $merchantId;
+                }
+
+                $price->save();
+            }
+
+            if ($price->offer_id === 1153) {
+                if ($price->price_base) {
+                    $newPrices[$price->offer_id] = $price->price_base;
+                }
+            }
+        }
+
+        if ($newPrices) {
+            $priceWriter->setPrices($newPrices);
+        }
 
         return response('', 204);
     }
