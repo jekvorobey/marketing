@@ -231,14 +231,18 @@ class InputCalculator
                 continue;
             }
 
-            /** @var float|null $price */
-            $price = $prices->get($offerId);
+            /** @var Price $priceDto */
+            $priceDto = $prices->get($offerId);
 
             $hydratedBasketItems->put($basketItem->id, collect([
                 'id' => $basketItem->id,
                 'offer_id' => $offerId,
-                'price' => $price ?? null,
-                'cost' => $price ?? null,
+                'price' => $priceDto->price ?? null,
+                'price_base' => $priceDto->price_base ?? null,
+                'price_retail' => $priceDto->price_retail ?? null,
+                'percent_prof' => $priceDto->percent_prof ?? null,
+                'percent_retail' => $priceDto->percent_retail ?? null,
+                'cost' => $priceDto->price ?? null,
                 'qty' => $basketItem->qty ?? 1,
                 'brand_id' => $offerDto->product->brand_id ?? null,
                 'category_id' => $offerDto->product->category_id ?? null,
@@ -285,8 +289,9 @@ class InputCalculator
     protected function loadPrices(array $offersIds): Collection
     {
         return Price::query()
+            ->select('offer_id', 'price', 'price_base', 'price_retail', 'percent_prof', 'percent_retail')
             ->whereIn('offer_id', $offersIds)
-            ->pluck('price', 'offer_id');
+            ->get()->keyBy('offer_id');
     }
 
     protected function hydrateCustomerInfo(): void

@@ -1615,7 +1615,7 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.ibt.ru:iBT.studio/ibt-pim-lib",
-                "reference": "35c9e2ddee2182b9d5a2b17f7116d6166fd54ef2"
+                "reference": "a814b67dc642fcdf05af144bb7b920a8f74b8c3c"
             },
             "require": {
                 "ext-json": "*",
@@ -1639,7 +1639,7 @@
                 }
             ],
             "description": "iBT PIM service client",
-            "time": "2023-05-26T06:31:52+00:00"
+            "time": "2023-06-20T06:09:17+00:00"
         },
         {
             "name": "jean85/pretty-package-versions",

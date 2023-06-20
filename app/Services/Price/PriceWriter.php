@@ -84,13 +84,17 @@ class PriceWriter
 
         $priceBase = $newPrice;
         $priceRetail = $newPrice;
+        $percentProf = 0;
+        $percentRetail = 0;
 
         if ($baseOfferPrice instanceof MerchantPricesDto) {
             if ($baseOfferPrice->valueProf) {
-                $newPrice = ceil($priceBase + $priceBase * $baseOfferPrice->valueProf / 100);
+                $percentProf = $baseOfferPrice->valueProf;
+                $newPrice = ceil($priceBase + $priceBase * $percentProf / 100);
             }
             if ($baseOfferPrice->valueRetail) {
-                $priceRetail = ceil($priceBase + $priceBase * $baseOfferPrice->valueRetail / 100);
+                $percentRetail = $baseOfferPrice->valueRetail;
+                $priceRetail = ceil($priceBase + $priceBase * $percentRetail / 100);
             }
         }
 
@@ -105,6 +109,8 @@ class PriceWriter
             $price->price = $newPrice;
             $price->price_base = $priceBase;
             $price->price_retail = $priceRetail;
+            $price->percent_prof = $percentProf;
+            $price->percent_retail = $percentRetail;
 
             $price->save();
         }
