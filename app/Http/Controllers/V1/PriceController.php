@@ -125,6 +125,10 @@ class PriceController extends Controller
                 'offer_id' => $offerId,
                 'cost' => $items[0]['cost'],
                 'price' => $items[0]['price'],
+                'price_base' => $items[0]['price_base'],
+                'price_retail' => $items[0]['price_retail'],
+                'percent_prof' => $items[0]['percent_prof'],
+                'percent_retail' => $items[0]['percent_retail'],
                 'discounts' => $items[0]['discounts'] ?? null,
                 'bonus' => $items[0]['bonus'] ?? 0,
             ],
@@ -176,6 +180,10 @@ class PriceController extends Controller
                     $prices[$offerId][$segmentKey][$roleKey] = [
                         'cost' => $item['cost'],
                         'price' => $item['price'],
+                        'price_base' => $item['price_base'],
+                        'price_retail' => $item['price_retail'],
+                        'percent_prof' => $item['percent_prof'],
+                        'percent_retail' => $item['percent_retail'],
                         'bonus' => $item['bonus'],
                         'discounts' => $item['discounts'] ?? null,
                     ];
@@ -261,12 +269,24 @@ class PriceController extends Controller
         )->pluck('id')->toArray();
 
         /** @var Collection|Price[] $prices */
-        $prices = Price::select('id', 'offer_id', 'merchant_id', 'price_base', 'price', 'price_retail')->whereIn('offer_id', $offersId)->get();
+        $prices = Price::select(
+            'id',
+            'offer_id',
+            'merchant_id',
+            'price',
+            'price_base',
+            'price_retail',
+            'percent_prof',
+            'percent_retail'
+        )->whereIn('offer_id', $offersId)->get();
 
         $newPrices = [];
 
         foreach ($prices as $price) {
-            if (!$price->price_base || !$price->price_retail || !$price->merchant_id) {
+            if (!$price->price_base
+                || !$price->price_retail
+                || !$price->merchant_id
+            ) {
                 if (!$price->price_base && $price->price) {
                     $price->price_base = $price->price;
                 }
@@ -280,15 +300,18 @@ class PriceController extends Controller
                 $price->save();
             }
 
-            if ($price->offer_id === 1153) {
+            //if ($price->offer_id === 2898) {
                 if ($price->price_base) {
                     $newPrices[$price->offer_id] = $price->price_base;
                 }
-            }
+            //}
         }
 
         if ($newPrices) {
-            $priceWriter->setPrices($newPrices);
+            try {
+                $priceWriter->setPrices($newPrices);
+            } catch (PimException) {
+            }
         }
 
         return response('', 204);
