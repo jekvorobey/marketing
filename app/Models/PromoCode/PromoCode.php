@@ -11,7 +11,9 @@ use Greensight\Customer\Services\CustomerService\CustomerService;
 use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
+use Ramsey\Collection\Collection;
 
 /**
  * Class PromoCode
@@ -33,7 +35,7 @@ use Illuminate\Support\Str;
  * @property int|null $bonus_id
  * @property array $conditions
  *
- * @property-read Discount|null $discount
+ * @property-read Collection|Discount[]|null $discounts
  * @property-read Bonus|null $bonus
  */
 class PromoCode extends AbstractModel
@@ -185,9 +187,9 @@ class PromoCode extends AbstractModel
         return mb_strtoupper(Str::random(10));
     }
 
-    public function discount(): BelongsTo
+    public function discounts(): BelongsToMany
     {
-        return $this->belongsTo(Discount::class);
+        return $this->belongsToMany(Discount::class);
     }
 
     public function bonus(): BelongsTo

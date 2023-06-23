@@ -8,6 +8,7 @@ use App\Services\Calculator\AbstractCalculator;
 use App\Services\Calculator\Bonus\BonusCalculator;
 use App\Services\Calculator\CalculatorChangePrice;
 use App\Services\Calculator\Discount\DiscountCalculator;
+use App\Services\Calculator\PromoCode\Dto\PromoCodeResult;
 use Greensight\Oms\Services\OrderService\OrderService;
 
 /**
@@ -22,7 +23,7 @@ class PromoCodeCalculator extends AbstractCalculator
      */
     protected $promoCode;
 
-    public function calculate()
+    public function calculate(): void
     {
         if (!$this->needCalculate()) {
             return;
@@ -45,86 +46,14 @@ class PromoCodeCalculator extends AbstractCalculator
             return null;
         }
 
-        $change = null;
-        $isApply = false;
-        switch ($this->promoCode->type) {
-            case PromoCode::TYPE_DISCOUNT:
-                $discount = $this->promoCode->discount;
-                if (!$discount) {
-                    break;
-                }
+        $promocodeResult = match($this->promoCode->type) {
+            PromoCode::TYPE_DISCOUNT => $this->applyDiscountPromocode(),
+            PromoCode::TYPE_DELIVERY => $this->applyDeliveryPromocode(),
+            PromoCode::TYPE_BONUS => $this->applyBonusPromocode(),
+            default => PromoCodeResult::notApplied()
+        };
 
-                $this->input->promoCodeDiscount = $discount;
-                $discountCalculator = new DiscountCalculator($this->input, $this->output);
-                $discountCalculator->calculate();
-                if ($this->output->appliedDiscounts->count() != 0) {
-                    $outputDiscount = $this->output->appliedDiscounts->filter(function ($item) use ($discount) {
-                        return $item['id'] === $discount->id;
-                    })->first();
-
-                    $isApply = !empty($outputDiscount);
-                    $change = $isApply ? $outputDiscount['change'] : 0;
-                    $discountCalculator->forceRollback();
-                } else {
-                    $isApply = true;
-                    $calculatorChangePrice = new CalculatorChangePrice();
-                    $change = $calculatorChangePrice->calculateDiscountByType(
-                        $this->input->basketItems->sum('price'),
-                        $discount->value,
-                        $discount->value_type
-                    );
-                }
-                break;
-            case PromoCode::TYPE_DELIVERY:
-                // Мерчант не может изменять стоимость доставки
-                if ($this->promoCode->merchant_id) {
-                    break;
-                }
-
-                $change = 0;
-                foreach ($this->input->deliveries['items'] as $k => $delivery) {
-                    $calculatorChangePrice = new CalculatorChangePrice();
-                    $changedPrice = $calculatorChangePrice->changePrice(
-                        $delivery,
-                        self::HIGHEST_POSSIBLE_PRICE_PERCENT,
-                        Discount::DISCOUNT_VALUE_TYPE_PERCENT,
-                        CalculatorChangePrice::FREE_DELIVERY_PRICE
-                    );
-                    $changeForDelivery = $changedPrice['discountValue'];
-                    $delivery = $calculatorChangePrice->syncItemWithChangedPrice($delivery, $changedPrice);
-
-                    if ($changeForDelivery > 0) {
-                        $isApply = $changeForDelivery > 0;
-                        if ($delivery['selected']) {
-                            $change += $changeForDelivery;
-                        }
-                        $this->input->freeDelivery = true;
-                        $this->input->deliveries['items'][$k] = $delivery;
-                    }
-                }
-                $isApply = true; // нужно, чтобы промокод применялся в корзине
-                break;
-            case PromoCode::TYPE_GIFT:
-                // todo
-                break;
-            case PromoCode::TYPE_BONUS:
-                $bonus = $this->promoCode->bonus;
-                if (!$bonus) {
-                    break;
-                }
-
-                $this->input->promoCodeBonus = $bonus;
-                $bonusCalculator = new BonusCalculator($this->input, $this->output);
-                $bonusCalculator->calculate();
-                $outputBonus = $this->output->appliedBonuses->filter(function ($item) use ($bonus) {
-                    return $item['id'] === $bonus->id;
-                })->first();
-
-                $isApply = !empty($outputBonus);
-                break;
-        }
-
-        return $isApply
+        return $promocodeResult->isApplied()
             ? [
                 'id' => $this->promoCode->id,
                 'type' => $this->promoCode->type,
@@ -135,8 +64,108 @@ class PromoCodeCalculator extends AbstractCalculator
                 'gift_id' => $this->promoCode->gift_id,
                 'bonus_id' => $this->promoCode->bonus_id,
                 'owner_id' => $this->promoCode->owner_id,
-                'change' => $change,
+                'change' => $promocodeResult->getChange(),
             ] : null;
+    }
+
+    /**
+     * Применить промокод типа СКИДКА
+     * @return PromoCodeResult
+     */
+    private function applyDiscountPromocode(): PromoCodeResult
+    {
+        $promocodeDiscounts = $this->promoCode->discounts;
+
+        if ($promocodeDiscounts->isEmpty()) {
+            return PromoCodeResult::notApplied();
+        }
+
+        $this->input->promoCodeDiscounts = $promocodeDiscounts;
+
+        $discountCalculator = new DiscountCalculator($this->input, $this->output);
+        $discountCalculator->calculate();
+
+        if ($this->output->anyDiscountWasApplied()) {
+            $change = $this->output
+                ->appliedDiscounts
+                ->filter(
+                    fn($appliedDiscount) => $promocodeDiscounts->pluck('id')->contains($appliedDiscount['id'])
+                )
+                ->sum('change');
+
+            $discountCalculator->forceRollback();
+        } else {
+            $calc = new CalculatorChangePrice();
+            $change = $promocodeDiscounts->reduce(function(float $sum, Discount $discount) use ($calc) {
+                $sum + $calc->calculateDiscountByType(
+                    $this->input->basketItems->sum('price'),
+                    $discount->value,
+                    $discount->value_type
+                );
+            }, 0);
+        }
+
+        return PromoCodeResult::applied($change);
+    }
+
+    /**
+     * @return PromoCodeResult
+     */
+    public function applyDeliveryPromocode(): PromoCodeResult
+    {
+        // Мерчант не может изменять стоимость доставки
+        if ($this->promoCode->merchant_id) {
+            return PromoCodeResult::notApplied();
+        }
+
+        $change = 0;
+        foreach ($this->input->deliveries['items'] as $k => $delivery) {
+            $calculatorChangePrice = new CalculatorChangePrice();
+            $changedPrice = $calculatorChangePrice->changePrice(
+                $delivery,
+                self::HIGHEST_POSSIBLE_PRICE_PERCENT,
+                Discount::DISCOUNT_VALUE_TYPE_PERCENT,
+                CalculatorChangePrice::FREE_DELIVERY_PRICE
+            );
+            $changeForDelivery = $changedPrice['discountValue'];
+            $delivery = $calculatorChangePrice->syncItemWithChangedPrice($delivery, $changedPrice);
+
+            if ($changeForDelivery > 0) {
+                if ($delivery['selected']) {
+                    $change += $changeForDelivery;
+                }
+                $this->input->freeDelivery = true;
+                $this->input->deliveries['items'][$k] = $delivery;
+            }
+        }
+
+        return PromoCodeResult::applied($change);
+    }
+
+    /**
+     * @return PromoCodeResult
+     */
+    public function applyBonusPromocode(): PromoCodeResult
+    {
+        $bonus = $this->promoCode->bonus;
+
+        if (!$bonus) {
+            return PromoCodeResult::notApplied();
+        }
+
+        $this->input->promoCodeBonus = $bonus;
+        $bonusCalculator = new BonusCalculator($this->input, $this->output);
+        $bonusCalculator->calculate();
+        $outputBonus = $this->output
+            ->appliedBonuses
+            ->filter(function ($item) use ($bonus) {
+                return $item['id'] === $bonus->id;
+            })
+            ->first();
+
+        return $outputBonus
+            ? PromoCodeResult::applied(null)
+            : PromoCodeResult::notApplied();
     }
 
     /**
