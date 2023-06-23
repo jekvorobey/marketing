@@ -20,7 +20,7 @@ class DeliveryApplier extends AbstractApplier
         return $this->currentDelivery;
     }
 
-    public function apply(Discount $discount): ?float
+    public function apply(Discount $discount, bool $justCalculate = false): ?float
     {
         if (!$this->isApplicable($discount)) {
             return 0;
@@ -34,7 +34,10 @@ class DeliveryApplier extends AbstractApplier
             $discount->value_type,
             CalculatorChangePrice::FREE_DELIVERY_PRICE
         );
-        $this->currentDelivery = $calculatorChangePrice->syncItemWithChangedPrice($this->currentDelivery, $changedPrice);
+
+        if (!$justCalculate) {
+            $this->currentDelivery = $calculatorChangePrice->syncItemWithChangedPrice($this->currentDelivery, $changedPrice);
+        }
 
         return $changedPrice['discountValue'];
     }
