@@ -14,6 +14,7 @@ use App\Services\Calculator\Discount\Checker\DiscountConditionChecker;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class DiscountCalculator
@@ -83,32 +84,67 @@ class DiscountCalculator extends AbstractCalculator
         $this->getDiscountOutput();
     }
 
-    protected function needCalculate(): bool
+    /**
+     * Фильтрует все актуальные скидки и оставляет только те, которые можно применить
+     */
+    protected function filter(): self
     {
-        return $this->input->payment['isNeedCalculate'];
-    }
+        $this->possibleDiscounts = $this->discounts->filter(function (Discount $discount) {
+            return $this->checkDiscount($discount);
+        })->values();
 
-    protected function fetchDiscounts(): void
-    {
-        $discountFetcher = new DiscountFetcher($this->input);
-        $this->discounts = $discountFetcher->getDiscounts();
-    }
+        $conditionCheckers = [
+            new DiscountConditionChecker($this->input),
+            new DifferentProductsCountChecker($this->input),
+        ];
 
-    private function getDiscountOutput(): void
-    {
-        $discountOutput = new DiscountOutput($this->input, $this->discounts, $this->basketItemsByDiscounts, $this->appliedDiscounts);
-        $this->input->basketItems = $discountOutput->getBasketItems();
-        $this->basketItemsByDiscounts = $discountOutput->getModifiedBasketItemsByDiscounts();
-        $this->appliedDiscounts = $discountOutput->getModifiedAppliedDiscounts();
-        $this->output->appliedDiscounts = $discountOutput->getOutputFormat();
+        foreach ($conditionCheckers as $conditionChecker) {
+            $this->possibleDiscounts = $this->possibleDiscounts->filter(function (Discount $discount) use ($conditionChecker) {
+                if ($discount->conditions->isNotEmpty()) {
+                    return $conditionChecker->check($discount, $this->getCheckingConditions());
+                }
+
+                return true;
+            })->values();
+        }
+
+        return $this->compileSynegry();
     }
 
     /**
-     * Полностью откатывает все примененные скидки
+     * Сортируем в порядке: бандлы > скидка по промо-коду > скидка на товар > скидка на корзину -> скидка на доставку
      */
-    public function forceRollback(): self
+    protected function sort(): self
     {
-        return $this->rollback();
+        /** @var Collection|Discount[] $discounts */
+        $discounts = $this->possibleDiscounts->sortBy(fn(Discount $discount) => $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB);
+
+        if ($promoCodeDiscountId = $this->input->promoCodeDiscount->id ?? null) {
+            [$appliedPromocodeDiscounts, $discounts] = $discounts->partition('id', $promoCodeDiscountId);
+        }
+        [$deliveryDiscounts, $discounts] = $discounts->partition('type', Discount::DISCOUNT_TYPE_DELIVERY);
+        [$promocodeDiscounts, $discounts] = $discounts->partition('promo_code_only', true);
+        [$bundleDiscounts, $discounts] = $discounts->partition(
+            fn($discount) => in_array($discount->type, [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS])
+        );
+        [$cartTotalDiscounts, $discounts] = $discounts->partition('type', Discount::DISCOUNT_TYPE_CART_TOTAL);
+        [$nonCatalogDiscounts, $catalogDiscounts] = $discounts->partition(function (Discount $discount) {
+            return $discount->conditions->where('type', '!=', DiscountCondition::DISCOUNT_SYNERGY)->isNotEmpty();
+        });
+
+        $this->possibleDiscounts = $bundleDiscounts
+            ->merge($appliedPromocodeDiscounts ?? [])
+            ->merge($catalogDiscounts)
+            ->merge($promocodeDiscounts)
+            ->merge($nonCatalogDiscounts)
+            ->merge($cartTotalDiscounts)
+            ->merge($deliveryDiscounts);
+
+        // сортируем скидки таким образом, чтобы первыми были скидки с максимальным приоритетом,
+        // а затем скидки по убыванию выгодности для клиента
+        $this->possibleDiscounts = $this->sortDiscountsByProfit($this->possibleDiscounts);
+        $this->possibleDiscounts = $this->possibleDiscounts->sortByDesc(fn($discount) => $discount->max_priority);
+        return $this;
     }
 
     /**
@@ -122,29 +158,6 @@ class DiscountCalculator extends AbstractCalculator
         }
 
         return $this->processFreeProducts();
-    }
-
-    /**
-     * Делает товар бесплатным, если была применена только одна скидка на 100% или равная сумме товара в рублях
-     */
-    protected function processFreeProducts(): self
-    {
-        foreach ($this->input->basketItems as $basketItem) {
-            if ($this->basketItemsByDiscounts->has($basketItem['id'])) {
-                [$freeProductDiscounts, $otherDiscounts] = $this->basketItemsByDiscounts->get($basketItem['id'])
-                    ->partition(fn($discount) =>
-                        $discount['value_type'] == Discount::DISCOUNT_VALUE_TYPE_PERCENT && $discount['value'] == 100 ||
-                        $discount['value_type'] == Discount::DISCOUNT_VALUE_TYPE_RUB && $discount['value'] == $basketItem['cost']
-                    );
-
-                // Если применена 100% скидка на товар и нет других скидок, то делаем этот товар бесплатным
-                if ($freeProductDiscounts->count() > 0 && $otherDiscounts->count() == 0) {
-                    $basketItem['price'] = 0;
-                }
-            }
-        }
-
-        return $this;
     }
 
     protected function applyDiscount(Discount $discount): float|false
@@ -192,7 +205,7 @@ class DiscountCalculator extends AbstractCalculator
                     $offerIds = $this->input->basketItems->filter(function ($basketItem) use ($exceptBundleIds) {
                         return $basketItem['bundle_id'] > 0 && !$exceptBundleIds->contains($basketItem['bundle_id']);
                     })
-                    ->pluck('offer_id');
+                        ->pluck('offer_id');
                 }
 
                 if (in_array($discount->type, [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_ANY_BUNDLE])) {
@@ -319,146 +332,15 @@ class DiscountCalculator extends AbstractCalculator
         // Добавляем все скидки к примененным.
         // Даже те, что не повлияли на цену, т.к. они тоже участвовали в подсчете общей скидки
 //        if ($change > 0) {
-            $this->appliedDiscounts->put($discount->id, [
-                'discountId' => $discount->id,
-                'change' => $change,
-                'conditions' => $discount->conditions->pluck('type') ?? collect(),
-                'summarizable_with_all' => $discount->summarizable_with_all,
-            ]);
+        $this->appliedDiscounts->put($discount->id, [
+            'discountId' => $discount->id,
+            'change' => $change,
+            'conditions' => $discount->conditions->pluck('type') ?? collect(),
+            'summarizable_with_all' => $discount->summarizable_with_all,
+        ]);
 //        }
 
         return $change ?: false;
-    }
-
-    protected function getExceptOffersForDiscount(Discount $discount): Collection
-    {
-        return $discount
-            ->offers
-            ->where('except', true)
-            ->pluck('offer_id');
-    }
-
-    protected function getExceptBrandsForDiscount(Discount $discount): Collection
-    {
-        return $discount
-            ->brands
-            ->where('except', true)
-            ->pluck('brand_id');
-    }
-
-    protected function getExceptCategoriesForDiscount(Discount $discount): Collection
-    {
-        return $discount
-            ->categories
-            ->where('except', true)
-            ->pluck('category_id');
-    }
-
-    /**
-     * Совместимы ли скидки (даже если они не пересекаются)
-     */
-    protected function isCompatibleDiscount(Discount $discount): bool
-    {
-        return !$this->appliedDiscounts->has($discount->id);
-    }
-
-    /**
-     * Откатывает все примененные скидки
-     */
-    protected function rollback(): self
-    {
-        $this->appliedDiscounts = collect();
-        $this->basketItemsByDiscounts = collect();
-        $this->output->appliedDiscounts = collect();
-
-        $basketItems = collect();
-        foreach ($this->input->basketItems as $basketItem) {
-            $basketItem['price'] = $basketItem['cost'] ?? $basketItem['price'];
-            unset($basketItem['discount']);
-            unset($basketItem['cost']);
-            $basketItems->put($basketItem['id'], $basketItem);
-        }
-        $this->input->basketItems = $basketItems;
-
-        $deliveries = collect();
-        foreach ($this->input->deliveries['items'] as $delivery) {
-            $delivery['price'] = $delivery['cost'] ?? $delivery['price'];
-            unset($delivery['discount']);
-            unset($delivery['cost']);
-            $deliveries->put($delivery['id'], $delivery);
-        }
-        $this->input->deliveries['items'] = $deliveries;
-
-        return $this;
-    }
-
-    /**
-     * Сортируем в порядке: бандлы > скидка по промо-коду > скидка на товар > скидка на корзину -> скидка на доставку
-     */
-    protected function sort(): self
-    {
-        /** @var Collection|Discount[] $discounts */
-        $discounts = $this->possibleDiscounts->sortBy(fn(Discount $discount) => $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB);
-
-        if ($promoCodeDiscountId = $this->input->promoCodeDiscount->id ?? null) {
-            [$appliedPromocodeDiscounts, $discounts] = $discounts->partition('id', $promoCodeDiscountId);
-        }
-        [$deliveryDiscounts, $discounts] = $discounts->partition('type', Discount::DISCOUNT_TYPE_DELIVERY);
-        [$promocodeDiscounts, $discounts] = $discounts->partition('promo_code_only', true);
-        [$bundleDiscounts, $discounts] = $discounts->partition(
-            fn($discount) => in_array($discount->type, [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS])
-        );
-        [$cartTotalDiscounts, $discounts] = $discounts->partition('type', Discount::DISCOUNT_TYPE_CART_TOTAL);
-        [$nonCatalogDiscounts, $catalogDiscounts] = $discounts->partition(function (Discount $discount) {
-            return $discount->conditions->where('type', '!=', DiscountCondition::DISCOUNT_SYNERGY)->isNotEmpty();
-        });
-
-        $this->possibleDiscounts = $bundleDiscounts
-            ->merge($appliedPromocodeDiscounts ?? [])
-            ->merge($catalogDiscounts)
-            ->merge($promocodeDiscounts)
-            ->merge($nonCatalogDiscounts)
-            ->merge($cartTotalDiscounts)
-            ->merge($deliveryDiscounts);
-
-        // сортируем скидки таким образом, чтобы первыми были скидки с максимальным приоритетом,
-        // а затем скидки по убыванию значения(value)
-        $this->possibleDiscounts = $this->possibleDiscounts->sort(function ($a, $b) {
-            if ($a['max_priority'] == $b['max_priority']) {
-                return $b['value'] - $a['value'];
-            }
-
-            return $b['max_priority'] - $a['max_priority'];
-        });
-
-        return $this;
-    }
-
-    /**
-     * Фильтрует все актуальные скидки и оставляет только те, которые можно применить
-     */
-    protected function filter(): self
-    {
-        $this->possibleDiscounts = $this->discounts->filter(function (Discount $discount) {
-            return $this->checkDiscount($discount);
-        })->values();
-
-        $conditionCheckers = [
-            new DiscountConditionChecker($this->input),
-            new DifferentProductsCountChecker($this->input),
-        ];
-
-        foreach ($conditionCheckers as $conditionChecker) {
-            $this->possibleDiscounts = $this->possibleDiscounts->filter(function (Discount $discount) use ($conditionChecker) {
-                if ($discount->conditions->isNotEmpty()) {
-                    return $conditionChecker->check($discount, $this->getCheckingConditions());
-                }
-
-                return true;
-            })->values();
-        }
-
-        return $this->compileSynegry();
     }
 
     /**
@@ -563,7 +445,7 @@ class DiscountCalculator extends AbstractCalculator
     protected function checkBundles(Discount $discount): bool
     {
         return in_array($discount->type, [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS])
-                && $discount->bundleItems->isNotEmpty();
+            && $discount->bundleItems->isNotEmpty();
     }
 
     /**
@@ -626,4 +508,243 @@ class DiscountCalculator extends AbstractCalculator
             ->intersect($types)
             ->isEmpty();
     }
+
+    protected function needCalculate(): bool
+    {
+        return $this->input->payment['isNeedCalculate'];
+    }
+
+    protected function fetchDiscounts(): void
+    {
+        $discountFetcher = new DiscountFetcher($this->input);
+        $this->discounts = $discountFetcher->getDiscounts();
+    }
+
+    private function getDiscountOutput(): void
+    {
+        $discountOutput = new DiscountOutput($this->input, $this->discounts, $this->basketItemsByDiscounts, $this->appliedDiscounts);
+        $this->input->basketItems = $discountOutput->getBasketItems();
+        $this->basketItemsByDiscounts = $discountOutput->getModifiedBasketItemsByDiscounts();
+        $this->appliedDiscounts = $discountOutput->getModifiedAppliedDiscounts();
+        $this->output->appliedDiscounts = $discountOutput->getOutputFormat();
+    }
+
+    /**
+     * Полностью откатывает все примененные скидки
+     */
+    public function forceRollback(): self
+    {
+        return $this->rollback();
+    }
+
+    /**
+     * Делает товар бесплатным, если была применена только одна скидка на 100% или равная сумме товара в рублях
+     */
+    protected function processFreeProducts(): self
+    {
+        foreach ($this->input->basketItems as $basketItem) {
+            if ($this->basketItemsByDiscounts->has($basketItem['id'])) {
+                [$freeProductDiscounts, $otherDiscounts] = $this->basketItemsByDiscounts->get($basketItem['id'])
+                    ->partition(fn($discount) =>
+                        $discount['value_type'] == Discount::DISCOUNT_VALUE_TYPE_PERCENT && $discount['value'] == 100 ||
+                        $discount['value_type'] == Discount::DISCOUNT_VALUE_TYPE_RUB && $discount['value'] == $basketItem['cost']
+                    );
+
+                // Если применена 100% скидка на товар и нет других скидок, то делаем этот товар бесплатным
+                if ($freeProductDiscounts->count() > 0 && $otherDiscounts->count() == 0) {
+                    $basketItem['price'] = 0;
+                }
+            }
+        }
+
+        return $this;
+    }
+
+    protected function getExceptOffersForDiscount(Discount $discount): Collection
+    {
+        return $discount
+            ->offers
+            ->where('except', true)
+            ->pluck('offer_id');
+    }
+
+    protected function getExceptBrandsForDiscount(Discount $discount): Collection
+    {
+        return $discount
+            ->brands
+            ->where('except', true)
+            ->pluck('brand_id');
+    }
+
+    protected function getExceptCategoriesForDiscount(Discount $discount): Collection
+    {
+        return $discount
+            ->categories
+            ->where('except', true)
+            ->pluck('category_id');
+    }
+
+    /**
+     * Совместимы ли скидки (даже если они не пересекаются)
+     */
+    protected function isCompatibleDiscount(Discount $discount): bool
+    {
+        return !$this->appliedDiscounts->has($discount->id);
+    }
+
+    /**
+     * Откатывает все примененные скидки
+     */
+    protected function rollback(): self
+    {
+        $this->appliedDiscounts = collect();
+        $this->basketItemsByDiscounts = collect();
+        $this->output->appliedDiscounts = collect();
+
+        $basketItems = collect();
+        foreach ($this->input->basketItems as $basketItem) {
+            $basketItem['price'] = $basketItem['cost'] ?? $basketItem['price'];
+            unset($basketItem['discount']);
+            unset($basketItem['cost']);
+            $basketItems->put($basketItem['id'], $basketItem);
+        }
+        $this->input->basketItems = $basketItems;
+
+        $deliveries = collect();
+        foreach ($this->input->deliveries['items'] as $delivery) {
+            $delivery['price'] = $delivery['cost'] ?? $delivery['price'];
+            unset($delivery['discount']);
+            unset($delivery['cost']);
+            $deliveries->put($delivery['id'], $delivery);
+        }
+        $this->input->deliveries['items'] = $deliveries;
+
+        return $this;
+    }
+
+    protected function sortDiscountsByProfit(Collection $discounts): Collection
+    {
+        return $discounts->sortByDesc(function (Discount $discount) {
+            switch ($discount->type) {
+                case Discount::DISCOUNT_TYPE_OFFER:
+                    $offerIds = $discount->offers->pluck('offer_id');
+                    $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
+                    $offerApplier->setOfferIds($offerIds);
+                    return $offerApplier->apply($discount, true);
+                case Discount::DISCOUNT_TYPE_ANY_OFFER:
+                    $exceptOfferIds = $this->getExceptOffersForDiscount($discount);
+                    $offerIds = $this->input->basketItems
+                        ->where('product_id', '!=', null)
+                        ->whereNotIn('offer_id', $exceptOfferIds)
+                        ->pluck('offer_id');
+
+                    $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
+                    $offerApplier->setOfferIds($offerIds);
+                    return $offerApplier->apply($discount, true);
+                case Discount::DISCOUNT_TYPE_BUNDLE_OFFER:
+                case Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS:
+                case Discount::DISCOUNT_TYPE_ANY_BUNDLE:
+                    $bundleItems = $discount->bundleItems;
+                    if (in_array($discount->type, [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS])) {
+                        $offerIds = $bundleItems->pluck('item_id');
+                    } else {
+                        $exceptBundleIds = $discount->bundles->pluck('bundle_id');
+                        $offerIds = $this->input->basketItems->filter(function ($basketItem) use ($exceptBundleIds) {
+                            return $basketItem['bundle_id'] > 0 && !$exceptBundleIds->contains($basketItem['bundle_id']);
+                        })
+                            ->pluck('offer_id');
+                    }
+
+                    if (in_array($discount->type, [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_ANY_BUNDLE])) {
+                        $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
+                        $offerApplier->setOfferIds($offerIds);
+                        return $offerApplier->apply($discount, true);
+                    }
+                    return 0;
+                case Discount::DISCOUNT_TYPE_BRAND:
+                case Discount::DISCOUNT_TYPE_ANY_BRAND:
+                    /** @var Collection $brandIds */
+                    $brandIds = $discount->type == Discount::DISCOUNT_TYPE_BRAND
+                        ? $discount->brands->pluck('brand_id')
+                        : $this->input->brands->keys();
+
+                    $exceptBrandIds = $this->getExceptBrandsForDiscount($discount);
+                    $brandIds = $brandIds->diff($exceptBrandIds);
+
+                    $exceptOfferIds = $this->getExceptOffersForDiscount($discount);
+
+                    $offerIds = $this->filterForBrand($brandIds, $exceptOfferIds, $discount->merchant_id);
+                    $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
+                    $offerApplier->setOfferIds($offerIds);
+                    return $offerApplier->apply($discount, true);
+                case Discount::DISCOUNT_TYPE_CATEGORY:
+                case Discount::DISCOUNT_TYPE_ANY_CATEGORY:
+                    /** @var Collection $categoryIds */
+                    $categoryIds = $discount->type == Discount::DISCOUNT_TYPE_CATEGORY
+                        ? $discount->categories->pluck('category_id')
+                        : $this->input->categories->keys();
+
+                    $exceptCategoryIds = $this->getExceptCategoriesForDiscount($discount);
+                    $categoryIds = $categoryIds->diff($exceptCategoryIds);
+
+                    $exceptBrandIds = $this->getExceptBrandsForDiscount($discount);
+
+                    $exceptOfferIds = $this->getExceptOffersForDiscount($discount);
+
+                    $offerIds = $this->filterForCategory(
+                        $categoryIds,
+                        $exceptBrandIds,
+                        $exceptOfferIds,
+                        $discount->merchant_id
+                    );
+                    $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
+                    $offerApplier->setOfferIds($offerIds);
+                    return $offerApplier->apply($discount, true);
+                case Discount::DISCOUNT_TYPE_DELIVERY:
+                    if ($this->input->freeDelivery) {
+                        return 0;
+                    }
+
+                    $currentDeliveryId = $this->input->deliveries['current']['id'] ?? null;
+                    $this->input->deliveries['items']->transform(function ($delivery) use ($discount, $currentDeliveryId, &$change) {
+                        $deliveryApplier = new DeliveryApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
+                        $deliveryApplier->setCurrentDelivery($delivery);
+                        $changedPrice = $deliveryApplier->apply($discount);
+                        $currentDelivery = $deliveryApplier->getModifiedCurrentDelivery();
+
+                        if ($currentDelivery['id'] === $currentDeliveryId) {
+                            $change = $changedPrice;
+                        }
+                        return $currentDelivery;
+                    });
+                    return $change ?? 0;
+                case Discount::DISCOUNT_TYPE_CART_TOTAL:
+                    $basketApplier = new BasketApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
+                    return $basketApplier->apply($discount, true);
+                case Discount::DISCOUNT_TYPE_MASTERCLASS:
+                    $ticketTypeIds = $discount->publicEvents
+                        ->pluck('ticket_type_id')
+                        ->toArray();
+
+                    $offerIds = $this->input->basketItems
+                        ->whereIn('ticket_type_id', $ticketTypeIds)
+                        ->pluck('offer_id');
+
+                    $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
+                    $offerApplier->setOfferIds($offerIds);
+                    return $offerApplier->apply($discount, true);
+                case Discount::DISCOUNT_TYPE_ANY_MASTERCLASS:
+                    $offerIds = $this->input->basketItems
+                        ->whereStrict('product_id', null)
+                        ->pluck('offer_id');
+
+                    $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
+                    $offerApplier->setOfferIds($offerIds);
+                    return $offerApplier->apply($discount, true);
+                default:
+                    return 0;
+            }
+        });
+    }
 }
+
