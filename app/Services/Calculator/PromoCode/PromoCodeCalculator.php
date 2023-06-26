@@ -60,7 +60,7 @@ class PromoCodeCalculator extends AbstractCalculator
                 'status' => $this->promoCode->status,
                 'name' => $this->promoCode->name,
                 'code' => $this->promoCode->code,
-                'discount_id' => $this->promoCode->discount_id,
+                'discounts' => $this->promoCode->getDiscountIds(),
                 'gift_id' => $this->promoCode->gift_id,
                 'bonus_id' => $this->promoCode->bonus_id,
                 'owner_id' => $this->promoCode->owner_id,
