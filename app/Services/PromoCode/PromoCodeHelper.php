@@ -5,6 +5,7 @@ namespace App\Services\PromoCode;
 use App\Models\Discount\Discount;
 use App\Models\PromoCode\PromoCode;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class PromoCodeHelper
@@ -27,23 +28,19 @@ class PromoCodeHelper
         }
 
         switch ($data['type']) {
-            case PromoCode::TYPE_DISCOUNT:
-                if (!isset($data['discount_id']) || isset($data['gift_id']) || isset($data['bonus_id'])) {
-                    throw new HttpException(400, 'PromoCode type error');
-                }
-                break;
             case PromoCode::TYPE_DELIVERY:
-                if (isset($data['discount_id']) || isset($data['gift_id']) || isset($data['bonus_id'])) {
+            case PromoCode::TYPE_DISCOUNT:
+                if (isset($data['gift_id']) || isset($data['bonus_id'])) {
                     throw new HttpException(400, 'PromoCode type error');
                 }
                 break;
             case PromoCode::TYPE_GIFT:
-                if (isset($data['discount_id']) || !isset($data['gift_id']) || isset($data['bonus_id'])) {
+                if (!isset($data['gift_id']) || isset($data['bonus_id'])) {
                     throw new HttpException(400, 'PromoCode type error');
                 }
                 break;
             case PromoCode::TYPE_BONUS:
-                if (isset($data['discount_id']) || isset($data['gift_id']) || !isset($data['bonus_id'])) {
+                if (isset($data['gift_id']) || !isset($data['bonus_id'])) {
                     throw new HttpException(400, 'PromoCode type error');
                 }
                 break;
@@ -69,9 +66,8 @@ class PromoCodeHelper
             throw new HttpException(400, 'PromoCode type of limit error');
         }
 
-        $discount = $data['discount_id'] ? Discount::find($data['discount_id']) : null;
-        if (isset($data['discount_id']) && !$discount) {
-            throw new HttpException(400, 'PromoCode discount error');
+        if (isset($data['discounts']) && count($data['discounts']) != self::getDiscounts($data)->count()) {
+            throw new HttpException(400, 'PromoCode discounts error');
         }
 
         if (isset($data['merchant_id'])) {
@@ -79,11 +75,28 @@ class PromoCodeHelper
                 throw new HttpException(400, 'PromoCode merchant type error');
             }
 
-            if ($data['discount_id'] && $discount->merchant_id != $data['merchant_id']) {
-                throw new HttpException(400, 'PromoCode discount type error');
+            if (isset($data['discounts'])) {
+                $validMerchantDiscounts = self::getDiscounts($data)
+                    ->filter(fn($d) => $d->merchant_id == $data['merchant_id']);
+                if ($data['discounts'] && $validMerchantDiscounts->count() != count($data['discounts'])) {
+                    throw new HttpException(400, 'PromoCode discount type error');
+                }
             }
         }
 
         return true;
+    }
+
+    /**
+     * @param $data
+     * @return Collection
+     */
+    private static function getDiscounts($data): Collection
+    {
+        if (!isset($data['discounts']) || !$data['discounts']) {
+            return new Collection();
+        }
+
+        return Discount::whereIn('id', $data['discounts'])->get();
     }
 }
