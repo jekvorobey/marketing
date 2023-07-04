@@ -13,23 +13,23 @@ class BasketApplier extends AbstractApplier
     /**
      * @return false|float|int
      */
-    public function apply(Discount $discount): ?float
+    public function apply(Discount $discount, bool $justCalculate = false): ?float
     {
         $basketItemIds = $this->input->basketItems->filter(function ($basketItem) use ($discount) {
-            return $this->applicableToBasketItem($discount, $basketItem['id']);
+            return $this->applicableToBasketItem($discount, $basketItem);
         })->pluck('id');
 
         if ($basketItemIds->isEmpty()) {
             return null;
         }
 
-        return $this->applyEvenly($discount, $basketItemIds);
+        return $this->applyEvenly($discount, $basketItemIds, $justCalculate);
     }
 
     /**
      * Равномерно распределяет скидку
      */
-    protected function applyEvenly(Discount $discount, Collection $basketItemIds): ?float
+    protected function applyEvenly(Discount $discount, Collection $basketItemIds, bool $justCalculate = false): ?float
     {
         $calculatorChangePrice = new CalculatorChangePrice();
         $priceOrders = $this->getBasketPriceOrders($basketItemIds);
@@ -67,16 +67,22 @@ class BasketApplier extends AbstractApplier
                 if ($changeUp * $basketItem['qty'] <= $discountValue - $currentDiscountValue || $force) {
                     $changedPrice = $calculatorChangePrice->changePrice($basketItem, $valueUp);
                     $change = $changedPrice['discountValue'];
-                    $basketItem = $calculatorChangePrice->syncItemWithChangedPrice($basketItem, $changedPrice);
+                    if(!$justCalculate) {
+                        $basketItem = $calculatorChangePrice->syncItemWithChangedPrice($basketItem, $changedPrice);
+                    }
                 } elseif ($changeDown * $basketItem['qty'] <= $discountValue - $currentDiscountValue || $force) {
                     $changedPrice = $calculatorChangePrice->changePrice($basketItem, $valueDown);
                     $change = $changedPrice['discountValue'];
-                    $basketItem = $calculatorChangePrice->syncItemWithChangedPrice($basketItem, $changedPrice);
+                    if(!$justCalculate) {
+                        $basketItem = $calculatorChangePrice->syncItemWithChangedPrice($basketItem, $changedPrice);
+                    }
                 } else {
                     continue;
                 }
 
-                $this->addBasketItemByDiscount($basketItemId, $discount, $change);
+                if(!$justCalculate) {
+                    $this->addBasketItemByDiscount($basketItemId, $discount, $change);
+                }
 
                 $currentDiscountValue += $change * $basketItem['qty'];
                 if ($currentDiscountValue >= $discountValue) {

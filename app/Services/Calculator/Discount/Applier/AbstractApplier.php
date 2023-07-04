@@ -43,9 +43,15 @@ abstract class AbstractApplier
     /**
      * Можно ли применить скидку к элементу корзины
      */
-    protected function applicableToBasketItem(Discount $discount, $basketItemId): bool
+    protected function applicableToBasketItem(Discount $discount, Collection $basketItem): bool
     {
-        if ($this->appliedDiscounts->isEmpty() || !$this->basketItemsByDiscounts->has($basketItemId)) {
+        $merchantCondition = $discount->conditions->firstWhere('type', DiscountCondition::MERCHANT);
+
+        if ($merchantCondition && !in_array($basketItem->get('merchant_id'), $merchantCondition->getMerchants())) {
+            return false;
+        }
+
+        if ($this->appliedDiscounts->isEmpty() || !$this->basketItemsByDiscounts->has($basketItem->get('id'))) {
             return true;
         }
 
@@ -55,7 +61,7 @@ abstract class AbstractApplier
         }
 
         /** @var Collection $discountIdsForBasketItem */
-        $discountIdsForBasketItem = $this->basketItemsByDiscounts[$basketItemId]->pluck('id');
+        $discountIdsForBasketItem = $this->basketItemsByDiscounts[$basketItem->get('id')]->pluck('id');
 
         /** @var DiscountCondition $synergyCondition */
         $synergyCondition = $discount->conditions->firstWhere('type', DiscountCondition::DISCOUNT_SYNERGY);

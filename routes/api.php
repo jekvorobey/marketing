@@ -86,6 +86,15 @@ Route::namespace('V1')->prefix('v1')->group(function () {
             });
         });
         Route::post('catalogCombinations', [PriceController::class, 'catalogCombinations']);
+        Route::get('getCatalogCombinations', [PriceController::class, 'catalogCombinations']);
+    });
+
+    Route::prefix('merchants')->group(function () {
+        Route::prefix('{merchantId}')->group(function () {
+            Route::prefix('price')->group(function () {
+                Route::put('', [PriceController::class, 'updatePriceByMerchant']);
+            });
+        });
     });
 
     Route::prefix('price-reactor')->group(function () {
