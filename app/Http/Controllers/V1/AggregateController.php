@@ -25,7 +25,7 @@ class AggregateController extends Controller
             ->whereJsonContains('conditions->' . PromoCode::CONDITION_TYPE_CUSTOMER_IDS, $customer_id)
             ->whereJsonLength('conditions', 1)
             ->whereJsonLength('conditions->' . PromoCode::CONDITION_TYPE_CUSTOMER_IDS, 1)
-            ->whereHas('discount', function (Builder $query) {
+            ->whereHas('discounts', function (Builder $query) {
                 $query
                     ->where('value_type', Discount::DISCOUNT_VALUE_TYPE_PERCENT)
                     ->where('type', Discount::DISCOUNT_TYPE_CART_TOTAL)

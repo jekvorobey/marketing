@@ -40,8 +40,8 @@ class InputCalculator
     public $ticketTypeIds;
     /** @var string|null */
     public $promoCode;
-    /** @var Discount|null */
-    public $promoCodeDiscount;
+    /** @var Collection|Discount[]|null */
+    public $promoCodeDiscounts;
     /** @var Bonus|null */
     public $promoCodeBonus;
     /** @var array */
@@ -97,6 +97,7 @@ class InputCalculator
         $this->categories = collect();
         $this->ticketTypeIds = collect();
         $this->promoCode = isset($params['promoCode']) ? (string) $params['promoCode'] : null;
+        $this->promoCodeDiscounts = new Collection();
         $this->regionFiasId = $params['regionFiasId'] ?? null;
         $this->customer = [
             'id' => null,

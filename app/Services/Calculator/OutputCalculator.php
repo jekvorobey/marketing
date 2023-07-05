@@ -23,4 +23,13 @@ class OutputCalculator
         $this->appliedPromoCode = null;
         $this->maxSpendableBonus = 0;
     }
+
+    /**
+     * Была ли применена хотя бы одна скидка
+     * @return bool
+     */
+    public function anyDiscountWasApplied(): bool
+    {
+        return $this->appliedDiscounts->isNotEmpty();
+    }
 }
