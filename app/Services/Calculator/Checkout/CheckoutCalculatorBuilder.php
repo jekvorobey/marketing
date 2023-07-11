@@ -73,6 +73,13 @@ class CheckoutCalculatorBuilder
         return $this;
     }
 
+    public function roleId(?string $id): self
+    {
+        $this->params['roleId'] = $id;
+
+        return $this;
+    }
+
     public function bonus(?int $bonus): self
     {
         $this->params['bonus'] = $bonus ?? 0;
