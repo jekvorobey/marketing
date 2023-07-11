@@ -8,7 +8,7 @@ class BasketItem implements \JsonSerializable
     public $id;
 
     /**
-     * Стоимость единцы товара без скидок.
+     * Стоимость единицы товара без скидок.
      * @var float
      */
     public $cost;
@@ -28,12 +28,12 @@ class BasketItem implements \JsonSerializable
      */
     public $price;
     /**
-     * Цена элемента корзины со скидкой (totalCost - discount).
+     * Базовая цена элемента корзины.
      * @var float
      */
     public $priceBase;
     /**
-     * Цена элемента корзины со скидкой (totalCost - discount).
+     * Розничная цена элемента.
      * @var float
      */
     public $priceRetail;
