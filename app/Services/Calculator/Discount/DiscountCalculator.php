@@ -146,8 +146,11 @@ class DiscountCalculator extends AbstractCalculator
 
         // сортируем скидки таким образом, чтобы первыми были скидки с максимальным приоритетом,
         // а затем скидки по убыванию выгодности для клиента
-        $this->possibleDiscounts = $this->sortDiscountsByProfit($this->possibleDiscounts);
-        $this->possibleDiscounts = $this->possibleDiscounts->sortByDesc(fn($discount) => $discount->max_priority);
+        $this->possibleDiscounts = $this->sortDiscountsByProfit($this->possibleDiscounts)->values();
+        $discountsWithoutPriority = $this->possibleDiscounts->where('max_priority', 0);
+        $discountsWithPriority = $this->possibleDiscounts->where('max_priority', 1);
+        $this->possibleDiscounts = $discountsWithPriority->concat($discountsWithoutPriority);
+
         return $this;
     }
 
