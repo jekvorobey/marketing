@@ -1528,7 +1528,7 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.ibt.ru:iBT.studio/ibt-message-lib",
-                "reference": "93290e6e2c473a9204fb13a6a353ad4e33f64735"
+                "reference": "5a839b9c60c2ef9e90b3bdb8cb2b8577fe1611a3"
             },
             "require": {
                 "ext-json": "*",
@@ -1563,7 +1563,7 @@
                 }
             ],
             "description": "iBT message client",
-            "time": "2022-09-08T12:02:35+00:00"
+            "time": "2023-07-14T13:45:15+00:00"
         },
         {
             "name": "ibt/oms-lib",
@@ -1615,7 +1615,7 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.ibt.ru:iBT.studio/ibt-pim-lib",
-                "reference": "21eac3f88a5825ab58a1e5b88bdeb0d14b066b3c"
+                "reference": "ffddc0218ec48c233c9dfb0d66458f99976c759f"
             },
             "require": {
                 "ext-json": "*",
@@ -1639,7 +1639,7 @@
                 }
             ],
             "description": "iBT PIM service client",
-            "time": "2023-07-11T06:12:45+00:00"
+            "time": "2023-07-14T13:45:13+00:00"
         },
         {
             "name": "jean85/pretty-package-versions",
