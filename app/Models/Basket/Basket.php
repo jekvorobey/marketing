@@ -4,6 +4,7 @@ namespace App\Models\Basket;
 
 use App\Models\Option\Option;
 use App\Services\Calculator\Checkout\CheckoutCalculatorBuilder;
+use Greensight\Oms\Services\BasketService\BasketService;
 use Illuminate\Support\Collection;
 use Exception;
 use RuntimeException;
@@ -143,9 +144,17 @@ class Basket implements \JsonSerializable
         $totalBonusDiscount = 0;
         $totalItemsAmount = 0;
 
-        foreach ($this->items as $item) {
+        foreach ($this->items as $key => $item) {
             if (!$calculation['basketItems']->has($item->id)) {
-                throw new RuntimeException("basket item id {$item->id} without price");
+                //throw new RuntimeException("basket item id {$item->id} without price");
+
+                //ToDo Принудительно удаление товара из корзины, у которого нет цены в prices
+                /** @var BasketService $basketService */
+                $basketService = resolve(BasketService::class);
+                $basketService->deleteBasketItem($item->id);
+                unset($this->items[$key]);
+
+                continue;
             }
 
             $basketItem = $calculation['basketItems'][$item->id];
