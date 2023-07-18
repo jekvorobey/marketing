@@ -344,6 +344,7 @@ class DiscountCalculator extends AbstractCalculator
             'change' => $change,
             'conditions' => $discount->conditions->pluck('type') ?? collect(),
             'summarizable_with_all' => $discount->summarizable_with_all,
+            'max_priority' => $discount->max_priority,
         ]);
 //        }
 
@@ -637,125 +638,131 @@ class DiscountCalculator extends AbstractCalculator
     protected function sortDiscountsByProfit(Collection $discounts): Collection
     {
         return $discounts->sortByDesc(function (Discount $discount) {
-            switch ($discount->type) {
-                case Discount::DISCOUNT_TYPE_OFFER:
-                    $offerIds = $discount->offers->pluck('offer_id');
-                    $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
-                    $offerApplier->setOfferIds($offerIds);
-                    return $offerApplier->apply($discount, true);
-                case Discount::DISCOUNT_TYPE_ANY_OFFER:
-                    $exceptOfferIds = $this->getExceptOffersForDiscount($discount);
-                    $offerIds = $this->input->basketItems
-                        ->where('product_id', '!=', null)
-                        ->whereNotIn('offer_id', $exceptOfferIds)
-                        ->pluck('offer_id');
-
-                    $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
-                    $offerApplier->setOfferIds($offerIds);
-                    return $offerApplier->apply($discount, true);
-                case Discount::DISCOUNT_TYPE_BUNDLE_OFFER:
-                case Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS:
-                case Discount::DISCOUNT_TYPE_ANY_BUNDLE:
-                    $bundleItems = $discount->bundleItems;
-                    if (in_array($discount->type, [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS])) {
-                        $offerIds = $bundleItems->pluck('item_id');
-                    } else {
-                        $exceptBundleIds = $discount->bundles->pluck('bundle_id');
-                        $offerIds = $this->input->basketItems->filter(function ($basketItem) use ($exceptBundleIds) {
-                            return $basketItem['bundle_id'] > 0 && !$exceptBundleIds->contains($basketItem['bundle_id']);
-                        })
-                            ->pluck('offer_id');
-                    }
-
-                    if (in_array($discount->type, [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_ANY_BUNDLE])) {
-                        $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
-                        $offerApplier->setOfferIds($offerIds);
-                        return $offerApplier->apply($discount, true);
-                    }
-                    return 0;
-                case Discount::DISCOUNT_TYPE_BRAND:
-                case Discount::DISCOUNT_TYPE_ANY_BRAND:
-                    /** @var Collection $brandIds */
-                    $brandIds = $discount->type == Discount::DISCOUNT_TYPE_BRAND
-                        ? $discount->brands->pluck('brand_id')
-                        : $this->input->brands->keys();
-
-                    $exceptBrandIds = $this->getExceptBrandsForDiscount($discount);
-                    $brandIds = $brandIds->diff($exceptBrandIds);
-
-                    $exceptOfferIds = $this->getExceptOffersForDiscount($discount);
-
-                    $offerIds = $this->filterForBrand($brandIds, $exceptOfferIds, $discount->merchant_id);
-                    $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
-                    $offerApplier->setOfferIds($offerIds);
-                    return $offerApplier->apply($discount, true);
-                case Discount::DISCOUNT_TYPE_CATEGORY:
-                case Discount::DISCOUNT_TYPE_ANY_CATEGORY:
-                    /** @var Collection $categoryIds */
-                    $categoryIds = $discount->type == Discount::DISCOUNT_TYPE_CATEGORY
-                        ? $discount->categories->pluck('category_id')
-                        : $this->input->categories->keys();
-
-                    $exceptCategoryIds = $this->getExceptCategoriesForDiscount($discount);
-                    $categoryIds = $categoryIds->diff($exceptCategoryIds);
-
-                    $exceptBrandIds = $this->getExceptBrandsForDiscount($discount);
-
-                    $exceptOfferIds = $this->getExceptOffersForDiscount($discount);
-
-                    $offerIds = $this->filterForCategory(
-                        $categoryIds,
-                        $exceptBrandIds,
-                        $exceptOfferIds,
-                        $discount->merchant_id
-                    );
-                    $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
-                    $offerApplier->setOfferIds($offerIds);
-                    return $offerApplier->apply($discount, true);
-                case Discount::DISCOUNT_TYPE_DELIVERY:
-                    if ($this->input->freeDelivery) {
-                        return 0;
-                    }
-
-                    $currentDeliveryId = $this->input->deliveries['current']['id'] ?? null;
-                    $this->input->deliveries['items']->each(function ($delivery) use ($discount, $currentDeliveryId, &$change) {
-                        $deliveryApplier = new DeliveryApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
-                        $deliveryApplier->setCurrentDelivery($delivery);
-                        $changedPrice = $deliveryApplier->apply($discount, true);
-                        $currentDelivery = $deliveryApplier->getModifiedCurrentDelivery();
-
-                        if ($currentDelivery['id'] === $currentDeliveryId) {
-                            $change = $changedPrice;
-                        }
-                    });
-                    return $change ?? 0;
-                case Discount::DISCOUNT_TYPE_CART_TOTAL:
-                    $basketApplier = new BasketApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
-                    return $basketApplier->apply($discount, true);
-                case Discount::DISCOUNT_TYPE_MASTERCLASS:
-                    $ticketTypeIds = $discount->publicEvents
-                        ->pluck('ticket_type_id')
-                        ->toArray();
-
-                    $offerIds = $this->input->basketItems
-                        ->whereIn('ticket_type_id', $ticketTypeIds)
-                        ->pluck('offer_id');
-
-                    $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
-                    $offerApplier->setOfferIds($offerIds);
-                    return $offerApplier->apply($discount, true);
-                case Discount::DISCOUNT_TYPE_ANY_MASTERCLASS:
-                    $offerIds = $this->input->basketItems
-                        ->whereStrict('product_id', null)
-                        ->pluck('offer_id');
-
-                    $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
-                    $offerApplier->setOfferIds($offerIds);
-                    return $offerApplier->apply($discount, true);
-                default:
-                    return 0;
-            }
+            $change = $this->calcDiscountChange($discount);
+            return $change;
         });
+    }
+
+    private function calcDiscountChange(Discount $discount): ?float
+    {
+        switch ($discount->type) {
+            case Discount::DISCOUNT_TYPE_OFFER:
+                $offerIds = $discount->offers->pluck('offer_id');
+                $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
+                $offerApplier->setOfferIds($offerIds);
+                return $offerApplier->apply($discount, true);
+            case Discount::DISCOUNT_TYPE_ANY_OFFER:
+                $exceptOfferIds = $this->getExceptOffersForDiscount($discount);
+                $offerIds = $this->input->basketItems
+                    ->where('product_id', '!=', null)
+                    ->whereNotIn('offer_id', $exceptOfferIds)
+                    ->pluck('offer_id');
+
+                $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
+                $offerApplier->setOfferIds($offerIds);
+                return $offerApplier->apply($discount, true);
+            case Discount::DISCOUNT_TYPE_BUNDLE_OFFER:
+            case Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS:
+            case Discount::DISCOUNT_TYPE_ANY_BUNDLE:
+                $bundleItems = $discount->bundleItems;
+                if (in_array($discount->type, [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS])) {
+                    $offerIds = $bundleItems->pluck('item_id');
+                } else {
+                    $exceptBundleIds = $discount->bundles->pluck('bundle_id');
+                    $offerIds = $this->input->basketItems->filter(function ($basketItem) use ($exceptBundleIds) {
+                        return $basketItem['bundle_id'] > 0 && !$exceptBundleIds->contains($basketItem['bundle_id']);
+                    })
+                        ->pluck('offer_id');
+                }
+
+                if (in_array($discount->type, [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_ANY_BUNDLE])) {
+                    $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
+                    $offerApplier->setOfferIds($offerIds);
+                    return $offerApplier->apply($discount, true);
+                }
+                return 0;
+            case Discount::DISCOUNT_TYPE_BRAND:
+            case Discount::DISCOUNT_TYPE_ANY_BRAND:
+                /** @var Collection $brandIds */
+                $brandIds = $discount->type == Discount::DISCOUNT_TYPE_BRAND
+                    ? $discount->brands->pluck('brand_id')
+                    : $this->input->brands->keys();
+
+                $exceptBrandIds = $this->getExceptBrandsForDiscount($discount);
+                $brandIds = $brandIds->diff($exceptBrandIds);
+
+                $exceptOfferIds = $this->getExceptOffersForDiscount($discount);
+
+                $offerIds = $this->filterForBrand($brandIds, $exceptOfferIds, $discount->merchant_id);
+                $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
+                $offerApplier->setOfferIds($offerIds);
+                return $offerApplier->apply($discount, true);
+            case Discount::DISCOUNT_TYPE_CATEGORY:
+            case Discount::DISCOUNT_TYPE_ANY_CATEGORY:
+                /** @var Collection $categoryIds */
+                $categoryIds = $discount->type == Discount::DISCOUNT_TYPE_CATEGORY
+                    ? $discount->categories->pluck('category_id')
+                    : $this->input->categories->keys();
+
+                $exceptCategoryIds = $this->getExceptCategoriesForDiscount($discount);
+                $categoryIds = $categoryIds->diff($exceptCategoryIds);
+
+                $exceptBrandIds = $this->getExceptBrandsForDiscount($discount);
+
+                $exceptOfferIds = $this->getExceptOffersForDiscount($discount);
+
+                $offerIds = $this->filterForCategory(
+                    $categoryIds,
+                    $exceptBrandIds,
+                    $exceptOfferIds,
+                    $discount->merchant_id
+                );
+                $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
+                $offerApplier->setOfferIds($offerIds);
+                return $offerApplier->apply($discount, true);
+            case Discount::DISCOUNT_TYPE_DELIVERY:
+                if ($this->input->freeDelivery) {
+                    return 0;
+                }
+
+                $currentDeliveryId = $this->input->deliveries['current']['id'] ?? null;
+                $this->input->deliveries['items']->each(function ($delivery) use ($discount, $currentDeliveryId, &$change) {
+                    $deliveryApplier = new DeliveryApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
+                    $deliveryApplier->setCurrentDelivery($delivery);
+                    $changedPrice = $deliveryApplier->apply($discount, true);
+                    $currentDelivery = $deliveryApplier->getModifiedCurrentDelivery();
+
+                    if ($currentDelivery['id'] === $currentDeliveryId) {
+                        $change = $changedPrice;
+                    }
+                });
+                return $change ?? 0;
+            case Discount::DISCOUNT_TYPE_CART_TOTAL:
+                $basketApplier = new BasketApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
+                return $basketApplier->apply($discount, true);
+            case Discount::DISCOUNT_TYPE_MASTERCLASS:
+                $ticketTypeIds = $discount->publicEvents
+                    ->pluck('ticket_type_id')
+                    ->toArray();
+
+                $offerIds = $this->input->basketItems
+                    ->whereIn('ticket_type_id', $ticketTypeIds)
+                    ->pluck('offer_id');
+
+                $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
+                $offerApplier->setOfferIds($offerIds);
+                return $offerApplier->apply($discount, true);
+            case Discount::DISCOUNT_TYPE_ANY_MASTERCLASS:
+                $offerIds = $this->input->basketItems
+                    ->whereStrict('product_id', null)
+                    ->pluck('offer_id');
+
+                $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
+                $offerApplier->setOfferIds($offerIds);
+                return $offerApplier->apply($discount, true);
+            default:
+                return 0;
+        }
     }
 }
 

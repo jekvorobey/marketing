@@ -140,6 +140,7 @@ class DiscountOutput
                 'merchant_id' => $discount->merchant_id,
                 'visible_in_catalog' => $extType === Discount::EXT_TYPE_OFFER,
                 'promo_code_only' => $discount->promo_code_only,
+                'max_priority' => $discount->max_priority,
                 'summarizable_with_all' => $discount->summarizable_with_all,
                 'promo_code' => $isPromoCodeDiscount ? $this->input->promoCode : null,
             ]);
