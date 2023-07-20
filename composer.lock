@@ -1351,7 +1351,7 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.ibt.ru:iBT.studio/ibt-cm-lib",
-                "reference": "a48dfd2f51833a2e7e9a132a4ffbed8842396c64"
+                "reference": "0699eed7fa5089173296b2f9989da22ae30d05f1"
             },
             "require": {
                 "ext-json": "*",
@@ -1386,7 +1386,7 @@
                 }
             ],
             "description": "iBT Customer management client",
-            "time": "2023-07-05T17:35:42+00:00"
+            "time": "2023-07-20T10:47:18+00:00"
         },
         {
             "name": "ibt/common-lib",
@@ -1571,7 +1571,7 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.ibt.ru:iBT.studio/ibt-oms-lib",
-                "reference": "3cf28884db201b73af1410aa8479f59e846cb9bb"
+                "reference": "490c1b9df081133f625ffc9015efd5ae06a3deea"
             },
             "require": {
                 "ext-json": "*",
@@ -1607,7 +1607,7 @@
                 }
             ],
             "description": "iBT oms client",
-            "time": "2023-07-18T06:36:35+00:00"
+            "time": "2023-07-20T10:47:36+00:00"
         },
         {
             "name": "ibt/pim-lib",
