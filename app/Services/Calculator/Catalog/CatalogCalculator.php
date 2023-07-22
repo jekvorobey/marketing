@@ -71,6 +71,7 @@ class CatalogCalculator extends AbstractCalculator
                     $cost = $basketItem['cost'] ?? ($basketItem['price_retail'] ?: $basketItem['price']);
                     break;
                 case RoleDto::ROLE_SHOWCASE_PROFESSIONAL:
+                case RoleDto::ROLE_SHOWCASE_REFERRAL_PARTNER:
                     $price = $basketItem['price'];
                     $cost = $basketItem['cost'] ?? $basketItem['price'];
                     break;
