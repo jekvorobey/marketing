@@ -12,7 +12,6 @@ use App\Services\Calculator\OutputCalculator;
 use App\Services\Calculator\PromoCode\PromoCodeCalculator;
 use Greensight\CommonMsa\Dto\RoleDto;
 use Illuminate\Support\Collection;
-use Pim\Core\PimException;
 
 /**
  * Класс для расчета скидок (цен) для отображения в чекауте
@@ -82,6 +81,7 @@ class CheckoutCalculator extends AbstractCalculator
                     $cost = $basketItem['cost'] ?? ($basketItem['price_retail'] ?: $basketItem['price']);
                     break;
                 case RoleDto::ROLE_SHOWCASE_PROFESSIONAL:
+                case RoleDto::ROLE_SHOWCASE_REFERRAL_PARTNER:
                     $price = $basketItem['price'];
                     $cost = $basketItem['cost'] ?? $basketItem['price'];
                     break;
@@ -94,6 +94,9 @@ class CheckoutCalculator extends AbstractCalculator
                 'id' => $basketItemId,
                 'offer_id' => $basketItem['offer_id'],
                 'price' => $price,
+                'price_prof' => $basketItem['price'] ?? 0,
+                'price_base' => $basketItem['price_base'] ?? 0,
+                'price_retail' => $basketItem['price_retail'] ?? 0,
                 'qty' => (float) $basketItem['qty'],
                 'cost' => $cost,
                 'discount' => $basketItem['discount'] ?? 0,
