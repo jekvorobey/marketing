@@ -254,8 +254,8 @@ class DiscountCondition extends AbstractModel
                     ->unique()
                     ->toArray();
 
-                $conditionFields = array_merge($item->condition, [DiscountCondition::FIELD_SYNERGY => $synergy]);
-                $condition->condition = $conditionFields;
+                $conditionSynergy = array_merge($item->condition['synergy'], $synergy);
+                $condition->condition['synergy'] = $conditionSynergy;
                 $condition->save();
             }
 
