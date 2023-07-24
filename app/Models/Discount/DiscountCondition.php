@@ -234,6 +234,44 @@ class DiscountCondition extends AbstractModel
                         ]);
                     });
             }
+
+            if ($item->type !== self::DISCOUNT_SYNERGY || empty($item->condition[self::FIELD_SYNERGY] ?? [])) {
+                return;
+            }
+
+            $discountIds = $item->condition[self::FIELD_SYNERGY];
+            $conditions = DiscountCondition::query()
+                ->where('type', self::DISCOUNT_SYNERGY)
+                ->whereIn('discount_id', $discountIds)
+                ->get()
+                ->keyBy('discount_id');
+
+            /** @var DiscountCondition $condition */
+            foreach ($conditions as $condition) {
+                $synergy = collect($condition->condition[DiscountCondition::FIELD_SYNERGY])
+                    ->push($item->discount_id)
+                    ->values()
+                    ->unique()
+                    ->toArray();
+
+                $conditionFields = array_merge($item->condition, [DiscountCondition::FIELD_SYNERGY => $synergy]);
+                $condition->condition = $conditionFields;
+                $condition->save();
+            }
+
+            foreach ($discountIds as $discountId) {
+                if ($conditions->has($discountId)) {
+                    continue;
+                }
+
+                $condition = new DiscountCondition();
+                $condition->type = self::DISCOUNT_SYNERGY;
+                $condition->condition = array_merge($item->condition, [
+                    DiscountCondition::FIELD_SYNERGY => [$item->discount_id],
+                ]);
+                $condition->discount_id = $discountId;
+                $condition->save();
+            }
         });
 
         self::deleted(function (DiscountCondition $item) {
