@@ -123,7 +123,7 @@ class DiscountHelper
         $discount->end_date = $data['end_date'] ?? null;
         $discount->status = $data['status'];
         $discount->product_qty_limit = $data['product_qty_limit'] ?? null;
-        $discount->promo_code_only = $data['promo_code_only'];
+        $discount->promo_code_only = $data['promo_code_only'] ?? false;
         $discount->max_priority = $data['max_priority'] ?? false;
         $discount->summarizable_with_all = $data['summarizable_with_all'] ?? false;
         $discount->comment = $data['comment'] ?? null;

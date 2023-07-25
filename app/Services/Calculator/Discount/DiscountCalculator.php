@@ -117,10 +117,14 @@ class DiscountCalculator extends AbstractCalculator
     protected function sort(): self
     {
         /** @var Collection|Discount[] $discounts */
-        $discounts = $this->possibleDiscounts->sortBy(fn(Discount $discount) => $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB);
-
-        if ($promoCodeDiscountId = $this->input->promoCodeDiscount->id ?? null) {
-            [$appliedPromocodeDiscounts, $discounts] = $discounts->partition('id', $promoCodeDiscountId);
+        $discounts = $this->possibleDiscounts->sortBy(
+            fn(Discount $discount) => $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB
+        );
+        $promocodeDiscounts = $this->input->promoCodeDiscounts;
+        if ($promocodeDiscounts->isNotEmpty()) {
+            [$appliedPromocodeDiscounts, $discounts] = $discounts->partition(
+                fn(Discount $discount) => $promocodeDiscounts->pluck('id')->contains($discount->id)
+            );
         }
         [$deliveryDiscounts, $discounts] = $discounts->partition('type', Discount::DISCOUNT_TYPE_DELIVERY);
         [$promocodeDiscounts, $discounts] = $discounts->partition('promo_code_only', true);
@@ -526,7 +530,12 @@ class DiscountCalculator extends AbstractCalculator
 
     private function getDiscountOutput(): void
     {
-        $discountOutput = new DiscountOutput($this->input, $this->discounts, $this->basketItemsByDiscounts, $this->appliedDiscounts);
+        $discountOutput = new DiscountOutput(
+            $this->input,
+            $this->discounts,
+            $this->basketItemsByDiscounts,
+            $this->appliedDiscounts
+        );
         $this->input->basketItems = $discountOutput->getBasketItems();
         $this->basketItemsByDiscounts = $discountOutput->getModifiedBasketItemsByDiscounts();
         $this->appliedDiscounts = $discountOutput->getModifiedAppliedDiscounts();

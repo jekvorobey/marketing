@@ -81,7 +81,8 @@ class PromoCodeController extends Controller
             'end_date' => 'date|nullable',
             'status' => "numeric|{$required_rule}",
             'type' => "numeric|{$required_rule}",
-            'discount_id' => 'numeric|nullable',
+            'discounts' => 'array|nullable',
+            'discounts.*' => 'numeric',
             'gift_id' => 'numeric|nullable',
             'bonus_id' => 'numeric|nullable',
             'conditions' => 'array|nullable',
@@ -108,6 +109,8 @@ class PromoCodeController extends Controller
             $promoCode->fill($data);
             PromoCodeHelper::validate($promoCode->attributesToArray());
             $promoCode->save();
+            $promoCode->discounts()->sync($data['discounts'] ?? []);
+            $promoCode->updateDiscountsPromocodeOnly();
             DB::commit();
         } catch (HttpException $e) {
             DB::rollBack();
@@ -161,6 +164,7 @@ class PromoCodeController extends Controller
 
     protected function modifyQuery(Request $request, Builder $query): Builder
     {
+        $query->with($request->get('with', []));
         $params['page'] = $request->get('page', null);
         $params['perPage'] = $request->get('perPage', null);
 
@@ -175,7 +179,6 @@ class PromoCodeController extends Controller
                 // todo
                 case 'id':
                 case 'merchant_id':
-                case 'discount_id':
                 case 'owner_id':
                 case 'status':
                     if (is_array($value)) {
@@ -205,6 +208,9 @@ class PromoCodeController extends Controller
                     } else {
                         $query->where($key, $value);
                     }
+                    break;
+                case 'discounts':
+                    $query->with('discounts');
                     break;
             }
         }

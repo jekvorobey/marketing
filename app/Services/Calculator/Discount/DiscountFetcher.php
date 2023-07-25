@@ -4,6 +4,7 @@ namespace App\Services\Calculator\Discount;
 
 use App\Models\Discount\Discount;
 use App\Services\Calculator\InputCalculator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use Pim\Core\PimException;
@@ -32,24 +33,25 @@ class DiscountFetcher
      */
     private function fetchDiscounts(array $filterTypes = []): void
     {
-        $query = Discount::query()->select([
-            'id',
-            'type',
-            'name',
-            'merchant_id',
-            'value',
-            'value_type',
-            'promo_code_only',
-            'max_priority',
-            'summarizable_with_all',
-            'merchant_id',
-            'product_qty_limit',
-        ])
-            ->where(function ($query) {
+        $query = Discount::query()
+            ->select([
+                'id',
+                'type',
+                'name',
+                'merchant_id',
+                'value',
+                'value_type',
+                'promo_code_only',
+                'max_priority',
+                'summarizable_with_all',
+                'merchant_id',
+                'product_qty_limit',
+            ])
+            ->where(function (Builder $query) {
                 $query->where('promo_code_only', false);
-                $promoCodeDiscountId = $this->input->promoCodeDiscount->id ?? null;
-                if ($promoCodeDiscountId) {
-                    $query->orWhere('id', $promoCodeDiscountId);
+                $promoCodeDiscounts = $this->input->promoCodeDiscounts;
+                if ($promoCodeDiscounts->isNotEmpty()) {
+                    $query->orWhereIn('id', $promoCodeDiscounts->pluck('id'));
                 }
             })
             ->active();

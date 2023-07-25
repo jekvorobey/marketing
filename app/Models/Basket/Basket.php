@@ -7,6 +7,7 @@ use App\Services\Calculator\Checkout\CheckoutCalculatorBuilder;
 use Greensight\Oms\Services\BasketService\BasketService;
 use Illuminate\Support\Collection;
 use Exception;
+use RuntimeException;
 
 class Basket implements \JsonSerializable
 {
@@ -30,6 +31,8 @@ class Basket implements \JsonSerializable
     public $customerId;
     /** @var int */
     public $userRegionFiasId;
+    /** @var int|null */
+    public $roleId;
     /** @var string */
     public $referalCode;
     /** @var Collection|array */
@@ -68,7 +71,7 @@ class Basket implements \JsonSerializable
 
     public static function fromRequestData(array $data): self
     {
-        $basket = new self($data['customerId'], $data['userRegionFiasId']);
+        $basket = new self($data['customerId'], $data['userRegionFiasId'], $data['roleId'] ?? null);
 
         @([
             'referal_code' => $basket->referalCode,
@@ -102,10 +105,11 @@ class Basket implements \JsonSerializable
         return $basket;
     }
 
-    public function __construct(?int $customerId, $userRegionFiasId = null)
+    public function __construct(?int $customerId, $userRegionFiasId = null, $roleId = null)
     {
         $this->customerId = $customerId;
         $this->userRegionFiasId = $userRegionFiasId;
+        $this->roleId = $roleId;
 
         /** @var Option $option */
         $option = Option::query()->where('key', Option::KEY_BONUS_PER_RUBLES)->first();
@@ -121,6 +125,7 @@ class Basket implements \JsonSerializable
             ->customer(['id' => $this->customerId])
             ->payment(['method' => $this->payMethod])
             ->regionFiasId($this->userRegionFiasId)
+            ->roleId($this->roleId)
             ->deliveries($this->deliveries)
             ->basketItems($this->items)
             ->promoCode($this->promoCode)

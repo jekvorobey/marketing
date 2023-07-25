@@ -11,7 +11,9 @@ use Greensight\Customer\Services\CustomerService\CustomerService;
 use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
+use Ramsey\Collection\Collection;
 
 /**
  * Class PromoCode
@@ -33,7 +35,7 @@ use Illuminate\Support\Str;
  * @property int|null $bonus_id
  * @property array $conditions
  *
- * @property-read Discount|null $discount
+ * @property-read Collection|Discount[]|null $discounts
  * @property-read Bonus|null $bonus
  */
 class PromoCode extends AbstractModel
@@ -116,7 +118,6 @@ class PromoCode extends AbstractModel
         'end_date',
         'status',
         'type',
-        'discount_id',
         'gift_id',
         'bonus_id',
         'conditions',
@@ -185,9 +186,9 @@ class PromoCode extends AbstractModel
         return mb_strtoupper(Str::random(10));
     }
 
-    public function discount(): BelongsTo
+    public function discounts(): BelongsToMany
     {
-        return $this->belongsTo(Discount::class);
+        return $this->belongsToMany(Discount::class);
     }
 
     public function bonus(): BelongsTo
@@ -259,17 +260,8 @@ class PromoCode extends AbstractModel
         parent::boot();
 
         self::saved(function (self $item) {
-            /**
-             * Скидка доступна только по промокоду
-             */
-            if ($item->discount_id) {
-                /** @var Discount $discount */
-                $discount = Discount::query()->find($item->discount_id);
-                if ($discount && !$discount->promo_code_only) {
-                    $discount->promo_code_only = true;
-                    $discount->save();
-                }
-            }
+
+            $item->updateDiscountsPromocodeOnly();
 
             if ($item->owner_id) {
                 $serviceNotificationService = app(ServiceNotificationService::class);
@@ -309,6 +301,25 @@ class PromoCode extends AbstractModel
                     default => $serviceNotificationService->sendToAdmin('aozpromokodpromokod_izmenen'),
                 };
             }
+        });
+    }
+
+    /**
+     * @return array
+     */
+    public function getDiscountIds(): array
+    {
+        return $this->discounts->pluck('id')->toArray();
+    }
+
+    /**
+     * @return void
+     */
+    public function updateDiscountsPromocodeOnly(): void
+    {
+        $this->discounts()->each(function($discount) {
+            $discount->promo_code_only = true;
+            $discount->save();
         });
     }
 }

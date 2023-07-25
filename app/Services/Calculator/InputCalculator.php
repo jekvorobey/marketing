@@ -40,12 +40,14 @@ class InputCalculator
     public $ticketTypeIds;
     /** @var string|null */
     public $promoCode;
-    /** @var Discount|null */
-    public $promoCodeDiscount;
+    /** @var Collection|Discount[]|null */
+    public $promoCodeDiscounts;
     /** @var Bonus|null */
     public $promoCodeBonus;
     /** @var array */
     public $customer;
+    /** @var int */
+    public $roleId;
     /** @var string */
     public $regionFiasId;
     /** @var array */
@@ -97,7 +99,9 @@ class InputCalculator
         $this->categories = collect();
         $this->ticketTypeIds = collect();
         $this->promoCode = isset($params['promoCode']) ? (string) $params['promoCode'] : null;
+        $this->promoCodeDiscounts = new Collection();
         $this->regionFiasId = $params['regionFiasId'] ?? null;
+        $this->roleId = $params['roleId'] ?? null;
         $this->customer = [
             'id' => null,
             'roles' => [],
@@ -112,9 +116,10 @@ class InputCalculator
             ];
         } else {
             if (isset($params['role_ids']) && is_array($params['role_ids'])) {
-                $this->customer['roles'] = array_map(function ($roleId) {
+                $this->customer['roles'] = array_map(static function ($roleId) {
                     return (int) $roleId;
                 }, $params['role_ids']);
+                $this->roleId = $params['role_ids'][0] ?? null;
             }
             if (isset($params['segment_id'])) {
                 $this->customer['segment'] = (int) $params['segment_id'];
@@ -239,6 +244,7 @@ class InputCalculator
                 'offer_id' => $offerId,
                 'price' => $priceDto->price ?? null,
                 'price_base' => $priceDto->price_base ?? null,
+                'price_prof' => $priceDto->price ?? null,
                 'price_retail' => $priceDto->price_retail ?? null,
                 'percent_prof' => $priceDto->percent_prof ?? null,
                 'percent_retail' => $priceDto->percent_retail ?? null,

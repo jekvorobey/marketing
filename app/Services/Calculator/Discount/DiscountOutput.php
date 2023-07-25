@@ -125,9 +125,12 @@ class DiscountOutput
             $conditions = $discount->conditions
                 ? $discount->conditions->toArray()
                 : [];
-
             $extType = Discount::getExternalType($discount['type'], $conditions, $discount->promo_code_only);
-            $isPromoCodeDiscount = $this->input->promoCodeDiscount && $this->input->promoCodeDiscount->id === $discountId;
+            $isPromoCodeDiscount = $this->input
+                ->promoCodeDiscounts
+                ->pluck('id')
+                ->contains($discountId);
+
             $items->push([
                 'id' => $discountId,
                 'name' => $discount->name,

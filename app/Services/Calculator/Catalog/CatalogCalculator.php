@@ -8,6 +8,7 @@ use App\Services\Calculator\Bonus\BonusCatalogCalculator;
 use App\Services\Calculator\Discount\DiscountCatalogCalculator;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
+use Greensight\CommonMsa\Dto\RoleDto;
 use Pim\Core\PimException;
 
 /**
@@ -20,14 +21,13 @@ class CatalogCalculator extends AbstractCalculator
     /**
      * DiscountPriceCalculator constructor.
      *
-     * @param array|null $params
+     * @param array $params
      *  [
      *  'offer_ids' => int[] – ID офферов
      *  'role_ids' => int[]|null, – Роли пользователя
      *  'segment_id' => int|null, – Сегмент пользователя
      *  ]
      *
-     * @throws PimException
      */
     public function __construct(array $params = [])
     {
@@ -63,15 +63,33 @@ class CatalogCalculator extends AbstractCalculator
     public function getFormatBasketItems(): array
     {
         return $this->input->basketItems->map(function ($basketItem, $basketItemId) {
+
+            switch ($this->input->roleId) {
+                case RoleDto::ROLE_SHOWCASE_GUEST:
+                case RoleDto::ROLE_SHOWCASE_CUSTOMER:
+                    $price = $basketItem['price_retail'] ?: $basketItem['price'];
+                    $cost = $basketItem['cost'] ?? ($basketItem['price_retail'] ?: $basketItem['price']);
+                    break;
+                case RoleDto::ROLE_SHOWCASE_PROFESSIONAL:
+                case RoleDto::ROLE_SHOWCASE_REFERRAL_PARTNER:
+                    $price = $basketItem['price'];
+                    $cost = $basketItem['cost'] ?? $basketItem['price'];
+                    break;
+                default:
+                    $price = $basketItem['price'];
+                    $cost = $basketItem['cost'] ?? $basketItem['price'];
+            }
+
             return [
                 'id' => $basketItemId,
                 'offer_id' => $basketItem['offer_id'],
-                'price' => $basketItem['price'],
+                'price' => $price,
                 'price_base' => $basketItem['price_base'],
+                'price_prof' => $basketItem['price'],
                 'price_retail' => $basketItem['price_retail'],
                 'percent_prof' => $basketItem['percent_prof'],
                 'percent_retail' => $basketItem['percent_retail'],
-                'cost' => $basketItem['cost'] ?? $basketItem['price'],
+                'cost' => $cost,
                 'discounts' => $basketItem['discounts'] ?? null,
                 'bonus' => $basketItem['bonus'] ?? 0,
             ];
