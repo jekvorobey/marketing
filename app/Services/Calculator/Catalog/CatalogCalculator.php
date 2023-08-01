@@ -83,13 +83,15 @@ class CatalogCalculator extends AbstractCalculator
             return [
                 'id' => $basketItemId,
                 'offer_id' => $basketItem['offer_id'],
-                'price' => $price,
+                //'price' => $price,
+                'price' => $basketItem['price'],
                 'price_base' => $basketItem['price_base'],
                 'price_prof' => $basketItem['price'],
                 'price_retail' => $basketItem['price_retail'],
                 'percent_prof' => $basketItem['percent_prof'],
                 'percent_retail' => $basketItem['percent_retail'],
-                'cost' => $cost,
+                //'cost' => $cost,
+                'cost' => $basketItem['cost'] ?? $basketItem['price'],
                 'discounts' => $basketItem['discounts'] ?? null,
                 'bonus' => $basketItem['bonus'] ?? 0,
             ];
