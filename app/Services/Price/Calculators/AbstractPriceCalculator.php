@@ -59,19 +59,6 @@ abstract class AbstractPriceCalculator
         return static::$merchantsPriceSettingsCache[$this->offer->merchant_id] ?? collect();
     }
 
-    private function getProductByOffer(OfferDto $offer): ProductDto
-    {
-        if (isset($offer->product) && $offer->product instanceof ProductDto) {
-            return $offer->product;
-        }
-
-        $productsQuery = $this->productService->newQuery()
-            ->setFilter('id', $this->offer->product_id)
-            ->addFields(ProductDto::entity(), 'id', 'category_id', 'brand_id');
-
-        return $this->productService->products($productsQuery)->firstOrFail();
-    }
-
     /**
      * Находит настройки ценообразования для текущего оффера
      */
@@ -82,14 +69,12 @@ abstract class AbstractPriceCalculator
             return null;
         }
 
-        $product = $this->getProductByOffer($this->offer);
-
         $checker = new ProductChecker();
         $checker
             ->setNext(new CategoryChecker())
             ->setNext(new BrandChecker())
             ->setNext(new MerchantChecker());
 
-        return $checker->handle($this->offer, $product, $allMerchantPriceSettings);
+        return $checker->handle($this->offer, $allMerchantPriceSettings);
     }
 }

@@ -9,7 +9,7 @@ use Pim\Dto\Product\ProductDto;
 
 class MerchantChecker extends AbstractMerchantPriceChecker
 {
-    protected function check(OfferDto $offer, ProductDto $product, Collection $merchantPricesSettings): ?MerchantPricesDto
+    protected function check(OfferDto $offer, Collection $merchantPricesSettings): ?MerchantPricesDto
     {
         return $merchantPricesSettings->filter(fn(MerchantPricesDto $merchantPrice) =>
             $merchantPrice->type === MerchantPricesDto::TYPE_MERCHANT

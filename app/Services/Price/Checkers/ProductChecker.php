@@ -9,11 +9,11 @@ use Pim\Dto\Product\ProductDto;
 
 class ProductChecker extends AbstractMerchantPriceChecker
 {
-    protected function check(OfferDto $offer, ProductDto $product, Collection $merchantPricesSettings): ?MerchantPricesDto
+    protected function check(OfferDto $offer, Collection $merchantPricesSettings): ?MerchantPricesDto
     {
         return $merchantPricesSettings->filter(fn(MerchantPricesDto $merchantPrice) =>
             $merchantPrice->type === MerchantPricesDto::TYPE_SKU
-            && (int) $product->id === (int) $merchantPrice->product_id
+            && (int) $offer->product->id === (int) $merchantPrice->product_id
         )->first() ?: null;
     }
 }

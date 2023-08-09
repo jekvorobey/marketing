@@ -18,20 +18,35 @@ abstract class AbstractMerchantPriceChecker
         return $nextChecker;
     }
 
-    final public function handle(OfferDto $offer, ProductDto $product, Collection $merchantPricesSettings): ?MerchantPricesDto
+    final public function handle(OfferDto $offer, Collection $merchantPricesSettings): ?MerchantPricesDto
     {
-        $merchantPrice = $this->check($offer, $product, $merchantPricesSettings);
+        $this->loadProduct($offer);
+
+        $merchantPrice = $this->check($offer, $merchantPricesSettings);
 
         if ($merchantPrice) {
             return $merchantPrice;
         }
 
         if ($this->next instanceof AbstractMerchantPriceChecker) {
-            return $this->next->handle($offer, $product, $merchantPricesSettings);
+            return $this->next->handle($offer, $merchantPricesSettings);
         }
 
         return null;
     }
 
-    abstract protected function check(OfferDto $offer, ProductDto $product, Collection $merchantPricesSettings): ?MerchantPricesDto;
+    final protected function loadProduct(OfferDto $offer): void
+    {
+        if (isset($offer->product) && $offer->product instanceof ProductDto) {
+            return;
+        }
+
+        $productsQuery = $this->productService->newQuery()
+            ->setFilter('id', $this->offer->product_id)
+            ->addFields(ProductDto::entity(), 'id', 'category_id', 'brand_id');
+
+        $offer->product = $this->productService->products($productsQuery)->firstOrFail();
+    }
+
+    abstract protected function check(OfferDto $offer, Collection $merchantPricesSettings): ?MerchantPricesDto;
 }
