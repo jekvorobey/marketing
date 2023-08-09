@@ -58,6 +58,10 @@ abstract class AbstractPriceCalculator
 
     private function getProductByOffer(OfferDto $offer): ProductDto
     {
+        if (isset($offer->product) && $offer->product instanceof ProductDto) {
+            return $offer->product;
+        }
+
         $productsQuery = $this->productService->newQuery()
             ->setFilter('id', $this->offer->product_id)
             ->addFields(ProductDto::entity(), 'id', 'category_id', 'brand_id');

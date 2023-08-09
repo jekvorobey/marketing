@@ -7,10 +7,12 @@ use App\Models\Price\PriceByRole;
 use App\Services\Price\Calculators\AbstractPriceCalculator;
 use App\Services\Price\Calculators\PriceCalculatorInterface;
 use App\Services\Price\Calculators\ProfPriceCalculator;
+use App\Services\Price\Calculators\ReferralPriceCalculator;
 use App\Services\Price\Calculators\RetailPriceCalculator;
 use Illuminate\Database\Eloquent\Collection;
 use Pim\Core\PimException;
 use Pim\Dto\Offer\OfferDto;
+use Pim\Dto\Product\ProductDto;
 use Pim\Services\OfferService\OfferService;
 use Pim\Services\SearchService\SearchService;
 
@@ -63,15 +65,10 @@ class PriceWriter
         $offerIds = array_keys($newPrices);
 
         $this->prices = Price::query()
+            ->with('pricesByRoles')
             ->whereIn('offer_id', $offerIds)
             ->get()
             ->keyBy('offer_id');
-
-        $this->pricesByRoles = PriceByRole::query()
-            ->whereIn('offer_id', $offerIds)
-            ->get()
-            ->groupBy('offer_id')
-            ->transform(fn($tmpPriceByRole) => $tmpPriceByRole->keyBy('role'));
     }
 
     private function syncPrice(int $offerId, float $newPrice, bool $nullable): Price
@@ -82,7 +79,10 @@ class PriceWriter
         $offerService = resolve(OfferService::class);
         $offersQuery = $offerService->newQuery()
             ->setFilter('id', $offerId)
-            ->addFields(OfferDto::entity(), 'id', 'product_id', 'merchant_id');
+            ->include(ProductDto::entity())
+            ->addFields(OfferDto::entity(), 'id', 'product_id', 'merchant_id')
+            ->addFields(ProductDto::entity(), 'id', 'category_id', 'brand_id');
+
         /** @var OfferDto $offer */
         $offer = $offerService->offers($offersQuery)->firstOrFail();
 
@@ -102,6 +102,7 @@ class PriceWriter
         // Подсчитываем стоимость товара для каждой роли
         $calculators = [
             new ProfPriceCalculator($offer),
+            new ReferralPriceCalculator($offer),
             new RetailPriceCalculator($offer),
         ];
 
@@ -109,13 +110,12 @@ class PriceWriter
         foreach ($calculators as $calculator) {
             $priceByRoleFloat = $calculator->calculatePrice($newPrice);
 
-            $priceByRole = $this->pricesByRoles[$offer->id][$calculator->getRole()] ?? null;
+            $priceByRole = $price->pricesByRoles->filter(fn($tmpPriceByRole) => $tmpPriceByRole->role == $calculator->getRole())->first();
             if (!$priceByRole) {
                 $priceByRole = new PriceByRole();
                 $priceByRole->role = $calculator->getRole();
-                $priceByRole->offer_id = $offer->id;
+                $priceByRole->price_id = $price->id;
             }
-            $priceByRole->merchant_id = $offer->merchant_id ?? null;
             $priceByRole->price = $priceByRoleFloat;
             $priceByRole->percent_by_base_price = round(($priceByRoleFloat - $newPrice) / $newPrice * 100);
             $priceByRole->save();

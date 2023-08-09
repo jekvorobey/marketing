@@ -15,14 +15,14 @@ return new class extends Migration
     {
         Schema::create('prices_by_roles', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->bigInteger('offer_id')->unsigned();
+            $table->bigInteger('price_id')->unsigned();
+            $table->foreign('price_id')->references('id')->on('prices')->onDelete('CASCADE');
             $table->integer('role')->unsigned();
-            $table->bigInteger('merchant_id')->unsigned()->nullable();
             $table->float('price');
             $table->float('percent_by_base_price')->nullable();
             $table->timestamps();
 
-            $table->unique(['offer_id', 'role']);
+            $table->unique(['price_id', 'role']);
         });
     }
 
