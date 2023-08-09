@@ -12,15 +12,16 @@ class RetailPriceCalculator extends AbstractPriceCalculator
         return RoleDto::ROLE_SHOWCASE_CUSTOMER;
     }
 
-    public function calculatePrice(float $basePrice): float
+    public function calculatePrice(): float
     {
+        $price = $this->basePrice->price;
+
         /** @var MerchantPricesDto $relevantMerchantPriceSettings */
         $relevantMerchantPriceSettings = $this->getRelevantMerchantPriceSettings();
-
         if ($relevantMerchantPriceSettings && $relevantMerchantPriceSettings->valueRetail) {
-            $basePrice = ceil($basePrice + $basePrice * $relevantMerchantPriceSettings->valueRetail / 100);
+            $price = ceil($price + $price * $relevantMerchantPriceSettings->valueRetail / 100);
         }
 
-        return $basePrice;
+        return $price;
     }
 }

@@ -99,29 +99,39 @@ class PriceWriter
             $price->save();
         }
 
-        // Подсчитываем стоимость товара для каждой роли
+        $this->generatePricesByRoles($offer, $price);
+
+        return $price;
+    }
+
+    /**
+     * Подсчитываем и сохраняем стоимость товара для каждой роли
+     */
+    public function generatePricesByRoles(OfferDto $offer, Price $basePrice): void
+    {
+        $basePrice->loadMissing('pricesByRoles');
+
         $calculators = [
-            new ProfPriceCalculator($offer),
-            new ReferralPriceCalculator($offer),
-            new RetailPriceCalculator($offer),
+            ProfPriceCalculator::class,
+            ReferralPriceCalculator::class,
+            RetailPriceCalculator::class,
         ];
 
         /** @var AbstractPriceCalculator $calculator */
-        foreach ($calculators as $calculator) {
-            $priceByRoleFloat = $calculator->calculatePrice($newPrice);
+        foreach ($calculators as $calculatorClass) {
+            $calculator = new $calculatorClass($offer, $basePrice);
+            $priceByRoleFloat = $calculator->calculatePrice();
 
-            $priceByRole = $price->pricesByRoles->filter(fn($tmpPriceByRole) => $tmpPriceByRole->role == $calculator->getRole())->first();
+            $priceByRole = $basePrice->pricesByRoles->filter(fn($tmpPriceByRole) => $tmpPriceByRole->role == $calculator->getRole())->first();
             if (!$priceByRole) {
                 $priceByRole = new PriceByRole();
                 $priceByRole->role = $calculator->getRole();
-                $priceByRole->price_id = $price->id;
+                $priceByRole->price_id = $basePrice->id;
             }
             $priceByRole->price = $priceByRoleFloat;
-            $priceByRole->percent_by_base_price = round(($priceByRoleFloat - $newPrice) / $newPrice * 100);
+            $priceByRole->percent_by_base_price = round(($priceByRoleFloat - $basePrice->price) / $basePrice->price * 100);
             $priceByRole->save();
         }
-
-        return $price;
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Services\Price\Calculators;
 
+use App\Models\Price\Price;
 use App\Services\Price\Checkers\BrandChecker;
 use App\Services\Price\Checkers\CategoryChecker;
 use App\Services\Price\Checkers\MerchantChecker;
@@ -17,13 +18,15 @@ use Pim\Services\ProductService\ProductService;
 abstract class AbstractPriceCalculator
 {
     protected OfferDto $offer;
+    protected Price $basePrice;
     protected MerchantService $merchantService;
     protected ProductService $productService;
     protected static array $merchantsPriceSettingsCache;
 
-    public function __construct(OfferDto $offer)
+    public function __construct(OfferDto $offer, Price $basePrice)
     {
         $this->offer = $offer;
+        $this->basePrice = $basePrice;
         $this->merchantService = resolve(MerchantService::class);
         $this->productService = resolve(ProductService::class);
     }
@@ -34,7 +37,7 @@ abstract class AbstractPriceCalculator
      */
     abstract public function getRole(): int;
 
-    abstract public function calculatePrice(float $basePrice): float;
+    abstract public function calculatePrice(): float;
 
     /**
      * Все настройки ценообразования мерчанта

@@ -12,15 +12,16 @@ class ProfPriceCalculator extends AbstractPriceCalculator
         return RoleDto::ROLE_SHOWCASE_PROFESSIONAL;
     }
 
-    public function calculatePrice(float $basePrice): float
+    public function calculatePrice(): float
     {
+        $price = $this->basePrice->price;
+
         /** @var MerchantPricesDto $relevantMerchantPriceSettings */
         $relevantMerchantPriceSettings = $this->getRelevantMerchantPriceSettings();
-
         if ($relevantMerchantPriceSettings && $relevantMerchantPriceSettings->valueProf) {
-            $basePrice = ceil($basePrice + $basePrice * $relevantMerchantPriceSettings->valueProf / 100);
+            $price = ceil($price + $price * $relevantMerchantPriceSettings->valueProf / 100);
         }
 
-        return $basePrice;
+        return $price;
     }
 }
