@@ -8,6 +8,7 @@ use App\Services\PromoCode\PromoCodeHelper;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -210,7 +211,10 @@ class PromoCodeController extends Controller
                     }
                     break;
                 case 'discounts':
-                    $query->with('discounts');
+                    $query->whereHas('discounts', fn ($q) => $q->whereIn('discounts.id', Arr::wrap($value)));
+                    break;
+                case 'type':
+                    $query->where('type', $value);
                     break;
             }
         }

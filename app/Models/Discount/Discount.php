@@ -3,11 +3,13 @@
 namespace App\Models\Discount;
 
 use App\Jobs\UpdatePimContent;
+use App\Models\PromoCode\PromoCode;
 use Carbon\Carbon;
 use Greensight\CommonMsa\Dto\RoleDto;
 use Greensight\CommonMsa\Models\AbstractModel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Greensight\CommonMsa\Dto\UserDto;
 use Greensight\CommonMsa\Rest\RestQuery;
@@ -48,6 +50,7 @@ use Pim\Core\PimException;
  * @property-read Collection|DiscountCondition[] $conditions
  * @property-read Collection|DiscountPublicEvent[] $publicEvents
  * @property-read Collection|DiscountBundle[] $bundles
+ * @property-read Collection|PromoCode[] $promoCodes
  */
 class Discount extends AbstractModel
 {
@@ -154,6 +157,7 @@ class Discount extends AbstractModel
     public const DISCOUNT_BUNDLE_RELATION = 7;
     public const DISCOUNT_PUBLIC_EVENT_RELATION = 8;
     public const DISCOUNT_BUNDLE_ID_RELATION = 9;
+    public const DISCOUNT_PROMO_CODES_RELATION = 10;
 
     /**
      * Заполняемые поля модели
@@ -250,6 +254,7 @@ class Discount extends AbstractModel
             Discount::DISCOUNT_BUNDLE_RELATION,
             Discount::DISCOUNT_PUBLIC_EVENT_RELATION,
             Discount::DISCOUNT_BUNDLE_ID_RELATION,
+            Discount::DISCOUNT_PROMO_CODES_RELATION,
         ];
     }
 
@@ -317,6 +322,10 @@ class Discount extends AbstractModel
         return $this->hasMany(DiscountOffer::class, 'discount_id');
     }
 
+    public function promoCodes(): BelongsToMany
+    {
+        return $this->belongsToMany(PromoCode::class);
+    }
     public function bundleItems(): HasMany
     {
         return $this->hasMany(BundleItem::class, 'discount_id');
