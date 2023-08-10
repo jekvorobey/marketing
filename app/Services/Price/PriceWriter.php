@@ -129,7 +129,9 @@ class PriceWriter
                 $priceByRole->price_id = $basePrice->id;
             }
             $priceByRole->price = $priceByRoleFloat;
-            $priceByRole->percent_by_base_price = round(($priceByRoleFloat - $basePrice->price) / $basePrice->price * 100);
+            $priceByRole->percent_by_base_price = $basePrice->price > 0
+                ? round(($priceByRoleFloat - $basePrice->price) / $basePrice->price * 100)
+                : 0;
             $priceByRole->save();
         }
     }
