@@ -272,42 +272,21 @@ class PriceController extends Controller
         )->pluck('id')->toArray();
 
         /** @var Collection|Price[] $prices */
-        $prices = Price::select(
-            'id',
-            'offer_id',
-            'merchant_id',
-            'price',
-            'price_base',
-            'price_retail',
-            'percent_prof',
-            'percent_retail'
-        )->whereIn('offer_id', $offersId)->get();
+        $prices = Price::query()
+            ->select('id', 'offer_id', 'merchant_id', 'price')
+            ->whereIn('offer_id', $offersId)->get();
 
         $newPrices = [];
 
-        foreach ($prices as $price) {
-            if (!$price->price_base
-                || !$price->price_retail
-                || !$price->merchant_id
-            ) {
-                if (!$price->price_base && $price->price) {
-                    $price->price_base = $price->price;
-                }
-                if (!$price->price_retail && $price->price) {
-                    $price->price_retail = $price->price;
-                }
-                if (!$price->merchant_id) {
-                    $price->merchant_id = $merchantId;
-                }
-
-                $price->save();
+        foreach ($prices as $basePrice) {
+            if (!$basePrice->merchant_id) {
+                $basePrice->merchant_id = $merchantId;
+                $basePrice->save();
             }
 
-            //if ($price->offer_id === 2898) {
-                if ($price->price_base) {
-                    $newPrices[$price->offer_id] = $price->price_base;
-                }
-            //}
+            if ($basePrice->price) {
+                $newPrices[$basePrice->offer_id] = $basePrice->price;
+            }
         }
 
         if ($newPrices) {
