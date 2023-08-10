@@ -46,7 +46,7 @@
         "ext-json": "*",
         "ext-pdo": "*",
         "ibt/cm-lib": "dev-master",
-        "ibt/common-lib": "dev-master",
+        "ibt/common-lib": "dev-feature/18307-salon-role as dev-master",
         "ibt/logistics-lib": "dev-master",
         "ibt/merchant-management-lib": "dev-master",
         "ibt/message-lib": "dev-master",
