@@ -8,6 +8,7 @@ use App\Models\Discount\DiscountUserRole;
 use App\Models\Price\Price;
 use App\Services\Calculator\Catalog\CatalogCalculator;
 use App\Services\Price\PriceWriter;
+use Greensight\CommonMsa\Dto\RoleDto;
 use Greensight\CommonMsa\Rest\RestQuery;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
@@ -182,10 +183,10 @@ class PriceController extends Controller
                         'cost' => $item['cost'],
                         'price' => $item['price'],
                         'price_base' => $item['price_base'],
-                        'price_prof' => $item['price'],
-                        'price_retail' => $item['price_retail'],
-                        'percent_prof' => $item['percent_prof'],
-                        'percent_retail' => $item['percent_retail'],
+                        'price_prof' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_PROFESSIONAL]['price'] ?? null,
+                        'price_retail' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_CUSTOMER]['price'] ?? null,
+                        'percent_prof' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_PROFESSIONAL]['percent_by_base_price'] ?? null,
+                        'percent_retail' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_CUSTOMER]['percent_by_base_price'] ?? null,
                         'bonus' => $item['bonus'],
                         'discounts' => $item['discounts'] ?? null,
                     ];

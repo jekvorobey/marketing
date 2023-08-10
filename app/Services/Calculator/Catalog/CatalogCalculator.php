@@ -64,33 +64,12 @@ class CatalogCalculator extends AbstractCalculator
     {
         return $this->input->basketItems->map(function ($basketItem, $basketItemId) {
 
-            switch ($this->input->roleId) {
-                case RoleDto::ROLE_SHOWCASE_GUEST:
-                case RoleDto::ROLE_SHOWCASE_CUSTOMER:
-                    $price = $basketItem['price_retail'] ?: $basketItem['price'];
-                    $cost = $basketItem['cost'] ?? ($basketItem['price_retail'] ?: $basketItem['price']);
-                    break;
-                case RoleDto::ROLE_SHOWCASE_PROFESSIONAL:
-                case RoleDto::ROLE_SHOWCASE_REFERRAL_PARTNER:
-                    $price = $basketItem['price'];
-                    $cost = $basketItem['cost'] ?? $basketItem['price'];
-                    break;
-                default:
-                    $price = $basketItem['price'];
-                    $cost = $basketItem['cost'] ?? $basketItem['price'];
-            }
-
             return [
                 'id' => $basketItemId,
                 'offer_id' => $basketItem['offer_id'],
-                //'price' => $price,
                 'price' => $basketItem['price'],
                 'price_base' => $basketItem['price_base'],
-                'price_prof' => $basketItem['price'],
-                'price_retail' => $basketItem['price_retail'],
-                'percent_prof' => $basketItem['percent_prof'],
-                'percent_retail' => $basketItem['percent_retail'],
-                //'cost' => $cost,
+                'prices_by_roles' => $basketItem['prices_by_roles'],
                 'cost' => $basketItem['cost'] ?? $basketItem['price'],
                 'discounts' => $basketItem['discounts'] ?? null,
                 'bonus' => $basketItem['bonus'] ?? 0,
