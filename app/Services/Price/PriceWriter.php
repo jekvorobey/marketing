@@ -5,6 +5,7 @@ namespace App\Services\Price;
 use App\Models\Price\Price;
 use App\Models\Price\PriceByRole;
 use App\Services\Price\Calculators\AbstractPriceCalculator;
+use app\Services\Price\Calculators\GuestCustomerPriceCalculator;
 use App\Services\Price\Calculators\PriceCalculatorInterface;
 use App\Services\Price\Calculators\ProfPriceCalculator;
 use App\Services\Price\Calculators\ReferralPriceCalculator;
@@ -116,6 +117,7 @@ class PriceWriter
             ProfPriceCalculator::class,
             ReferralPriceCalculator::class,
             RetailPriceCalculator::class,
+            GuestCustomerPriceCalculator::class,
             SalonPriceCalculator::class,
         ];
 
