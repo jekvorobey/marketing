@@ -250,6 +250,7 @@ class InputCalculator
                 'price_base' => $basePrice->price ?? null,
                 'prices_by_roles' => ($basePrice && $basePrice->pricesByRoles) ?
                     $basePrice->pricesByRoles->keyBy('role')->transform(fn($tmpPriceByRole) => [
+                        'role' => $tmpPriceByRole->role,
                         'price' => $tmpPriceByRole->price,
                         'percent_by_base_price' => $tmpPriceByRole->percent_by_base_price,
                     ])->toArray() : null,
