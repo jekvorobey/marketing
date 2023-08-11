@@ -137,6 +137,7 @@ class PromoCodeController extends Controller
 
     /**
      * Проверяется уникальность промокода по коду
+     * TODO: переименовать метод, так как он проверяет валидность кода, а не уникальность (напр. isValid())
      * @throws ValidationException
      */
     public function check(): JsonResponse
@@ -144,8 +145,7 @@ class PromoCodeController extends Controller
         $data = $this->validate(request(), [
             'code' => 'required|string|max:32',
         ]);
-        $item = PromoCode::query()
-            ->where('code', $data['code'])
+        $item = PromoCode::caseSensitiveCode($data['code'])
             ->where(function ($query) {
                 $query->whereNull('start_date')
                     ->orWhere('start_date', '<=', now());
@@ -159,6 +159,22 @@ class PromoCodeController extends Controller
 
         return response()->json([
             'status' => $status,
+        ]);
+    }
+
+    /**
+     * Проверить уникальность кода
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function isCodeUnique(Request $request)
+    {
+        $data = $this->validate(request(), [
+            'code' => 'required|string|max:32',
+        ]);
+
+        return response()->json([
+            'success' => !PromoCode::caseSensitiveCode($data['code'])->exists(),
         ]);
     }
 
@@ -203,11 +219,7 @@ class PromoCodeController extends Controller
                     }
                     break;
                 case 'code':
-                    if (is_array($value)) {
-                        $query->whereIn($key, $value);
-                    } else {
-                        $query->where($key, $value);
-                    }
+                    $query->caseSensitiveCode($value);
                     break;
                 case 'discounts':
                     $query->with('discounts');
