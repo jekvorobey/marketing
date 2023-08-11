@@ -109,8 +109,10 @@ class PromoCodeController extends Controller
             $promoCode->fill($data);
             PromoCodeHelper::validate($promoCode->attributesToArray());
             $promoCode->save();
-            $promoCode->discounts()->sync($data['discounts'] ?? []);
-            $promoCode->updateDiscountsPromocodeOnly();
+            if (isset($data['discounts'])) {
+                $promoCode->discounts()->sync($data['discounts']);
+                $promoCode->updateDiscountsPromocodeOnly();
+            }
             DB::commit();
         } catch (HttpException $e) {
             DB::rollBack();
