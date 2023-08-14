@@ -74,32 +74,14 @@ class CheckoutCalculator extends AbstractCalculator
     {
         return $this->input->basketItems->map(function ($basketItem, $basketItemId) {
 
-            switch ($this->input->roleId) {
-                case RoleDto::ROLE_SHOWCASE_GUEST:
-                case RoleDto::ROLE_SHOWCASE_CUSTOMER:
-                    $price = $basketItem['price_retail'] ?: $basketItem['price'];
-                    $cost = $basketItem['cost'] ?? ($basketItem['price_retail'] ?: $basketItem['price']);
-                    break;
-                case RoleDto::ROLE_SHOWCASE_PROFESSIONAL:
-                case RoleDto::ROLE_SHOWCASE_REFERRAL_PARTNER:
-                    $price = $basketItem['price'];
-                    $cost = $basketItem['cost'] ?? $basketItem['price'];
-                    break;
-                default:
-                    $price = $basketItem['price'];
-                    $cost = $basketItem['cost'] ?? $basketItem['price'];
-            }
-
             return [
                 'id' => $basketItemId,
                 'offer_id' => $basketItem['offer_id'],
-                //'price' => $price,
                 'price' => $basketItem['price'],
                 'price_prof' => $basketItem['price'] ?? 0,
                 'price_base' => $basketItem['price_base'] ?? 0,
                 'price_retail' => $basketItem['price_retail'] ?? 0,
                 'qty' => (float) $basketItem['qty'],
-                //'cost' => $cost,
                 'cost' => $basketItem['cost'] ?? $basketItem['price'],
                 'discount' => $basketItem['discount'] ?? 0,
                 'discounts' => $basketItem['discounts'] ?? [],
