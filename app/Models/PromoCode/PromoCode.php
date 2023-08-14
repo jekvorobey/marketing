@@ -105,6 +105,9 @@ class PromoCode extends AbstractModel
     /** Для всех пользователей */
     public const TYPE_OF_LIMIT_ALL = 'all';
 
+    const SPONSOR_IBT = 'ibt';
+    const SPONSOR_MERCHANT = 'merchant';
+
     /**
      * Заполняемые поля модели
      */
