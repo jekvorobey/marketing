@@ -46,11 +46,11 @@ class PromoCodeHelper
                 break;
         }
 
-        if (preg_match('/^[A-Z0-9a-z]+$/', $data['code']) !== 1) {
+        if (!preg_match('/^[a-zа-я\d]+$/ui', $data['code'])) {
             throw new HttpException(400, 'PromoCode code error');
         }
 
-        $builder = PromoCode::query()->where('code', $data['code']);
+        $builder = PromoCode::caseSensitiveCode($data['code']);
         if (isset($data['id'])) {
             $builder->where('id', '!=', $data['id']);
         }

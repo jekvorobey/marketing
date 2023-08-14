@@ -236,19 +236,25 @@ class InputCalculator
                 continue;
             }
 
-            /** @var Price $priceDto */
-            $priceDto = $prices->get($offerId);
+            /** @var Price $basePrice */
+            $basePrice = $prices->get($offerId);
+            $priceByRole = ($basePrice && $basePrice->pricesByRoles) ?
+                $basePrice->pricesByRoles->filter(fn($tmpPrice) => $tmpPrice->role == $this->roleId)->first() : null;
+
+            $currentPrice = $priceByRole->price ?? $basePrice->price ?? null;
 
             $hydratedBasketItems->put($basketItem->id, collect([
                 'id' => $basketItem->id,
                 'offer_id' => $offerId,
-                'price' => $priceDto->price ?? null,
-                'price_base' => $priceDto->price_base ?? null,
-                'price_prof' => $priceDto->price ?? null,
-                'price_retail' => $priceDto->price_retail ?? null,
-                'percent_prof' => $priceDto->percent_prof ?? null,
-                'percent_retail' => $priceDto->percent_retail ?? null,
-                'cost' => $priceDto->price ?? null,
+                'price' => $currentPrice,
+                'price_base' => $basePrice->price ?? null,
+                'prices_by_roles' => ($basePrice && $basePrice->pricesByRoles) ?
+                    $basePrice->pricesByRoles->keyBy('role')->transform(fn($tmpPriceByRole) => [
+                        'role' => $tmpPriceByRole->role,
+                        'price' => $tmpPriceByRole->price,
+                        'percent_by_base_price' => $tmpPriceByRole->percent_by_base_price,
+                    ])->toArray() : null,
+                'cost' => $currentPrice,
                 'qty' => $basketItem->qty ?? 1,
                 'brand_id' => $offerDto->product->brand_id ?? null,
                 'category_id' => $offerDto->product->category_id ?? null,
@@ -295,9 +301,10 @@ class InputCalculator
     protected function loadPrices(array $offersIds): Collection
     {
         return Price::query()
-            ->select('offer_id', 'price', 'price_base', 'price_retail', 'percent_prof', 'percent_retail')
+            ->with('pricesByRoles')
             ->whereIn('offer_id', $offersIds)
-            ->get()->keyBy('offer_id');
+            ->get()
+            ->keyBy('offer_id');
     }
 
     protected function hydrateCustomerInfo(): void

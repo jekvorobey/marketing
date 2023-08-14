@@ -3,21 +3,24 @@
 namespace App\Services\Price;
 
 use App\Models\Price\Price;
+use App\Models\Price\PriceByRole;
+use App\Services\Price\Calculators\AbstractPriceCalculator;
+use App\Services\Price\Calculators\GuestCustomerPriceCalculator;
+use App\Services\Price\Calculators\PriceCalculatorInterface;
+use App\Services\Price\Calculators\ProfPriceCalculator;
+use App\Services\Price\Calculators\ReferralPriceCalculator;
+use App\Services\Price\Calculators\RetailPriceCalculator;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\ItemNotFoundException;
-use MerchantManagement\Dto\MerchantPricesDto;
-use MerchantManagement\Services\MerchantService\Dto\GetMerchantPricesDto;
-use MerchantManagement\Services\MerchantService\MerchantService;
 use Pim\Core\PimException;
 use Pim\Dto\Offer\OfferDto;
 use Pim\Dto\Product\ProductDto;
 use Pim\Services\OfferService\OfferService;
-use Pim\Services\ProductService\ProductService;
 use Pim\Services\SearchService\SearchService;
 
 class PriceWriter
 {
     private Collection $prices;
+    private Collection $pricesByRoles;
     private ?array $merchantPrices = [];
 
     /**
@@ -63,6 +66,7 @@ class PriceWriter
         $offerIds = array_keys($newPrices);
 
         $this->prices = Price::query()
+            ->with('pricesByRoles')
             ->whereIn('offer_id', $offerIds)
             ->get()
             ->keyBy('offer_id');
@@ -72,31 +76,16 @@ class PriceWriter
     {
         $price = $this->prices->get($offerId);
 
-        try {
-            $merchantOfferPrices = $this->getMerchantOfferPrices($offerId);
-            /** @var MerchantPricesDto|null $baseOfferPrice */
-            $baseOfferPrice = $merchantOfferPrices['sku'] ?? $merchantOfferPrices['category'] ?? $merchantOfferPrices['brand'] ?? $merchantOfferPrices['personal'] ?? null;
-            $merchantId = $merchantOfferPrices['merchant_id'] ?? null;
-        } catch (PimException|ItemNotFoundException) {
-            $baseOfferPrice = null;
-            $merchantId = null;
-        }
+        /** @var OfferService $offerService */
+        $offerService = resolve(OfferService::class);
+        $offersQuery = $offerService->newQuery()
+            ->setFilter('id', $offerId)
+            ->include(ProductDto::entity())
+            ->addFields(OfferDto::entity(), 'id', 'product_id', 'merchant_id')
+            ->addFields(ProductDto::entity(), 'id', 'category_id', 'brand_id');
 
-        $priceBase = $newPrice;
-        $priceRetail = $newPrice;
-        $percentProf = 0;
-        $percentRetail = 0;
-
-        if ($baseOfferPrice instanceof MerchantPricesDto) {
-            if ($baseOfferPrice->valueProf) {
-                $percentProf = $baseOfferPrice->valueProf;
-                $newPrice = ceil($priceBase + $priceBase * $percentProf / 100);
-            }
-            if ($baseOfferPrice->valueRetail) {
-                $percentRetail = $baseOfferPrice->valueRetail;
-                $priceRetail = ceil($priceBase + $priceBase * $percentRetail / 100);
-            }
-        }
+        /** @var OfferDto $offer */
+        $offer = $offerService->offers($offersQuery)->firstOrFail();
 
         if (!$nullable && $price && !$newPrice) {
             $price->delete();
@@ -104,18 +93,49 @@ class PriceWriter
             if (!$price) {
                 $price = new Price();
             }
-            $price->merchant_id = $merchantId ?? null;
             $price->offer_id = $offerId;
             $price->price = $newPrice;
-            $price->price_base = $priceBase;
-            $price->price_retail = $priceRetail;
-            $price->percent_prof = $percentProf;
-            $price->percent_retail = $percentRetail;
+            $price->merchant_id = $offer->merchant_id ?? null;
 
             $price->save();
         }
 
+        $this->generatePricesByRoles($offer, $price);
+
         return $price;
+    }
+
+    /**
+     * Подсчитываем и сохраняем стоимость товара для каждой роли
+     */
+    public function generatePricesByRoles(OfferDto $offer, Price $basePrice): void
+    {
+        $basePrice->loadMissing('pricesByRoles');
+
+        $calculators = [
+            ProfPriceCalculator::class,
+            ReferralPriceCalculator::class,
+            RetailPriceCalculator::class,
+            GuestCustomerPriceCalculator::class,
+        ];
+
+        /** @var AbstractPriceCalculator $calculator */
+        foreach ($calculators as $calculatorClass) {
+            $calculator = new $calculatorClass($offer, $basePrice);
+            $priceByRoleFloat = $calculator->calculatePrice();
+
+            $priceByRole = $basePrice->pricesByRoles->filter(fn($tmpPriceByRole) => $tmpPriceByRole->role == $calculator->getRole())->first();
+            if (!$priceByRole) {
+                $priceByRole = new PriceByRole();
+                $priceByRole->role = $calculator->getRole();
+                $priceByRole->price_id = $basePrice->id;
+            }
+            $priceByRole->price = $priceByRoleFloat;
+            $priceByRole->percent_by_base_price = $basePrice->price > 0
+                ? round(($priceByRoleFloat - $basePrice->price) / $basePrice->price * 100)
+                : 0;
+            $priceByRole->save();
+        }
     }
 
     /**
@@ -130,78 +150,5 @@ class PriceWriter
         /** @var SearchService $searchService */
         $searchService = resolve(SearchService::class);
         $searchService->markProductsForIndexByOfferIds($offerIds);
-    }
-
-    /**
-     * Получить ценообразование конкретного оффера
-     * @throws PimException|ItemNotFoundException
-     */
-    protected function getMerchantOfferPrices(int $offerId): array
-    {
-        /** @var OfferService $offerService */
-        $offerService = resolve(OfferService::class);
-        /** @var ProductService $productService */
-        $productService = resolve(ProductService::class);
-
-        $offersQuery = $offerService->newQuery()
-            ->setFilter('id', $offerId)
-            ->addFields(OfferDto::entity(), 'id', 'product_id', 'merchant_id');
-        $offers = $offerService->offers($offersQuery);
-        /** @var OfferDto $offer */
-        $offer = $offers->firstOrFail();
-
-        $productsQuery = $productService->newQuery()
-            ->setFilter('id', $offer->product_id)
-            ->addFields(ProductDto::entity(), 'id', 'category_id', 'brand_id');
-        $products = $productService->products($productsQuery);
-        /** @var ProductDto $product */
-        $product = $products->firstOrFail();
-
-        if (!isset($this->merchantPrices[$offer->merchant_id])) {
-            /** @var MerchantService $merchantService */
-            $merchantService = resolve(MerchantService::class);
-            $merchantPrices = $merchantService->merchantPrices(
-                (new GetMerchantPricesDto())
-                    ->addType(MerchantPricesDto::TYPE_MERCHANT)
-                    ->addType(MerchantPricesDto::TYPE_BRAND)
-                    ->addType(MerchantPricesDto::TYPE_CATEGORY)
-                    ->addType(MerchantPricesDto::TYPE_SKU)
-                    ->setMerchantId($offer->merchant_id)
-            );
-            $this->merchantPrices[$offer->merchant_id] = $merchantPrices;
-        } else {
-            $merchantPrices = $this->merchantPrices[$offer->merchant_id];
-        }
-
-        $merchantOfferPrices = [
-            'offer_id' => $offer->id,
-            'merchant_id' => $offer->merchant_id,
-            'product_id' => $offer->product_id,
-            'brand_id' => $product?->brand_id,
-            'category_id' => $product?->category_id,
-            'personal' => null,
-            'brand' => null,
-            'category' => null,
-            'sku' => null,
-        ];
-
-        foreach ($merchantPrices as $merchantPrice) {
-            switch ($merchantPrice->type) {
-                case MerchantPricesDto::TYPE_MERCHANT:
-                    $merchantOfferPrices['personal'] = $merchantPrice;
-                    break;
-                case MerchantPricesDto::TYPE_BRAND:
-                    $merchantOfferPrices['brand'] = $merchantPrice;
-                    break;
-                case MerchantPricesDto::TYPE_CATEGORY:
-                    $merchantOfferPrices['category'] = $merchantPrice;
-                    break;
-                case MerchantPricesDto::TYPE_SKU:
-                    $merchantOfferPrices['sku'] = $merchantPrice;
-                    break;
-            }
-        }
-
-        return $merchantOfferPrices;
     }
 }

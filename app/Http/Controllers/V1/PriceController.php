@@ -8,6 +8,7 @@ use App\Models\Discount\DiscountUserRole;
 use App\Models\Price\Price;
 use App\Services\Calculator\Catalog\CatalogCalculator;
 use App\Services\Price\PriceWriter;
+use Greensight\CommonMsa\Dto\RoleDto;
 use Greensight\CommonMsa\Rest\RestQuery;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
@@ -126,10 +127,10 @@ class PriceController extends Controller
                 'cost' => $items[0]['cost'],
                 'price' => $items[0]['price'],
                 'price_base' => $items[0]['price_base'],
-                'price_prof' => $items[0]['price'],
-                'price_retail' => $items[0]['price_retail'],
-                'percent_prof' => $items[0]['percent_prof'],
-                'percent_retail' => $items[0]['percent_retail'],
+                'price_prof' => $items[0]['prices_by_roles'][RoleDto::ROLE_SHOWCASE_PROFESSIONAL]['price'] ?? null,
+                'price_retail' => $items[0]['prices_by_roles'][RoleDto::ROLE_SHOWCASE_CUSTOMER]['price'] ?? null,
+                'percent_prof' => $items[0]['prices_by_roles'][RoleDto::ROLE_SHOWCASE_PROFESSIONAL]['percent_by_base_price'] ?? null,
+                'percent_retail' => $items[0]['prices_by_roles'][RoleDto::ROLE_SHOWCASE_CUSTOMER]['percent_by_base_price'] ?? null,
                 'discounts' => $items[0]['discounts'] ?? null,
                 'bonus' => $items[0]['bonus'] ?? 0,
             ],
@@ -182,10 +183,10 @@ class PriceController extends Controller
                         'cost' => $item['cost'],
                         'price' => $item['price'],
                         'price_base' => $item['price_base'],
-                        'price_prof' => $item['price'],
-                        'price_retail' => $item['price_retail'],
-                        'percent_prof' => $item['percent_prof'],
-                        'percent_retail' => $item['percent_retail'],
+                        'price_prof' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_PROFESSIONAL]['price'] ?? null,
+                        'price_retail' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_CUSTOMER]['price'] ?? null,
+                        'percent_prof' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_PROFESSIONAL]['percent_by_base_price'] ?? null,
+                        'percent_retail' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_CUSTOMER]['percent_by_base_price'] ?? null,
                         'bonus' => $item['bonus'],
                         'discounts' => $item['discounts'] ?? null,
                     ];
@@ -271,42 +272,21 @@ class PriceController extends Controller
         )->pluck('id')->toArray();
 
         /** @var Collection|Price[] $prices */
-        $prices = Price::select(
-            'id',
-            'offer_id',
-            'merchant_id',
-            'price',
-            'price_base',
-            'price_retail',
-            'percent_prof',
-            'percent_retail'
-        )->whereIn('offer_id', $offersId)->get();
+        $prices = Price::query()
+            ->select('id', 'offer_id', 'merchant_id', 'price')
+            ->whereIn('offer_id', $offersId)->get();
 
         $newPrices = [];
 
-        foreach ($prices as $price) {
-            if (!$price->price_base
-                || !$price->price_retail
-                || !$price->merchant_id
-            ) {
-                if (!$price->price_base && $price->price) {
-                    $price->price_base = $price->price;
-                }
-                if (!$price->price_retail && $price->price) {
-                    $price->price_retail = $price->price;
-                }
-                if (!$price->merchant_id) {
-                    $price->merchant_id = $merchantId;
-                }
-
-                $price->save();
+        foreach ($prices as $basePrice) {
+            if (!$basePrice->merchant_id) {
+                $basePrice->merchant_id = $merchantId;
+                $basePrice->save();
             }
 
-            //if ($price->offer_id === 2898) {
-                if ($price->price_base) {
-                    $newPrices[$price->offer_id] = $price->price_base;
-                }
-            //}
+            if ($basePrice->price) {
+                $newPrices[$basePrice->offer_id] = $basePrice->price;
+            }
         }
 
         if ($newPrices) {
