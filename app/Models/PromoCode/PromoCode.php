@@ -12,6 +12,8 @@ use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationSe
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Ramsey\Collection\Collection;
 
@@ -102,6 +104,9 @@ class PromoCode extends AbstractModel
 
     /** Для всех пользователей */
     public const TYPE_OF_LIMIT_ALL = 'all';
+
+    const SPONSOR_IBT = 'ibt';
+    const SPONSOR_MERCHANT = 'merchant';
 
     /**
      * Заполняемые поля модели
@@ -253,6 +258,17 @@ class PromoCode extends AbstractModel
             })->where(function ($query) use ($date) {
                 $query->where('end_date', '>=', $date)->orWhereNull('end_date');
             });
+    }
+
+    /**
+     * Найти по коду, учитывая регистр
+     * @param Builder $query
+     * @param string|array $code
+     * @return Builder
+     */
+    public function scopeCaseSensitiveCode(Builder $query, string|array $code): Builder
+    {
+        return $query->whereIn(DB::raw('BINARY code'), Arr::wrap($code));
     }
 
     public static function boot()
