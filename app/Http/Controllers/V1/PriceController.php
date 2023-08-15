@@ -8,6 +8,7 @@ use App\Models\Discount\DiscountUserRole;
 use App\Models\Price\Price;
 use App\Services\Calculator\Catalog\CatalogCalculator;
 use App\Services\Price\PriceWriter;
+use Greensight\CommonMsa\Dto\Front;
 use Greensight\CommonMsa\Dto\RoleDto;
 use Greensight\CommonMsa\Rest\RestQuery;
 use Illuminate\Database\Eloquent\Collection;
@@ -149,7 +150,8 @@ class PriceController extends Controller
 
         $segments = DiscountSegment::query()->select(['id', 'segment_id'])->get()->pluck('segment_id')->unique()->all();
         $segments[] = null;
-        $roles = DiscountUserRole::query()->select(['id', 'role_id'])->get()->pluck('role_id')->unique()->all();
+//        $roles = DiscountUserRole::query()->select(['id', 'role_id'])->get()->pluck('role_id')->unique()->all();
+        $roles = array_keys(RoleDto::rolesByFrontIds([Front::FRONT_SHOWCASE]));
         $roles[] = null;
 
         $prices = [];
