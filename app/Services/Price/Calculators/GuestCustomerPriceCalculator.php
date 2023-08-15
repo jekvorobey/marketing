@@ -1,6 +1,6 @@
 <?php
 
-namespace app\Services\Price\Calculators;
+namespace App\Services\Price\Calculators;
 
 use Greensight\CommonMsa\Dto\RoleDto;
 use MerchantManagement\Dto\MerchantPricesDto;
