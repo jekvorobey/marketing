@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7435bf91bc94a458bce89c118e9acaeb",
+    "content-hash": "b738f228f8f5c9de052ac6e057427e72",
     "packages": [
         {
             "name": "brick/math",
@@ -1390,11 +1390,11 @@
         },
         {
             "name": "ibt/common-lib",
-            "version": "dev-feature/18307-salon-role",
+            "version": "dev-master",
             "source": {
                 "type": "git",
                 "url": "git@gitlab.ibt.ru:iBT.studio/ibt-common-ms-code.git",
-                "reference": "d3be5ee325fea0fa4d9438c9b28cb3ca1bb17615"
+                "reference": "938aa13842d9a4ba36713bf876e246ab8c8c3fcc"
             },
             "require": {
                 "ext-json": "*",
@@ -1411,6 +1411,7 @@
                 "phpunit/php-code-coverage": "6.1.4",
                 "phpunit/phpunit": "^7.5"
             },
+            "default-branch": true,
             "type": "library",
             "extra": {
                 "laravel": {
@@ -1444,7 +1445,7 @@
                 }
             ],
             "description": "iBT common code for all microservices",
-            "time": "2023-08-04T05:39:22+00:00"
+            "time": "2023-08-15T06:56:39+00:00"
         },
         {
             "name": "ibt/logistics-lib",
@@ -9788,14 +9789,7 @@
             "time": "2021-07-28T10:34:58+00:00"
         }
     ],
-    "aliases": [
-        {
-            "package": "ibt/common-lib",
-            "version": "dev-feature/18307-salon-role",
-            "alias": "dev-master",
-            "alias_normalized": "dev-master"
-        }
-    ],
+    "aliases": [],
     "minimum-stability": "dev",
     "stability-flags": {
         "ibt/cm-lib": 20,
