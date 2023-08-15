@@ -10,6 +10,7 @@ use App\Services\Price\Calculators\PriceCalculatorInterface;
 use App\Services\Price\Calculators\ProfPriceCalculator;
 use App\Services\Price\Calculators\ReferralPriceCalculator;
 use App\Services\Price\Calculators\RetailPriceCalculator;
+use App\Services\Price\Calculators\SalonPriceCalculator;
 use Illuminate\Database\Eloquent\Collection;
 use Pim\Core\PimException;
 use Pim\Dto\Offer\OfferDto;
@@ -117,6 +118,7 @@ class PriceWriter
             ReferralPriceCalculator::class,
             RetailPriceCalculator::class,
             GuestCustomerPriceCalculator::class,
+            SalonPriceCalculator::class,
         ];
 
         /** @var AbstractPriceCalculator $calculator */
