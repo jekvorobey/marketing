@@ -96,7 +96,7 @@ class PromoCodeCalculator extends AbstractCalculator
             $discountCalculator->forceRollback();
         } else {
             $calc = new CalculatorChangePrice();
-            $change = $promocodeDiscounts->reduce(function(float $sum, Discount $discount) use ($calc) {
+            $change = $promocodeDiscounts->reduce(function(?float $sum, Discount $discount) use ($calc) {
                 $sum + $calc->calculateDiscountByType(
                     $this->input->basketItems->sum('price'),
                     $discount->value,
