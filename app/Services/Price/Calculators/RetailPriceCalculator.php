@@ -18,8 +18,13 @@ class RetailPriceCalculator extends AbstractPriceCalculator
 
         /** @var MerchantPricesDto $relevantMerchantPriceSettings */
         $relevantMerchantPriceSettings = $this->getRelevantMerchantPriceSettings();
+
         if ($relevantMerchantPriceSettings && $relevantMerchantPriceSettings->valueRetail) {
-            $price = ceil($price + $price * $relevantMerchantPriceSettings->valueRetail / 100);
+            if ($this->offer->free_buy && !$this->offer->is_price_hidden) {
+                $price = ceil($price + $price * $relevantMerchantPriceSettings->valueRetail / 100);
+            } else {
+                $price = ceil($price + $price * $relevantMerchantPriceSettings->valueProf / 100);
+            }
         }
 
         return $price;
