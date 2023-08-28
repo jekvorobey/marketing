@@ -82,7 +82,7 @@ class PriceWriter
         $offersQuery = $offerService->newQuery()
             ->setFilter('id', $offerId)
             ->include(ProductDto::entity())
-            ->addFields(OfferDto::entity(), 'id', 'product_id', 'merchant_id')
+            ->addFields(OfferDto::entity(), 'id', 'product_id', 'merchant_id', 'free_buy', 'is_price_hidden')
             ->addFields(ProductDto::entity(), 'id', 'category_id', 'brand_id');
 
         /** @var OfferDto $offer */
