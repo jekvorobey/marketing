@@ -4,12 +4,20 @@ namespace App\Services\Price\Checkers;
 
 use MerchantManagement\Dto\MerchantPricesDto;
 use Illuminate\Support\Collection;
+use Pim\Core\PimException;
 use Pim\Dto\Offer\OfferDto;
 use Pim\Dto\Product\ProductDto;
+use Pim\Services\ProductService\ProductService;
 
 abstract class AbstractMerchantPriceChecker
 {
-    protected AbstractMerchantPriceChecker $next;
+    protected ?AbstractMerchantPriceChecker $next;
+    protected ProductService $productService;
+
+    public function __construct()
+    {
+        $this->productService = resolve(ProductService::class);
+    }
 
     final public function setNext(AbstractMerchantPriceChecker $nextChecker): AbstractMerchantPriceChecker
     {
@@ -28,7 +36,7 @@ abstract class AbstractMerchantPriceChecker
             return $merchantPrice;
         }
 
-        if ($this->next instanceof AbstractMerchantPriceChecker) {
+        if ($this->next instanceof self) {
             return $this->next->handle($offer, $merchantPricesSettings);
         }
 
@@ -37,15 +45,18 @@ abstract class AbstractMerchantPriceChecker
 
     final protected function loadProduct(OfferDto $offer): void
     {
-        if (isset($offer->product) && $offer->product instanceof ProductDto) {
+        if (!$offer->product_id || (isset($offer->product) && $offer->product instanceof ProductDto)) {
             return;
         }
 
         $productsQuery = $this->productService->newQuery()
-            ->setFilter('id', $this->offer->product_id)
+            ->setFilter('id', $offer->product_id)
             ->addFields(ProductDto::entity(), 'id', 'category_id', 'brand_id');
 
-        $offer->product = $this->productService->products($productsQuery)->firstOrFail();
+        try {
+            $offer->product = $this->productService->products($productsQuery)->firstOrFail();
+        } catch (PimException) {
+        }
     }
 
     abstract protected function check(OfferDto $offer, Collection $merchantPricesSettings): ?MerchantPricesDto;
