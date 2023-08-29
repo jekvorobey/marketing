@@ -42,9 +42,12 @@ Route::namespace('V1')->prefix('v1')->group(function () {
 
     Route::prefix('promoCodes')->group(function () {
         Route::get('', [PromoCodeController::class, 'read']);
+        Route::get('count', [PromoCodeController::class, 'count']);
+        Route::get('pluck', [PromoCodeController::class, 'pluck']);
         Route::post('', [PromoCodeController::class, 'create']);
         Route::get('generate', [PromoCodeController::class, 'generate']);
         Route::get('check', [PromoCodeController::class, 'check']);
+        Route::get('is-code-unique', [PromoCodeController::class, 'isCodeUnique']);
 
         Route::prefix('{id}')->group(function () {
             Route::get('', [PromoCodeController::class, 'read']);

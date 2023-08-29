@@ -8,7 +8,9 @@ use App\Services\PromoCode\PromoCodeHelper;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+                                    use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -37,6 +39,39 @@ class PromoCodeController extends Controller
             'items' => $this->modifyQuery($request, PromoCode::query())
                 ->orderBy('id', $request->get('sortDirection') === 'asc' ? 'asc' : 'desc')
                 ->get(),
+        ]);
+    }
+
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function count(Request $request): JsonResponse
+    {
+        return response()->json([
+            'count' => $this->modifyQuery($request, PromoCode::query())->count(),
+        ]);
+    }
+
+    /**
+     * Получить выборку поля, учитывая фильтры
+     * Например получить все merchant_id, creator_id по аналогии
+     * с методом pluck у Collection
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function pluck(Request $request): JsonResponse
+    {
+        $this->validate($request, [
+            'field' => ['required', 'string', Rule::in(PromoCode::FILLABLE)]
+        ]);
+
+        return response()->json([
+            'items' => $this->modifyQuery($request, PromoCode::query())
+                ->pluck($request->get('field'))
+                ->filter()
+                ->unique()
+                ->values(),
         ]);
     }
 
@@ -139,6 +174,7 @@ class PromoCodeController extends Controller
 
     /**
      * Проверяется уникальность промокода по коду
+     * TODO: переименовать метод, так как он проверяет валидность кода, а не уникальность (напр. isValid())
      * @throws ValidationException
      */
     public function check(): JsonResponse
@@ -146,8 +182,7 @@ class PromoCodeController extends Controller
         $data = $this->validate(request(), [
             'code' => 'required|string|max:32',
         ]);
-        $item = PromoCode::query()
-            ->where('code', $data['code'])
+        $item = PromoCode::caseSensitiveCode($data['code'])
             ->where(function ($query) {
                 $query->whereNull('start_date')
                     ->orWhere('start_date', '<=', now());
@@ -161,6 +196,22 @@ class PromoCodeController extends Controller
 
         return response()->json([
             'status' => $status,
+        ]);
+    }
+
+    /**
+     * Проверить уникальность кода
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function isCodeUnique(Request $request)
+    {
+        $data = $this->validate(request(), [
+            'code' => 'required|string|max:32',
+        ]);
+
+        return response()->json([
+            'success' => !PromoCode::caseSensitiveCode($data['code'])->exists(),
         ]);
     }
 
@@ -178,8 +229,40 @@ class PromoCodeController extends Controller
 
         foreach ($filter as $key => $value) {
             switch ($key) {
-                // todo
+                case 'created_at_from':
+                    $query->where('created_at', '>=', $value);
+                    break;
+                case 'created_at_to':
+                    $query->where('created_at', '<=', $value);
+                    break;
+                case 'validity_period_from':
+                    $query->where('start_date', '>=', $value);
+                    break;
+                case 'validity_period_to':
+                    $query->where('end_date', '<=', $value);
+                    break;
+                case 'is_perpetual':
+                    $query->whereNull('start_date')->whereNull('end_date');
+                    break;
+                case 'sponsor':
+                    if ($value === PromoCode::SPONSOR_IBT) {
+                        $query->whereNull('merchant_id');
+                    } else {
+                        $query->whereNotNull('merchant_id');
+                    }
+                    break;
+                case 'name':
+                    $query->where('name', 'LIKE', "%$value%");
+                    break;
+                case 'code':
+                    $query->caseSensitiveCode($value);
+                    break;
+                case 'discounts':
+                    $query->whereHas('discounts', fn ($q) => $q->whereIn('discounts.id', Arr::wrap($value)));
+                    break;
                 case 'id':
+                case 'type':
+                case 'creator_id':
                 case 'merchant_id':
                 case 'owner_id':
                 case 'status':
@@ -203,16 +286,6 @@ class PromoCodeController extends Controller
                     } else {
                         $query->where($key, (int) $value);
                     }
-                    break;
-                case 'code':
-                    if (is_array($value)) {
-                        $query->whereIn($key, $value);
-                    } else {
-                        $query->where($key, $value);
-                    }
-                    break;
-                case 'discounts':
-                    $query->with('discounts');
                     break;
             }
         }

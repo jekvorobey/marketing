@@ -54,7 +54,9 @@ class DiscountHelper
     }
 
     /**
+     * @param Discount $discount
      * @param array $relations
+     * @return bool
      */
     public static function validateRelations(Discount $discount, array $relations): bool
     {
@@ -141,6 +143,10 @@ class DiscountHelper
                 $model = new $value['class']($item);
                 $model->save();
             });
+        }
+
+        if ($data['promo_code_only'] && is_array($data['promoCodes'])) {
+            $discount->promoCodes()->attach($data['promoCodes']);
         }
 
         $discount->updatePimContents();

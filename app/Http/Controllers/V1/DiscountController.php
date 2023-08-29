@@ -149,12 +149,19 @@ class DiscountController extends Controller
             'merchant_id' => 'numeric|nullable',
             'relations' => 'array',
             'comment' => 'string|nullable',
+            'promoCodes' => 'array|required_if:promo_code_only,true',
         ]);
 
         foreach ($data as $field => $value) {
-            if ($field != 'relations') {
+            if (!in_array($field, ['relations', 'promoCodes'])) {
                 $discount[$field] = $value;
             }
+        }
+
+        if ($data['promo_code_only'] && is_array($data['promoCodes'])) {
+            $discount->promoCodes()->sync($data['promoCodes']);
+        } else {
+            $discount->promoCodes()->detach();
         }
 
         try {
@@ -200,6 +207,7 @@ class DiscountController extends Controller
                 'merchant_id' => 'numeric|nullable',
                 'relations' => 'array',
                 'comment' => 'string|nullable',
+                'promoCodes' => 'array|required_if:promo_code_only,true',
             ]);
 
             $data['user_id'] = $client->userId();
@@ -366,6 +374,9 @@ class DiscountController extends Controller
                     break;
                 case Discount::DISCOUNT_BUNDLE_ID_RELATION:
                     $query->with('bundles');
+                    break;
+                case Discount::DISCOUNT_PROMO_CODES_RELATION:
+                    $query->with('promoCodes');
                     break;
             }
         }
