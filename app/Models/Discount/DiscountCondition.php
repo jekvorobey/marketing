@@ -183,6 +183,13 @@ class DiscountCondition extends AbstractModel
         return $this->condition[self::FIELD_MERCHANTS] ?? [];
     }
 
+    public function setSynergy(array $value): void
+    {
+        $conditionArray = $this->condition ?? [];
+        $conditionArray[self::FIELD_SYNERGY] = $value;
+        $this->condition = $conditionArray;
+    }
+
     public function discount(): BelongsTo
     {
         return $this->belongsTo(Discount::class);
@@ -248,15 +255,13 @@ class DiscountCondition extends AbstractModel
 
             /** @var DiscountCondition $condition */
             foreach ($conditions as $condition) {
-                $synergy = collect($condition->condition[DiscountCondition::FIELD_SYNERGY])
+                $synergy = collect($condition->condition[DiscountCondition::FIELD_SYNERGY] ?? [])
                     ->push($item->discount_id)
-                    ->values()
                     ->unique()
+                    ->values()
                     ->toArray();
 
-                $newCondition = $condition->condition;
-                $newCondition[DiscountCondition::FIELD_SYNERGY] = array_merge($item->condition[DiscountCondition::FIELD_SYNERGY], $synergy);
-                $condition->condition = $newCondition;
+                $condition->setSynergy($synergy);
                 $condition->save();
             }
 
@@ -267,15 +272,15 @@ class DiscountCondition extends AbstractModel
 
                 $condition = new DiscountCondition();
                 $condition->type = self::DISCOUNT_SYNERGY;
-                $condition->condition = array_merge($item->condition, [
-                    DiscountCondition::FIELD_SYNERGY => [$item->discount_id],
-                ]);
+                $condition->setSynergy([$item->discount_id]);
                 $condition->discount_id = $discountId;
                 $condition->save();
             }
         });
 
-        self::deleted(function (DiscountCondition $item) {
+
+        self::deleted(function (DiscountCondition $item)
+        {
             if ($item->type !== self::DISCOUNT_SYNERGY) {
                 return;
             }
@@ -283,11 +288,15 @@ class DiscountCondition extends AbstractModel
             $conditions = DiscountCondition::query()
                 ->where('type', self::DISCOUNT_SYNERGY)
                 ->whereJsonContains('condition->synergy', $item->discount_id)
+                ->orWhere(function ($builder) use ($item) {
+                   return $builder->whereJsonContains('condition->synergy', "{$item->discount_id}");
+                })
                 ->get();
 
             /** @var DiscountCondition $condition */
             foreach ($conditions as $condition) {
                 $synergy = $condition->condition[DiscountCondition::FIELD_SYNERGY];
+
                 if (($key = array_search($item->discount_id, $synergy)) !== false) {
                     unset($synergy[$key]);
                     $synergy = array_values($synergy);
