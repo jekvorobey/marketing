@@ -13,7 +13,8 @@ class CategoryChecker extends AbstractMerchantPriceChecker
     {
         return $merchantPricesSettings->filter(fn(MerchantPricesDto $merchantPrice) =>
             $merchantPrice->type === MerchantPricesDto::TYPE_CATEGORY
-            && (int) $offer->product->category_id === (int) $merchantPrice->category_id
+            && $merchantPrice->category_id
+            && (int) $offer?->product?->category_id === (int) $merchantPrice->category_id
         )->first() ?: null;
     }
 }
