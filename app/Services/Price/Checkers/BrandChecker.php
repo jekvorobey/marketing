@@ -13,7 +13,8 @@ class BrandChecker extends AbstractMerchantPriceChecker
     {
         return $merchantPricesSettings->filter(fn(MerchantPricesDto $merchantPrice) =>
             $merchantPrice->type === MerchantPricesDto::TYPE_BRAND
-            && (int) $offer->product->brand_id === (int) $merchantPrice->brand_id
+            && $merchantPrice->brand_id
+            && (int) $offer?->product?->brand_id === (int) $merchantPrice->brand_id
         )->first() ?: null;
     }
 }

@@ -53,7 +53,7 @@ abstract class AbstractPriceCalculator
                     ->addType(MerchantPricesDto::TYPE_SKU)
                     ->setMerchantId($this->offer->merchant_id)
             );
-            static::$merchantsPriceSettingsCache[$this->offer->merchant_id] = $merchantPrices->keyBy('type');
+            static::$merchantsPriceSettingsCache[$this->offer->merchant_id] = $merchantPrices;
         }
 
         return static::$merchantsPriceSettingsCache[$this->offer->merchant_id] ?? collect();

@@ -559,12 +559,12 @@ class DiscountCalculator extends AbstractCalculator
             if ($this->basketItemsByDiscounts->has($basketItem['id'])) {
                 [$freeProductDiscounts, $otherDiscounts] = $this->basketItemsByDiscounts->get($basketItem['id'])
                     ->partition(fn($discount) =>
-                        $discount['value_type'] == Discount::DISCOUNT_VALUE_TYPE_PERCENT && $discount['value'] == 100 ||
-                        $discount['value_type'] == Discount::DISCOUNT_VALUE_TYPE_RUB && $discount['value'] == $basketItem['cost']
+                        ((int) $discount['value_type'] === Discount::DISCOUNT_VALUE_TYPE_PERCENT && (int) $discount['value'] === 100) ||
+                        ((int) $discount['value_type'] === Discount::DISCOUNT_VALUE_TYPE_RUB && (float) $discount['value'] === (float) $basketItem['cost'])
                     );
 
                 // Если применена 100% скидка на товар и нет других скидок, то делаем этот товар бесплатным
-                if ($freeProductDiscounts->count() > 0 && $otherDiscounts->count() == 0) {
+                if ($freeProductDiscounts->count() > 0 && (!$otherDiscounts->count() || $otherDiscounts->count() === 0)) {
                     $basketItem['price'] = 0;
                 }
             }
