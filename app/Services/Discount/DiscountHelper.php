@@ -129,6 +129,9 @@ class DiscountHelper
         $discount->max_priority = $data['max_priority'] ?? false;
         $discount->summarizable_with_all = $data['summarizable_with_all'] ?? false;
         $discount->comment = $data['comment'] ?? null;
+        $discount->show_on_showcase = $data['show_on_showcase'] ?? true;
+        $discount->showcase_display_type = $data['showcase_display_type'] ?? Discount::DISPLAY_TYPE_PERCENT;
+        $discount->show_original_price = $data['show_original_price'] ?? true;
 
         $ok = $discount->save();
         if (!$ok) {

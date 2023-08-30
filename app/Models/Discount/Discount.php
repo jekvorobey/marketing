@@ -159,6 +159,9 @@ class Discount extends AbstractModel
     public const DISCOUNT_BUNDLE_ID_RELATION = 9;
     public const DISCOUNT_PROMO_CODES_RELATION = 10;
 
+    public const DISPLAY_TYPE_PERCENT = 1;
+    public const DISPLAY_TYPE_RUB = 2;
+
     /**
      * Заполняемые поля модели
      */
@@ -176,6 +179,9 @@ class Discount extends AbstractModel
         'max_priority',
         'summarizable_with_all',
         'comment',
+        'show_on_showcase',
+        'showcase_display_type',
+        'show_original_price',
     ];
 
     /** @var array */
@@ -186,6 +192,8 @@ class Discount extends AbstractModel
         'promo_code_only' => 'bool',
         'max_priority' => 'bool',
         'summarizable_with_all' => 'bool',
+        'show_on_showcase' => 'bool',
+        'show_original_price' => 'bool',
     ];
 
     /** Индикатор, обозначающий что связи были обновлены. Нужен для вызова переиндесации в pim */
