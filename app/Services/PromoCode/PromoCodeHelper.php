@@ -50,7 +50,7 @@ class PromoCodeHelper
             throw new HttpException(400, 'PromoCode code error');
         }
 
-        $builder = PromoCode::caseSensitiveCode($data['code']);
+        $builder = PromoCode::query()->where('code', $data['code']);
         if (isset($data['id'])) {
             $builder->where('id', '!=', $data['id']);
         }

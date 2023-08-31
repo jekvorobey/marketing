@@ -182,7 +182,8 @@ class PromoCodeController extends Controller
         $data = $this->validate(request(), [
             'code' => 'required|string|max:32',
         ]);
-        $item = PromoCode::caseSensitiveCode($data['code'])
+        $item = PromoCode::query()
+            ->where('code', $data['code'])
             ->where(function ($query) {
                 $query->whereNull('start_date')
                     ->orWhere('start_date', '<=', now());
@@ -206,12 +207,12 @@ class PromoCodeController extends Controller
      */
     public function isCodeUnique(Request $request)
     {
-        $data = $this->validate(request(), [
+        $data = $this->validate($request, [
             'code' => 'required|string|max:32',
         ]);
 
         return response()->json([
-            'success' => !PromoCode::caseSensitiveCode($data['code'])->exists(),
+            'success' => !PromoCode::where('code', $data['code'])->exists(),
         ]);
     }
 
@@ -255,7 +256,11 @@ class PromoCodeController extends Controller
                     $query->where('name', 'LIKE', "%$value%");
                     break;
                 case 'code':
-                    $query->caseSensitiveCode($value);
+                    if (is_array($value)) {
+                        $query->whereIn($key, $value);
+                    } else {
+                        $query->where($key, $value);
+                    }
                     break;
                 case 'discounts':
                     $query->whereHas('discounts', fn ($q) => $q->whereIn('discounts.id', Arr::wrap($value)));
