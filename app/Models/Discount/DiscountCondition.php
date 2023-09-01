@@ -278,7 +278,9 @@ class DiscountCondition extends AbstractModel
             }
         });
 
-        self::deleted(function (DiscountCondition $item) {
+
+        self::deleted(function (DiscountCondition $item)
+        {
             if ($item->type !== self::DISCOUNT_SYNERGY) {
                 return;
             }
@@ -294,6 +296,7 @@ class DiscountCondition extends AbstractModel
             /** @var DiscountCondition $condition */
             foreach ($conditions as $condition) {
                 $synergy = $condition->condition[DiscountCondition::FIELD_SYNERGY];
+
                 if (($key = array_search($item->discount_id, $synergy)) !== false) {
                     unset($synergy[$key]);
                     $synergy = array_values($synergy);
