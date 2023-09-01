@@ -62,6 +62,7 @@ class InputCalculator
     /** @var Collection|CategoryDto[] */
     private static $allCategories;
     private ?int $regionId = null;
+    private static Collection $offersCache;
 
     /**
      * InputPriceCalculator constructor.
@@ -238,8 +239,7 @@ class InputCalculator
 
             /** @var Price $basePrice */
             $basePrice = $prices->get($offerId);
-            $priceByRole = ($basePrice && $basePrice->pricesByRoles) ?
-                $basePrice->pricesByRoles->filter(fn($tmpPrice) => $tmpPrice->role == $this->roleId)->first() : null;
+            $priceByRole = $basePrice?->pricesByRoles->filter(fn($tmpPrice) => $tmpPrice->role == $this->roleId)->first();
 
             $currentPrice = $priceByRole->price ?? $basePrice->price ?? null;
 
@@ -273,15 +273,25 @@ class InputCalculator
      */
     protected function loadOffers(array $offersIds): Collection
     {
-        /** @var OfferService $offerService */
-        $offerService = resolve(OfferService::class);
-        $query = $offerService->newQuery()
-            ->setFilter('id', $offersIds)
-            ->include(ProductDto::entity())
-            ->addFields(OfferDto::entity(), 'id', 'product_id', 'merchant_id', 'ticket_type_id')
-            ->addFields(ProductDto::entity(), 'id', 'category_id', 'brand_id');
+        if (!isset(static::$offersCache)) {
+            static::$offersCache = collect();
+        }
 
-        return $offerService->offers($query)->keyBy('id');
+        $offersIds = array_diff($offersIds, self::$offersCache->keys()->toArray());
+
+        if ($offersIds) {
+            /** @var OfferService $offerService */
+            $offerService = resolve(OfferService::class);
+            $query = $offerService->newQuery()
+                ->setFilter('id', $offersIds)
+                ->include(ProductDto::entity())
+                ->addFields(OfferDto::entity(), 'id', 'product_id', 'merchant_id', 'ticket_type_id')
+                ->addFields(ProductDto::entity(), 'id', 'category_id', 'brand_id');
+
+            self::$offersCache = self::$offersCache->union($offerService->offers($query)->keyBy('id'));
+        }
+
+        return self::$offersCache;
     }
 
     /**
