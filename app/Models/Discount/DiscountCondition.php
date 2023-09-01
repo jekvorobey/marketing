@@ -289,7 +289,7 @@ class DiscountCondition extends AbstractModel
                 ->where('type', self::DISCOUNT_SYNERGY)
                 ->whereJsonContains('condition->synergy', $item->discount_id)
                 ->orWhere(function ($builder) use ($item) {
-                   return $builder->whereJsonContains('condition->synergy', "{$item->discount_id}");
+                    return $builder->whereJsonContains('condition->synergy', "{$item->discount_id}");
                 })
                 ->get();
 
