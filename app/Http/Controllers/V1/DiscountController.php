@@ -151,7 +151,7 @@ class DiscountController extends Controller
             'comment' => 'string|nullable',
             'promoCodes' => 'array|required_if:promo_code_only,true',
             'show_on_showcase' => 'boolean|required',
-            'showcase_display_type' => 'numeric|required_if:show_on_showcase,true',
+            'showcase_value_type' => 'numeric|required_if:show_on_showcase,true',
             'show_original_price' => 'boolean|required',
         ]);
 
@@ -213,7 +213,7 @@ class DiscountController extends Controller
                 'promoCodes' => 'array|required_if:promo_code_only,true',
                 'promo_code_only' => 'boolean|required',
                 'show_on_showcase' => 'boolean|required',
-                'showcase_display_type' => 'numeric|required_if:show_on_showcase,true',
+                'showcase_value_type' => 'numeric|required_if:show_on_showcase,true',
                 'show_original_price' => 'boolean|required',
             ]);
 

@@ -159,9 +159,6 @@ class Discount extends AbstractModel
     public const DISCOUNT_BUNDLE_ID_RELATION = 9;
     public const DISCOUNT_PROMO_CODES_RELATION = 10;
 
-    public const DISPLAY_TYPE_PERCENT = 1;
-    public const DISPLAY_TYPE_RUB = 2;
-
     /**
      * Заполняемые поля модели
      */
@@ -180,7 +177,7 @@ class Discount extends AbstractModel
         'summarizable_with_all',
         'comment',
         'show_on_showcase',
-        'showcase_display_type',
+        'showcase_value_type',
         'show_original_price',
     ];
 

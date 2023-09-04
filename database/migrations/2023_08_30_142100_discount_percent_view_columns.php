@@ -16,7 +16,7 @@ return new class extends Migration
     {
         Schema::table('discounts', function (Blueprint $table) {
             $table->boolean('show_on_showcase')->default(true);
-            $table->integer('showcase_display_type')->default(Discount::DISPLAY_TYPE_PERCENT);
+            $table->integer('showcase_value_type')->default(Discount::DISCOUNT_VALUE_TYPE_PERCENT);
             $table->boolean('show_original_price')->default(true);
         });
     }
@@ -30,7 +30,7 @@ return new class extends Migration
     {
         Schema::table('discounts', function (Blueprint $table) {
             $table->dropColumn('show_on_showcase');
-            $table->dropColumn('showcase_display_type');
+            $table->dropColumn('showcase_value_type');
             $table->dropColumn('show_original_price');
         });
     }
