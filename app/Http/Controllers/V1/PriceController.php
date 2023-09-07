@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\DB;
 use Pim\Core\PimException;
 use Pim\Dto\Offer\OfferDto;
 use Pim\Services\OfferService\OfferService;
+use Pim\Services\SearchService\SearchService;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -296,6 +297,10 @@ class PriceController extends Controller
             } catch (PimException) {
             }
         }
+        
+        /** @var SearchService $searchService */
+        $searchService = resolve(SearchService::class);
+        $searchService->markForIndexByMerchant($merchantId);
 
         return response('', 204);
     }
