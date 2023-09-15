@@ -8,7 +8,7 @@ RUN chmod 600 ~/.ssh/*
 
 RUN composer install --no-interaction --no-progress --prefer-dist --no-scripts --optimize-autoloader --ignore-platform-reqs --no-dev
 
-FROM registry.ibt.ru:5050/php82:1.2
+FROM registry.ibt.ru:5050/php82:1.3
 
 WORKDIR /var/www
 
