@@ -16,6 +16,7 @@ use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationSe
  * App\Models\Discount\Discount
  *
  * @property int $discount_id
+ * @property int $discount_condition_group_id
  * @property int $type
  * @property array $condition
  * @property-read Discount $discount

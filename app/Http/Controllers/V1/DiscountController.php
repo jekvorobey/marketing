@@ -373,8 +373,11 @@ class DiscountController extends Controller
                 case Discount::DISCOUNT_USER_ROLE_RELATION:
                     $query->with('roles');
                     break;
-                case Discount::DISCOUNT_CONDITION_RELATION:
+                case Discount::DISCOUNT_CONDITION_RELATION: //deprecated
                     $query->with('conditions');
+                    break;
+                case Discount::DISCOUNT_CONDITION_GROUP_RELATION:
+                    $query->with('conditionGroups.conditions');
                     break;
                 case Discount::DISCOUNT_PUBLIC_EVENT_RELATION:
                     $query->with('publicEvents');

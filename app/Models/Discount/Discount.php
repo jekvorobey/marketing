@@ -48,6 +48,7 @@ use Pim\Core\PimException;
  * @property-read Collection|DiscountUserRole[] $roles
  * @property-read Collection|DiscountUserRole[] $segments
  * @property-read Collection|DiscountCondition[] $conditions
+ * @property-read Collection|DiscountConditionGroup[] $conditionGroups
  * @property-read Collection|DiscountPublicEvent[] $publicEvents
  * @property-read Collection|DiscountBundle[] $bundles
  * @property-read Collection|PromoCode[] $promoCodes
@@ -153,11 +154,12 @@ class Discount extends AbstractModel
     public const DISCOUNT_CATEGORY_RELATION = 3;
     public const DISCOUNT_SEGMENT_RELATION = 4;
     public const DISCOUNT_USER_ROLE_RELATION = 5;
-    public const DISCOUNT_CONDITION_RELATION = 6;
+    public const DISCOUNT_CONDITION_RELATION = 6; //deprecated
     public const DISCOUNT_BUNDLE_RELATION = 7;
     public const DISCOUNT_PUBLIC_EVENT_RELATION = 8;
     public const DISCOUNT_BUNDLE_ID_RELATION = 9;
     public const DISCOUNT_PROMO_CODES_RELATION = 10;
+    public const DISCOUNT_CONDITION_GROUP_RELATION = 11;
 
     /**
      * Заполняемые поля модели
@@ -315,7 +317,8 @@ class Discount extends AbstractModel
             Discount::DISCOUNT_CATEGORY_RELATION => ['class' => DiscountCategory::class, 'items' => $this->categories],
             Discount::DISCOUNT_SEGMENT_RELATION => ['class' => DiscountSegment::class, 'items' => $this->segments],
             Discount::DISCOUNT_USER_ROLE_RELATION => ['class' => DiscountUserRole::class, 'items' => $this->roles],
-            Discount::DISCOUNT_CONDITION_RELATION => ['class' => DiscountCondition::class, 'items' => $this->conditions],
+            Discount::DISCOUNT_CONDITION_RELATION => ['class' => DiscountCondition::class, 'items' => $this->conditions], //deprecated
+            Discount::DISCOUNT_CONDITION_GROUP_RELATION => ['class' => DiscountConditionGroup::class, 'items' => $this->conditionGroups],
             Discount::DISCOUNT_BUNDLE_RELATION => ['class' => BundleItem::class, 'items' => $this->bundleItems],
             Discount::DISCOUNT_PUBLIC_EVENT_RELATION => ['class' => DiscountPublicEvent::class, 'items' => $this->publicEvents],
             Discount::DISCOUNT_BUNDLE_ID_RELATION => ['class' => DiscountBundle::class, 'items' => $this->bundles],
@@ -359,6 +362,11 @@ class Discount extends AbstractModel
     public function conditions(): HasMany
     {
         return $this->hasMany(DiscountCondition::class, 'discount_id');
+    }
+
+    public function conditionGroups(): HasMany
+    {
+        return $this->hasMany(DiscountConditionGroup::class);
     }
 
     public function publicEvents(): HasMany

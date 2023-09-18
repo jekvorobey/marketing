@@ -4,6 +4,8 @@ namespace App\Services\Discount;
 
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountBrand;
+use App\Models\Discount\DiscountCondition;
+use App\Models\Discount\DiscountConditionGroup;
 use App\Models\Discount\DiscountOffer;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
@@ -139,12 +141,23 @@ class DiscountHelper
         }
 
         $relations = $data['relations'] ?? [];
+
         foreach ($discount->getMappingRelations() as $relation => $value) {
-            collect($relations[$relation] ?? [])->each(function (array $item) use ($discount, $value) {
+            collect($relations[$relation] ?? [])->each(function (array $item) use ($discount, $value, $relation) {
                 $item['discount_id'] = $discount->id;
                 /** @var Model $model */
                 $model = new $value['class']($item);
                 $model->save();
+
+                if ($relation === Discount::DISCOUNT_CONDITION_GROUP_RELATION) {
+                    $conditions = $item['conditions'] ?? [];
+                    foreach ($conditions as $condition) {
+                        $condition['discount_condition_group_id'] = $model->id;
+                        $condition['discount_id'] = $discount->id; //TODO: убрать потом
+                        /** @var DiscountConditionGroup $model */
+                        $model->conditions()->create($condition);
+                    }
+                }
             });
         }
 
