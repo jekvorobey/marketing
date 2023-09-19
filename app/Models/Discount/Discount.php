@@ -40,6 +40,7 @@ use Pim\Core\PimException;
  * @property bool $max_priority
  * @property bool $summarizable_with_all
  * @property string $comment
+ * @property int $conditions_logical_operator
  *
  * @property-read Collection|DiscountOffer[] $offers
  * @property-read Collection|BundleItem[] $bundleItems
