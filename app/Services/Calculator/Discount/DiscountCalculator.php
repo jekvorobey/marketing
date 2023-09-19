@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Class DiscountCalculator
  * @package App\Services\Calculator\Discount
+ * @test Tests\Feature\DiscountCalculatorTest
  */
 class DiscountCalculator extends AbstractCalculator
 {

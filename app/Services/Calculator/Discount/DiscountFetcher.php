@@ -82,9 +82,9 @@ class DiscountFetcher
         $categories = InputCalculator::getAllCategories();
         $this->discounts->each(function (Discount $discount) use ($categories) {
             $filteredCategories = $discount->categories->filter(function ($discountCategory) use ($categories) {
-                $categoryLeaf = $categories[$discountCategory->category_id];
+                $categoryLeaf = $categories[$discountCategory->category_id] ?? null;
                 foreach ($this->input->categories->keys() as $categoryId) {
-                    if ($categoryLeaf->isSelfOrAncestorOf($categories[$categoryId])) {
+                    if ($categoryLeaf?->isSelfOrAncestorOf($categories[$categoryId])) {
                         return true;
                     }
                 }
