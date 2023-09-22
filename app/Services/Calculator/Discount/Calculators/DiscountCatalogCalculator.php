@@ -4,7 +4,7 @@ namespace App\Services\Calculator\Discount\Calculators;
 
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountCondition;
-use App\Services\Calculator\Discount\Checker\DiscountConditionChecker;
+use App\Services\Calculator\Discount\Checker\Resolvers\DiscountConditionCheckerResolver;
 use App\Services\Calculator\Discount\DiscountFetcher;
 
 class DiscountCatalogCalculator extends DiscountCalculator
@@ -36,7 +36,7 @@ class DiscountCatalogCalculator extends DiscountCalculator
     protected function getExceptingConditionTypes(): array
     {
         return array_diff(
-            DiscountConditionChecker::TYPES,
+            DiscountConditionCheckerResolver::TYPES,
             [
                 DiscountCondition::DISCOUNT_SYNERGY,
                 DiscountCondition::MERCHANT,

@@ -11,7 +11,7 @@ trait WithExtraParams
      * @param mixed $value
      * @return $this
      */
-    public function addExtraParam(string $key, mixed $value): static
+    public function addExtraParam(string $key, mixed $value): self
     {
         $this->extraParams[$key] = $value;
         return $this;
@@ -31,7 +31,7 @@ trait WithExtraParams
      * @param array $extraParams
      * @return $this
      */
-    public function setExtraParams(array $extraParams): static
+    public function setExtraParams(array $extraParams): self
     {
         $this->extraParams = $extraParams;
         return $this;

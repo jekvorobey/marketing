@@ -15,4 +15,26 @@ abstract class AbstractConditionChecker implements CheckerInterface
         protected InputCalculator $input,
         protected DiscountCondition $condition
     ) {}
+
+    /**
+     * @param InputCalculator $input
+     * @return $this
+     */
+    public function setInput(InputCalculator $input): AbstractConditionChecker
+    {
+        $this->input = $input;
+        return $this;
+    }
+
+    /**
+     * @param DiscountCondition $condition
+     * @return $this
+     */
+    public function setCondition(DiscountCondition $condition): AbstractConditionChecker
+    {
+        $this->condition = $condition;
+        return $this;
+    }
+
+
 }

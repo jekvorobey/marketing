@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Calculator\Discount\Checker;
+namespace App\Services\Calculator\Discount\Checker\Resolvers;
 
 use App\Models\Discount\LogicalOperator;
 use App\Services\Calculator\Discount\Checker\LogicalOperatorCheckers\AndChecker;
@@ -14,6 +14,10 @@ use App\Services\Calculator\Discount\Checker\LogicalOperatorCheckers\OrNoChecker
  */
 class LogicalOperatorCheckerResolver
 {
+    /**
+     * @param int $operator
+     * @return LogicalOperatorCheckerInterface
+     */
     public function resolve(int $operator): LogicalOperatorCheckerInterface
     {
         return match($operator) {

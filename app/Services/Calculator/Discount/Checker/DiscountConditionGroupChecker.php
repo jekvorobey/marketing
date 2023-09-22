@@ -4,6 +4,8 @@ namespace App\Services\Calculator\Discount\Checker;
 
 use App\Models\Discount\DiscountCondition;
 use App\Models\Discount\DiscountConditionGroup;
+use App\Services\Calculator\Discount\Checker\Resolvers\DiscountConditionCheckerResolver;
+use App\Services\Calculator\Discount\Checker\Resolvers\LogicalOperatorCheckerResolver;
 use App\Services\Calculator\Discount\Checker\Traits\WithExtraParams;
 use App\Services\Calculator\InputCalculator;
 use Illuminate\Support\Collection;
@@ -54,8 +56,12 @@ class DiscountConditionGroupChecker implements CheckerInterface
         $checkers = [];
 
         foreach ($this->getFilteredConditions() as $condition) {
-            $checker = new DiscountConditionChecker($this->input, $condition);
-            $checker->setExtraParams($this->extraParams);
+            $checker = app(DiscountConditionCheckerResolver::class)
+                ->resolve($condition->type)
+                ->setInput($this->input)
+                ->setCondition($condition)
+                ->setExtraParams($this->extraParams);
+
             $checkers[] = $checker;
         }
 

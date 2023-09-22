@@ -3,6 +3,7 @@
 namespace App\Services\Calculator\Discount\Checker;
 
 use App\Models\Discount\Discount;
+use App\Services\Calculator\Discount\Checker\Resolvers\LogicalOperatorCheckerResolver;
 use App\Services\Calculator\Discount\Checker\Traits\WithExtraParams;
 use App\Services\Calculator\InputCalculator;
 
