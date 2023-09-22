@@ -82,7 +82,7 @@ class InputParams
             : (new RestQuery())->include('product');
 
         $offers = app(OfferService::class)->offers(
-            $query->pageNumber(rand(1, 20), $this->basketItemsCount)
+            $query->pageNumber(1, $this->basketItemsCount)
         );
 
         return $offers->map(fn (OfferDto $offer) => new BasketItem(

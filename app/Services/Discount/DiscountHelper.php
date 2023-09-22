@@ -153,7 +153,7 @@ class DiscountHelper
                     $conditions = $item['conditions'] ?? [];
                     foreach ($conditions as $condition) {
                         $condition['discount_condition_group_id'] = $model->id;
-                        $condition['discount_id'] = $discount->id; //TODO: убрать потом
+                        $condition['discount_id'] = $discount->id; //TODO: убрать потом, @deprecated
                         /** @var DiscountConditionGroup $model */
                         $model->conditions()->create($condition);
                     }

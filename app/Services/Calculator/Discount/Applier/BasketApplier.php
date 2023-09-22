@@ -5,6 +5,7 @@ namespace App\Services\Calculator\Discount\Applier;
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountCondition;
 use App\Services\Calculator\CalculatorChangePrice;
+use App\Services\Calculator\Discount\DiscountConditionStore;
 use App\Services\Calculator\Discount\Checker\DifferentProductsCountChecker;
 use Illuminate\Support\Collection;
 
@@ -40,7 +41,11 @@ class BasketApplier extends AbstractApplier
         # Текущее значение скидки (в рублях, без учета скидок, которые могли применяться ранее)
         $currentDiscountValue = 0;
         # Номинальное значение скидки (в рублях)
-        $discountValue = $calculatorChangePrice->calculateDiscountByType($priceOrders, $this->getDiscountValue($discount), $discount->value_type);
+        $discountValue = $calculatorChangePrice->calculateDiscountByType(
+            $priceOrders,
+            $this->getDiscountValue($discount),
+            $discount->value_type
+        );
         # Скидка не может быть больше, чем стоимость всей корзины
         $discountValue = min($discountValue, $priceOrders);
 
@@ -126,8 +131,13 @@ class BasketApplier extends AbstractApplier
     {
         $discountValue = $discount->value;
 
+        if (DiscountConditionStore::isEmpty()) {
+            return $discountValue;
+        }
+
         //применяем дополнительные скидки из условий
-        foreach ($discount->relevantConditionsWithAdditionalDiscount as $condition) {
+        /** @var DiscountCondition $condition */
+        foreach (DiscountConditionStore::getConditions() as $condition) {
             $discountValue += $condition->getAdditionalDiscount();
         }
 

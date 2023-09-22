@@ -484,4 +484,25 @@ class InputCalculator
 
         return max($sum, $max);
     }
+
+
+    /**
+     * Установить текущей выбранную доставку
+     * @return void
+     */
+    public function setSelectedDelivery(): void
+    {
+        $this->deliveries['current'] = $this->deliveries['items']
+            ->filter(fn ($item) => $item['selected'])
+            ->first();
+    }
+
+    /**
+     * Есть ли доставки
+     * @return bool
+     */
+    public function hasDeliveries(): bool
+    {
+        return !empty($this->deliveries['items']);
+    }
 }

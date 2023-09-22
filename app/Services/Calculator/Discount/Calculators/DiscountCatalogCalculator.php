@@ -1,9 +1,11 @@
 <?php
 
-namespace App\Services\Calculator\Discount;
+namespace App\Services\Calculator\Discount\Calculators;
 
 use App\Models\Discount\Discount;
-use App\Models\Discount\DiscountCondition as DiscountConditionModel;
+use App\Models\Discount\DiscountCondition;
+use App\Services\Calculator\Discount\Checker\DiscountConditionChecker;
+use App\Services\Calculator\Discount\DiscountFetcher;
 
 class DiscountCatalogCalculator extends DiscountCalculator
 {
@@ -18,17 +20,27 @@ class DiscountCatalogCalculator extends DiscountCalculator
         Discount::DISCOUNT_TYPE_ANY_MASTERCLASS,
     ];
 
+    /**
+     * @return void
+     */
     protected function fetchDiscounts(): void
     {
         $discountFetcher = new DiscountFetcher($this->input);
         $this->discounts = $discountFetcher->getDiscounts(self::DISCOUNT_TYPES_OF_CATALOG);
     }
 
-    protected function getCheckingConditions(): array
+    /**
+     * Исключить все, кроме DISCOUNT_SYNERGY и MERCHANT
+     * @return array
+     */
+    protected function getExceptingConditionTypes(): array
     {
-        return [
-            DiscountConditionModel::DISCOUNT_SYNERGY,
-            DiscountConditionModel::MERCHANT,
-        ];
+        return array_diff(
+            DiscountConditionChecker::TYPES,
+            [
+                DiscountCondition::DISCOUNT_SYNERGY,
+                DiscountCondition::MERCHANT,
+            ]
+        );
     }
 }

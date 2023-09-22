@@ -3,7 +3,7 @@
 namespace Tests\Feature\DiscountCalculator;
 
 use App\Models\Discount\Discount;
-use App\Services\Calculator\Discount\DiscountCalculator;
+use App\Services\Calculator\Discount\Calculators\DiscountCalculator;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
 use Illuminate\Foundation\Testing\DatabaseTransactions;

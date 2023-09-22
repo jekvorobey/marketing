@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Calculator\Discount;
+namespace App\Services\Calculator\Discount\Calculators;
 
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountCondition;
@@ -9,14 +9,12 @@ use App\Services\Calculator\AbstractCalculator;
 use App\Services\Calculator\Discount\Applier\BasketApplier;
 use App\Services\Calculator\Discount\Applier\DeliveryApplier;
 use App\Services\Calculator\Discount\Applier\OfferApplier;
-use App\Services\Calculator\Discount\Checker\BaseDiscountConditionChecker;
-use App\Services\Calculator\Discount\Checker\DifferentProductsCountChecker;
-use App\Services\Calculator\Discount\Checker\DiscountConditionChecker;
 use App\Services\Calculator\Discount\Checker\DiscountChecker;
+use App\Services\Calculator\Discount\DiscountFetcher;
+use App\Services\Calculator\Discount\DiscountOutput;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Class DiscountCalculator
@@ -83,15 +81,11 @@ class DiscountCalculator extends AbstractCalculator
 
         $this->fetchDiscounts();
 
-        if (!empty($this->input->deliveries['items'])) {
+        if ($this->input->hasDeliveries()) {
             if (!$this->input->freeDelivery) {
                 $this->filter()->sort()->apply()->rollback();
             }
-
-            $this->input->deliveries['current'] = $this->input
-                ->deliveries['items']
-                ->filter(fn ($item) => $item['selected'])
-                ->first();
+            $this->input->setSelectedDelivery();
         }
 
         /** Считаются окончательные скидки + бонусы */
@@ -108,27 +102,10 @@ class DiscountCalculator extends AbstractCalculator
         $this->possibleDiscounts = $this->discounts
             ->filter(function (Discount $discount) {
                 $checker = new DiscountChecker($this->input, $discount);
+                $checker->exceptConditionTypes($this->getExceptingConditionTypes());
                 return $this->checkDiscount($discount) && $checker->check();
             })
             ->values();
-
-//        $conditionCheckers = [
-//            new DiscountConditionChecker($this->input),
-//            new DifferentProductsCountChecker($this->input),
-//        ];
-//
-//        foreach ($conditionCheckers as $conditionChecker) {
-//            /** @var BaseDiscountConditionChecker $conditionChecker */
-//            $conditionChecker->setTypes($this->getCheckingConditions());
-//            $this->possibleDiscounts = $this->possibleDiscounts
-//                ->filter(function (Discount $discount) use ($conditionChecker) {
-//                    if ($discount->conditionGroups->isNotEmpty()) {
-//                        return $conditionChecker->check($discount);
-//                    }
-//
-//                    return true;
-//                })->values();
-//        }
 
         return $this->compileSynegry();
     }
@@ -145,9 +122,10 @@ class DiscountCalculator extends AbstractCalculator
     {
         /** @var Collection|Discount[] $discounts */
         $discounts = $this->possibleDiscounts->sortBy(
-            fn(Discount $discount) => $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB
+            fn (Discount $discount) => $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB
         );
         $promocodeDiscounts = $this->input->promoCodeDiscounts;
+
         if ($promocodeDiscounts->isNotEmpty()) {
             [$appliedPromocodeDiscounts, $discounts] = $discounts->partition(
                 fn(Discount $discount) => $promocodeDiscounts->pluck('id')->contains($discount->id)
@@ -160,7 +138,7 @@ class DiscountCalculator extends AbstractCalculator
         );
         [$cartTotalDiscounts, $discounts] = $discounts->partition('type', Discount::DISCOUNT_TYPE_CART_TOTAL);
         [$nonCatalogDiscounts, $catalogDiscounts] = $discounts->partition(function (Discount $discount) {
-            return $discount->conditions->where('type', '!=', DiscountCondition::DISCOUNT_SYNERGY)->isNotEmpty();
+            return $discount->conditions->where('type', '!=', DiscountConditionModel::DISCOUNT_SYNERGY)->isNotEmpty();
         });
 
         $this->possibleDiscounts = $bundleDiscounts
@@ -190,6 +168,8 @@ class DiscountCalculator extends AbstractCalculator
         foreach ($this->possibleDiscounts as $discount) {
             $this->applyDiscount($discount);
         }
+
+        $this->applyDeliveryDiscount();
 
         return $this->processFreeProducts();
     }
@@ -222,17 +202,15 @@ class DiscountCalculator extends AbstractCalculator
             default => false
         };
 
-        // Добавляем все скидки к примененным.
-        // Даже те, что не повлияли на цену, т.к. они тоже участвовали в подсчете общей скидки
-        $this->appliedDiscounts->put($discount->id, [
-            'discountId' => $discount->id,
-            'change' => $change,
-            'conditions' => $discount->conditions->pluck('type') ?? collect(),
-            'summarizable_with_all' => $discount->summarizable_with_all,
-            'max_priority' => $discount->max_priority,
-        ]);
+        $change = $change ?? false;
 
-        return $change ?? false;
+        /*
+         * Добавляем все скидку к примененным.
+         * Даже если не повлияла на цену, т.к. она тоже участвовала в подсчете общей скидки
+         */
+        $this->addDiscountToApplied($discount, $change);
+
+        return $change;
     }
 
     /**
@@ -360,7 +338,7 @@ class DiscountCalculator extends AbstractCalculator
             return false;
         }
 
-        /**
+        /*
          * Считаются только возможные скидки.
          * Берем все доставки, для которых необходимо посчитать только возможную скидку,
          * по очереди применяем скидки (откатывая предыдущие изменения, т.к. нельзя выбрать сразу две доставки),
@@ -411,7 +389,7 @@ class DiscountCalculator extends AbstractCalculator
     }
 
     /**
-     * На местеркласс
+     * На местер-класс
      * @param Discount $discount
      * @return float|null
      */
@@ -443,7 +421,7 @@ class DiscountCalculator extends AbstractCalculator
     }
 
     /**
-     * Применит скидку к офферам
+     * Применяет скидку к офферам
      * @param Discount $discount
      * @param Collection $offerIds
      * @return float|null
@@ -457,6 +435,7 @@ class DiscountCalculator extends AbstractCalculator
         );
         $offerApplier->setOfferIds($offerIds);
         $change = $offerApplier->apply($discount);
+
         $this->basketItemsByDiscounts = $offerApplier->getModifiedBasketItemsByDiscounts();
         $this->input->basketItems = $offerApplier->getModifiedInputBasketItems();
 
@@ -464,7 +443,57 @@ class DiscountCalculator extends AbstractCalculator
     }
 
     /**
-     * Генерирует временные DiscountCondition для скидок, которые суммируются со всеми (summarizable_with_all)
+     * @param Discount $discount
+     * @param float|false $change
+     * @return void
+     */
+    protected function addDiscountToApplied(Discount $discount, float|false $change): void
+    {
+        $this->appliedDiscounts->put($discount->id, [
+            'discountId' => $discount->id,
+            'change' => $change,
+            'conditions' => $discount->conditions->pluck('type') ?? collect(),
+            'summarizable_with_all' => $discount->summarizable_with_all,
+            'max_priority' => $discount->max_priority,
+        ]);
+    }
+
+    /**
+     * @return void
+     */
+    protected function applyDeliveryDiscount(): void
+    {
+        $deliveryDiscount = $this->discounts->firstWhere(
+            'type',
+            Discount::DISCOUNT_TYPE_DELIVERY
+        );
+
+        if ($deliveryDiscount) {
+            $this->applyDiscount($deliveryDiscount);
+        }
+    }
+
+    /**
+     * Считает размер скидки
+     * @param Discount $discount
+     * @param Collection $offerIds
+     * @return float|null
+     */
+    protected function calculateDiscountToOffersChange(Discount $discount, Collection $offerIds): ?float
+    {
+        $offerApplier = new OfferApplier(
+            $this->input,
+            $this->basketItemsByDiscounts,
+            $this->appliedDiscounts
+        );
+        $offerApplier->setOfferIds($offerIds);
+        return $offerApplier->apply($discount, true) ?? 0;
+    }
+
+
+    /**
+     * Генерирует временные DiscountCondition для скидок,
+     * которые суммируются со всеми (summarizable_with_all)
      */
     protected function compileSynegry(): self
     {
@@ -481,12 +510,12 @@ class DiscountCalculator extends AbstractCalculator
             /** @var Discount $discount */
             foreach ($otherDiscounts as $discount) {
 
-                /** @var DiscountCondition $condition */
-                $condition = $discount->conditions->firstWhere('type', DiscountCondition::DISCOUNT_SYNERGY);
+                /** @var DiscountConditionModel $condition */
+                $condition = $discount->conditions->firstWhere('type', DiscountConditionModel::DISCOUNT_SYNERGY);
 
                 if (!$condition) {
-                    $condition = new DiscountCondition();
-                    $condition->type = DiscountCondition::DISCOUNT_SYNERGY;
+                    $condition = new DiscountConditionModel();
+                    $condition->type = DiscountConditionModel::DISCOUNT_SYNERGY;
                     $discount->conditions->add($condition);
                 }
 
@@ -511,25 +540,12 @@ class DiscountCalculator extends AbstractCalculator
     }
 
     /**
-     * Условия скидок, которые должны проверяться
+     * Условия скидок, которые не должны проверяться
      */
-    protected function getCheckingConditions(): array
+    protected function getExceptingConditionTypes(): array
     {
         return [
-            DiscountConditionModel::FIRST_ORDER,
-            DiscountConditionModel::MIN_PRICE_ORDER,
-            DiscountConditionModel::MIN_PRICE_BRAND,
-            DiscountConditionModel::MIN_PRICE_CATEGORY,
-            DiscountConditionModel::EVERY_UNIT_PRODUCT,
             DiscountConditionModel::DELIVERY_METHOD,
-            DiscountConditionModel::PAY_METHOD,
-            DiscountConditionModel::REGION,
-            DiscountConditionModel::CUSTOMER,
-            DiscountConditionModel::ORDER_SEQUENCE_NUMBER,
-            DiscountConditionModel::BUNDLE,
-            DiscountConditionModel::DISCOUNT_SYNERGY,
-            DiscountConditionModel::DIFFERENT_PRODUCTS_COUNT,
-            DiscountConditionModel::MERCHANT
         ];
     }
 
@@ -750,6 +766,11 @@ class DiscountCalculator extends AbstractCalculator
         });
     }
 
+    /**
+     * Посчитать размер скидки
+     * @param Discount $discount
+     * @return float|null
+     */
     private function calcDiscountChange(Discount $discount): ?float
     {
         switch ($discount->type) {

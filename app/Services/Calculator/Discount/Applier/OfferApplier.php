@@ -10,16 +10,26 @@ class OfferApplier extends AbstractApplier
 {
     private Collection $offerIds;
 
+    /**
+     * @param Collection $offerIds
+     * @return void
+     */
     public function setOfferIds(Collection $offerIds): void
     {
         $this->offerIds = $offerIds;
     }
 
+    /**
+     * @param Discount $discount
+     * @param bool $justCalculate
+     * @return float|null
+     */
     public function apply(Discount $discount, bool $justCalculate = false): ?float
     {
-        $basketItems = $this->input->basketItems
+        $basketItems = $this->input
+            ->basketItems
             ->whereIn('offer_id', $this->offerIds->toArray())
-            ->filter(fn($basketItem) => $basketItem['qty'] > 0)     //иногда приходят запросы с qty=0 в корзине
+            ->where('qty', '>', 0)     //иногда приходят запросы с qty=0 в корзине
             ->filter(function ($basketItem) use ($discount) {
                 return $this->applicableToBasketItem($discount, $basketItem);
             });
@@ -31,6 +41,7 @@ class OfferApplier extends AbstractApplier
         $calculatorChangePrice = new CalculatorChangePrice();
         $value = $discount->value;
         $valueType = $discount->value_type;
+
         if ($discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
             $basketItems = $basketItems->where('bundle_id', $discount->id);
 
@@ -42,12 +53,14 @@ class OfferApplier extends AbstractApplier
         $hasProductQtyLimit = $discount->product_qty_limit > 0;
         $restProductQtyLimit = $discount->product_qty_limit;
         $changed = 0;
+
         foreach ($basketItems as $basketItemId => $basketItem) {
             $lowestPossiblePrice = $basketItem['product_id']
                 ? CalculatorChangePrice::LOWEST_POSSIBLE_PRICE
                 : CalculatorChangePrice::LOWEST_MASTERCLASS_PRICE;
 
-            // Если в условии на суммирование скидки было "не более x%", то переопределяем минимально возможную цену товара
+            // Если в условии на суммирование скидки было "не более x%",
+            // то переопределяем минимально возможную цену товара
             if (isset($this->maxValueByDiscount[$discount->id])) {
                 $cost = $basketItem['cost'] ?? $basketItem['price'];
                 // Получаем величину скидки, которая максимально возможна по условию
@@ -73,7 +86,13 @@ class OfferApplier extends AbstractApplier
                 $restProductQtyLimit -= $basketItem['qty'];
             }
 
-            $changedPrice = $calculatorChangePrice->changePrice($basketItem, $valueOfLimitDiscount ?? $value, $valueType, $lowestPossiblePrice, $discount);
+            $changedPrice = $calculatorChangePrice->changePrice(
+                $basketItem,
+                    $valueOfLimitDiscount ?? $value,
+                $valueType,
+                $lowestPossiblePrice,
+                $discount
+            );
 
             /**
              * @todo Этот код ломает корзину с бандлами, не понятно для чего он. Закомментил.
@@ -95,13 +114,19 @@ class OfferApplier extends AbstractApplier
                 continue;
             }
 
-            $qty = $basketItem['qty'];
-            $changed += $change * $qty;
+            $changed += $change * $basketItem['qty'];
         }
 
         return $changed;
     }
 
+    /**
+     * @param Discount $discount
+     * @param int $bundleId
+     * @param array $changedPrice
+     * @param float $changed
+     * @return array
+     */
     private function getChangedPriceForLastBundleItem(
         Discount $discount,
         int $bundleId,

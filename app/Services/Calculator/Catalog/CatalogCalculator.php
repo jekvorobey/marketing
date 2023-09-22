@@ -5,11 +5,9 @@ namespace App\Services\Calculator\Catalog;
 use App\Models\Basket\BasketItem;
 use App\Services\Calculator\AbstractCalculator;
 use App\Services\Calculator\Bonus\BonusCatalogCalculator;
-use App\Services\Calculator\Discount\DiscountCatalogCalculator;
+use App\Services\Calculator\Discount\Calculators\DiscountCatalogCalculator;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
-use Greensight\CommonMsa\Dto\RoleDto;
-use Pim\Core\PimException;
 
 /**
  * Класс для расчета скидок (цен) для отображения в каталоге
