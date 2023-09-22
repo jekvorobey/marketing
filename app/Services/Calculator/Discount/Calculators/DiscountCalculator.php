@@ -23,17 +23,14 @@ use Illuminate\Support\Collection;
  */
 class DiscountCalculator extends AbstractCalculator
 {
-    /**
-     * Скидки, которые активированы с помощью промокода
-     * @var Collection
-     */
-    protected $appliedDiscounts;
+    /** Скидки, которые активированы с помощью промокода */
+    protected Collection $appliedDiscounts;
 
-    /**
-     * Список скидок, которые можно применить (отдельно друг от друга)
-     * @var Collection
-     */
-    protected $possibleDiscounts;
+    /** Список скидок, которые можно применить (отдельно друг от друга) */
+    protected Collection $possibleDiscounts;
+
+    /** Список активных скидок */
+    protected Collection $discounts;
 
     /**
      * Офферы со скидками в формате:
@@ -47,15 +44,8 @@ class DiscountCalculator extends AbstractCalculator
      *          ...
      *      ]
      * ]
-     * @var Collection
      */
-    protected $basketItemsByDiscounts;
-
-    /**
-     * Список активных скидок
-     * @var Collection
-     */
-    protected $discounts;
+    protected Collection $basketItemsByDiscounts;
 
     /**
      * DiscountCalculator constructor.
@@ -88,7 +78,7 @@ class DiscountCalculator extends AbstractCalculator
             $this->input->setSelectedDelivery();
         }
 
-        /** Считаются окончательные скидки + бонусы */
+        // Считаются окончательные скидки + бонусы
         $this->filter()->sort()->apply();
 
         $this->getDiscountOutput();
@@ -96,6 +86,7 @@ class DiscountCalculator extends AbstractCalculator
 
     /**
      * Фильтрует все актуальные скидки и оставляет только те, которые можно применить
+     * @return $this
      */
     protected function filter(): self
     {
@@ -103,7 +94,7 @@ class DiscountCalculator extends AbstractCalculator
             ->filter(function (Discount $discount) {
                 $checker = new DiscountChecker($this->input, $discount);
                 $checker->exceptConditionTypes($this->getExceptingConditionTypes());
-                return $this->checkDiscount($discount) && $checker->check();
+                return $checker->check();
             })
             ->values();
 
@@ -159,8 +150,10 @@ class DiscountCalculator extends AbstractCalculator
         return $this;
     }
 
+
     /**
      * Применяет скидки
+     * @return $this
      */
     protected function apply(): self
     {
@@ -389,7 +382,7 @@ class DiscountCalculator extends AbstractCalculator
     }
 
     /**
-     * На местер-класс
+     * На мастер-класс
      * @param Discount $discount
      * @return float|null
      */
@@ -443,6 +436,7 @@ class DiscountCalculator extends AbstractCalculator
     }
 
     /**
+     * Добавить скидку к примененным
      * @param Discount $discount
      * @param float|false $change
      * @return void
@@ -459,6 +453,7 @@ class DiscountCalculator extends AbstractCalculator
     }
 
     /**
+     * Применить скидку на доставку
      * @return void
      */
     protected function applyDeliveryDiscount(): void
@@ -501,6 +496,7 @@ class DiscountCalculator extends AbstractCalculator
             $summarizableWithAll,
             $otherDiscounts
         ] = $this->possibleDiscounts->partition('summarizable_with_all', true);
+
         if ($summarizableWithAll->count() == 0) {
             return $this;
         }
@@ -529,18 +525,8 @@ class DiscountCalculator extends AbstractCalculator
     }
 
     /**
-     * Можно ли применить данную скидку (независимо от других скидок)
-     */
-    protected function checkDiscount(Discount $discount): bool
-    {
-        //TODO: проверка сегментов и ролей
-        return $this->checkType($discount)
-            && $this->checkCustomerRole($discount)
-            && $this->checkSegment($discount);
-    }
-
-    /**
      * Условия скидок, которые не должны проверяться
+     * @return array
      */
     protected function getExceptingConditionTypes(): array
     {
@@ -550,107 +536,25 @@ class DiscountCalculator extends AbstractCalculator
     }
 
     /**
-     * Проверяет все необходимые условия по свойству "Тип скидки"
+     * @return bool
      */
-    protected function checkType(Discount $discount): bool
-    {
-        return match ($discount->type) {
-            Discount::DISCOUNT_TYPE_OFFER => $this->checkOffers($discount),
-            Discount::DISCOUNT_TYPE_BUNDLE_OFFER,
-            Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS => $this->checkBundles($discount),
-            Discount::DISCOUNT_TYPE_BRAND => $this->checkBrands($discount),
-            Discount::DISCOUNT_TYPE_CATEGORY => $this->checkCategories($discount),
-            Discount::DISCOUNT_TYPE_DELIVERY => isset($this->input->deliveries['current']['price']),
-            Discount::DISCOUNT_TYPE_MASTERCLASS => $this->input->ticketTypeIds->isNotEmpty()
-                && $this->checkPublicEvents($discount),
-            Discount::DISCOUNT_TYPE_CART_TOTAL,
-            Discount::DISCOUNT_TYPE_ANY_OFFER,
-            Discount::DISCOUNT_TYPE_ANY_BUNDLE,
-            Discount::DISCOUNT_TYPE_ANY_BRAND,
-            Discount::DISCOUNT_TYPE_ANY_CATEGORY,
-            Discount::DISCOUNT_TYPE_ANY_MASTERCLASS => $this->input->basketItems->isNotEmpty(),
-            default => false,
-        };
-    }
-
-    /**
-     * Проверяет доступность применения скидки на офферы
-     */
-    protected function checkOffers(Discount $discount): bool
-    {
-        return $discount->type === Discount::DISCOUNT_TYPE_OFFER
-            && $discount->offers->where('except', '=', false)->isNotEmpty();
-    }
-
-    /**
-     * Проверяет доступность применения скидок-бандлов
-     */
-    protected function checkBundles(Discount $discount): bool
-    {
-        return in_array($discount->type, [
-                Discount::DISCOUNT_TYPE_BUNDLE_OFFER,
-                Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS
-            ]) && $discount->bundleItems->isNotEmpty();
-    }
-
-    /**
-     * Проверяет доступность применения скидки на бренды
-     */
-    protected function checkBrands(Discount $discount): bool
-    {
-        return $discount->type === Discount::DISCOUNT_TYPE_BRAND
-            && $discount->brands->filter(fn($brand) => !$brand['except'])->isNotEmpty();
-    }
-
-    /**
-     * Проверяет доступность применения скидки на категории
-     */
-    protected function checkCategories(Discount $discount): bool
-    {
-        return $discount->type === Discount::DISCOUNT_TYPE_CATEGORY
-            && $discount->categories->isNotEmpty();
-    }
-
-    /**
-     * Проверяет доступность применения скидки на мастер-классы
-     */
-    protected function checkPublicEvents(Discount $discount): bool
-    {
-        return $discount->type === Discount::DISCOUNT_TYPE_MASTERCLASS
-            && $discount->publicEvents->isNotEmpty();
-    }
-
-    protected function checkCustomerRole(Discount $discount): bool
-    {
-        return $discount->roles->pluck('role_id')->isEmpty() ||
-            (
-                isset($this->input->customer['roles'])
-                && $discount->roles->pluck('role_id')->intersect($this->input->customer['roles'])->isNotEmpty()
-            );
-    }
-
-    protected function checkSegment(Discount $discount): bool
-    {
-        // Если отсутствуют условия скидки на сегмент
-        if ($discount->segments->pluck('segment_id')->isEmpty()) {
-            return true;
-        }
-
-        return isset($this->input->customer['segment'])
-            && $discount->segments->contains('segment_id', $this->input->customer['segment']);
-    }
-
     protected function needCalculate(): bool
     {
         return $this->input->payment['isNeedCalculate'];
     }
 
+    /**
+     * @return void
+     */
     protected function fetchDiscounts(): void
     {
         $discountFetcher = new DiscountFetcher($this->input);
         $this->discounts = $discountFetcher->getDiscounts();
     }
 
+    /**
+     * @return void
+     */
     private function getDiscountOutput(): void
     {
         $discountOutput = new DiscountOutput(
@@ -667,6 +571,7 @@ class DiscountCalculator extends AbstractCalculator
 
     /**
      * Полностью откатывает все примененные скидки
+     * @return $this
      */
     public function forceRollback(): self
     {
@@ -674,14 +579,16 @@ class DiscountCalculator extends AbstractCalculator
     }
 
     /**
-     * Делает товар бесплатным, если была применена только одна скидка на 100% или равная сумме товара в рублях
+     * Делает товар бесплатным, если была применена только
+     * одна скидка на 100% или равная сумме товара в рублях
+     * @return $this
      */
     protected function processFreeProducts(): self
     {
         foreach ($this->input->basketItems as $basketItem) {
             if ($this->basketItemsByDiscounts->has($basketItem['id'])) {
                 [$freeProductDiscounts, $otherDiscounts] = $this->basketItemsByDiscounts->get($basketItem['id'])
-                    ->partition(fn($discount) =>
+                    ->partition(fn ($discount) =>
                         ((int) $discount['value_type'] === Discount::DISCOUNT_VALUE_TYPE_PERCENT && (int) $discount['value'] === 100) ||
                         ((int) $discount['value_type'] === Discount::DISCOUNT_VALUE_TYPE_RUB && (float) $discount['value'] === (float) $basketItem['cost'])
                     );
@@ -696,6 +603,10 @@ class DiscountCalculator extends AbstractCalculator
         return $this;
     }
 
+    /**
+     * @param Discount $discount
+     * @return Collection
+     */
     protected function getExceptOffersForDiscount(Discount $discount): Collection
     {
         return $discount
@@ -704,6 +615,10 @@ class DiscountCalculator extends AbstractCalculator
             ->pluck('offer_id');
     }
 
+    /**
+     * @param Discount $discount
+     * @return Collection
+     */
     protected function getExceptBrandsForDiscount(Discount $discount): Collection
     {
         return $discount
@@ -712,6 +627,10 @@ class DiscountCalculator extends AbstractCalculator
             ->pluck('brand_id');
     }
 
+    /**
+     * @param Discount $discount
+     * @return Collection
+     */
     protected function getExceptCategoriesForDiscount(Discount $discount): Collection
     {
         return $discount
@@ -722,6 +641,8 @@ class DiscountCalculator extends AbstractCalculator
 
     /**
      * Совместимы ли скидки (даже если они не пересекаются)
+     * @param Discount $discount
+     * @return bool
      */
     protected function isCompatibleDiscount(Discount $discount): bool
     {
@@ -730,6 +651,7 @@ class DiscountCalculator extends AbstractCalculator
 
     /**
      * Откатывает все примененные скидки
+     * @return $this
      */
     protected function rollback(): self
     {
@@ -758,6 +680,10 @@ class DiscountCalculator extends AbstractCalculator
         return $this;
     }
 
+    /**
+     * @param Collection $discounts
+     * @return Collection
+     */
     protected function sortDiscountsByProfit(Collection $discounts): Collection
     {
         return $discounts->sortByDesc(function (Discount $discount) {
@@ -773,6 +699,7 @@ class DiscountCalculator extends AbstractCalculator
      */
     private function calcDiscountChange(Discount $discount): ?float
     {
+        //TODO: refactor
         switch ($discount->type) {
             case Discount::DISCOUNT_TYPE_OFFER:
                 $offerIds = $discount->offers->pluck('offer_id');

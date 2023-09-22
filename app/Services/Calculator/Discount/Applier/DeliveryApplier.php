@@ -5,24 +5,44 @@ namespace App\Services\Calculator\Discount\Applier;
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountCondition;
 use App\Services\Calculator\CalculatorChangePrice;
+use App\Services\Calculator\Discount\Checker\ConditionCheckers\DeliveryMethodConditionChecker;
+use App\Services\Calculator\Discount\Checker\ConditionCheckers\MinPriceOrderConditionChecker;
+use App\Services\Calculator\Discount\Checker\DiscountChecker;
 
 class DeliveryApplier extends AbstractApplier
 {
     private array $currentDelivery;
 
+    /**
+     * @param $currentDelivery
+     * @return void
+     */
     public function setCurrentDelivery($currentDelivery): void
     {
         $this->currentDelivery = $currentDelivery;
     }
 
+    /**
+     * @return array
+     */
     public function getModifiedCurrentDelivery(): array
     {
         return $this->currentDelivery;
     }
 
+    /**
+     * @param Discount $discount
+     * @param bool $justCalculate
+     * @return float|null
+     */
     public function apply(Discount $discount, bool $justCalculate = false): ?float
     {
-        if (!$this->isApplicable($discount)) {
+        // BX-6549: скидка на доставку автоматически суммируется со всеми скидками.
+        // Оставили вызов метода, чтобы maxValueByDiscount заполнялся,
+        // если скидка на доставку все-таки указана в synergy
+        $this->applicableToBasket($discount);
+
+        if (!$this->checkConditionGroups($discount)) {
             return 0;
         }
 
@@ -36,46 +56,28 @@ class DeliveryApplier extends AbstractApplier
         );
 
         if (!$justCalculate) {
-            $this->currentDelivery = $calculatorChangePrice->syncItemWithChangedPrice($this->currentDelivery, $changedPrice);
+            $this->currentDelivery = $calculatorChangePrice->syncItemWithChangedPrice(
+                $this->currentDelivery,
+                $changedPrice
+            );
         }
 
         return $changedPrice['discountValue'];
     }
 
-    private function isApplicable(Discount $discount): bool
+    /** Проверка групп условий скидки на доставку */
+    private function checkConditionGroups(Discount $discount): bool
     {
-        foreach ($this->input->basketItems as $basketItem) {
-            // BX-6549: скидка на доставку автоматически суммируется со всеми скидками
-            // Оставил вызов метода, чтобы maxValueByDiscount заполнялся, если скидка на доставку все-таки указаны в synergy
-            $this->applicableToBasketItem($discount, $basketItem);
-//            if (!$this->applicableToBasketItem($discount, $basketItem['id'])) {
-//                return false;
-//            }
-        }
+        $checker = new DiscountChecker($this->input, $discount);
+        $checker
+            ->addExtraParam(
+                DeliveryMethodConditionChecker::KEY_DELIVERY_METHOD,
+                $this->currentDelivery['method']
+            )->addExtraParam(
+                MinPriceOrderConditionChecker::KEY_USE_PRICE,
+                true
+            );
 
-        return $this->checkConditions($discount);
-    }
-
-    /** Проверка условий скидки на доставку */
-    private function checkConditions(Discount $discount): bool
-    {
-        foreach ($discount->conditions as $minPriceCondition) {
-            if (!$this->checkCondition($minPriceCondition)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private function checkCondition(DiscountCondition $condition): bool
-    {
-        return match ($condition->type) {
-            DiscountCondition::MIN_PRICE_ORDER => $this->input->getPriceOrders() >= $condition->getMinPrice(),
-            DiscountCondition::MIN_PRICE_BRAND => $this->input->getMaxTotalPriceForBrands($condition->getBrands()) >= $condition->getMinPrice(),
-            DiscountCondition::MIN_PRICE_CATEGORY => $this->input->getMaxTotalPriceForCategories($condition->getCategories()) >= $condition->getMinPrice(),
-            DiscountCondition::DELIVERY_METHOD => in_array($this->currentDelivery['method'], $condition->getDeliveryMethods()),
-            default => true,
-        };
+        return $checker->checkDiscountConditionGroups();
     }
 }
