@@ -14,8 +14,8 @@ class OrNoChecker implements LogicalOperatorCheckerInterface
     {
         $firstChecker = array_shift($checkers);
 
-        if (!$firstChecker->check()) {
-            return false;
+        if ($firstChecker->check()) {
+            return true;
         }
 
         foreach ($checkers as $checker) {
@@ -24,6 +24,6 @@ class OrNoChecker implements LogicalOperatorCheckerInterface
             }
         }
 
-        return true;
+        return false;
     }
 }

@@ -178,6 +178,7 @@ class DiscountCalculator extends AbstractCalculator
             return false;
         }
 
+        //TODO: resolver and classes
         $change = match ($discount->type) {
             Discount::DISCOUNT_TYPE_OFFER => $this->applyDiscountTypeOffer($discount),
             Discount::DISCOUNT_TYPE_ANY_OFFER => $this->applyDiscountTypeAnyOffer($discount),

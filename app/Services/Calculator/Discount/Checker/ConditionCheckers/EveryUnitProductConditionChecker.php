@@ -14,8 +14,11 @@ class EveryUnitProductConditionChecker extends AbstractConditionChecker
 
     /**
      * Количество единиц одного оффера
+     * @param int $offerId
+     * @param int $count
+     * @return bool
      */
-    public function checkEveryUnitProduct($offerId, $count): bool
+    public function checkEveryUnitProduct(int $offerId, int $count): bool
     {
         $basketItemByOfferId = $this->input
             ->basketItems

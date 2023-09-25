@@ -12,10 +12,10 @@ class MinPriceOrderConditionChecker extends AbstractConditionChecker
      */
     public function check(): bool
     {
-        $sum = $this->getExtraParam(self::KEY_USE_PRICE)
+        $amount = $this->getExtraParam(self::KEY_USE_PRICE)
             ? $this->input->getPriceOrders()
             : $this->input->getCostOrders();
 
-        return $sum >= $this->condition->getMinPrice();
+        return $amount >= $this->condition->getMinPrice();
     }
 }

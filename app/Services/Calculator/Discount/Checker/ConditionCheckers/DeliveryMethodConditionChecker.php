@@ -11,6 +11,12 @@ class DeliveryMethodConditionChecker extends AbstractConditionChecker
      */
     public function check(): bool
     {
+        $deliveryMethod = $this->getExtraParam(self::KEY_DELIVERY_METHOD);
+
+        if (is_null($deliveryMethod)) {
+            return false;
+        }
+
         return in_array(
             $this->getExtraParam(self::KEY_DELIVERY_METHOD),
             $this->condition->getDeliveryMethods()

@@ -12,8 +12,8 @@ abstract class AbstractConditionChecker implements CheckerInterface
     use WithExtraParams;
 
     public function __construct(
-        protected InputCalculator $input,
-        protected DiscountCondition $condition
+        protected ?InputCalculator $input = null,
+        protected ?DiscountCondition $condition
     ) {}
 
     /**

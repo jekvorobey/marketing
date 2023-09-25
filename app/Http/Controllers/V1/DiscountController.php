@@ -43,6 +43,11 @@ class DiscountController extends Controller
         ];
     }
 
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     * @throws PimException
+     */
     public function count(Request $request): JsonResponse
     {
         $query = Discount::query();
@@ -50,6 +55,10 @@ class DiscountController extends Controller
         return response()->json(['total' => $total]);
     }
 
+    /**
+     * @param $id
+     * @return JsonResponse
+     */
     public function find($id): JsonResponse
     {
         $discount = Discount::query()
@@ -68,6 +77,11 @@ class DiscountController extends Controller
         return response()->json($discount);
     }
 
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     * @throws PimException
+     */
     public function read(Request $request): JsonResponse
     {
         $id = $request->route('id');
@@ -82,6 +96,10 @@ class DiscountController extends Controller
         ]);
     }
 
+    /**
+     * @param Request $request
+     * @return Response
+     */
     public function updateStatus(Request $request): Response
     {
         $data = $request->validate([
@@ -111,6 +129,11 @@ class DiscountController extends Controller
         return response('', 204);
     }
 
+    /**
+     * @param CopyAndDeleteDiscountRequest $request
+     * @return Response
+     * @throws \Throwable
+     */
     public function delete(CopyAndDeleteDiscountRequest $request): Response
     {
         DB::transaction(function () use ($request) {
@@ -129,6 +152,12 @@ class DiscountController extends Controller
         return response('', 204);
     }
 
+    /**
+     * @param int $id
+     * @param Request $request
+     * @return Response
+     * @throws \Throwable
+     */
     public function update(int $id, Request $request): Response
     {
         /** @var Discount $discount */
@@ -192,8 +221,15 @@ class DiscountController extends Controller
         return response('', 204);
     }
 
+    /**
+     * @param Request $request
+     * @param RequestInitiator $client
+     * @return JsonResponse
+     * @throws \Throwable
+     */
     public function create(Request $request, RequestInitiator $client): JsonResponse
     {
+
         try {
             $data = $request->validate([
                 'name' => 'string|required',
@@ -211,7 +247,6 @@ class DiscountController extends Controller
                 'relations' => 'array',
                 'comment' => 'string|nullable',
                 'promoCodes' => 'array|required_if:promo_code_only,true',
-                'promo_code_only' => 'boolean|required',
                 'show_on_showcase' => 'boolean|required',
                 'showcase_value_type' => 'numeric|required_if:show_on_showcase,true',
                 'show_original_price' => 'boolean|required',
@@ -247,6 +282,11 @@ class DiscountController extends Controller
         ], 201);
     }
 
+    /**
+     * @param CopyAndDeleteDiscountRequest $request
+     * @param RequestInitiator $client
+     * @return Response
+     */
     public function copy(CopyAndDeleteDiscountRequest $request, RequestInitiator $client): Response
     {
         DiscountHelper::copy($request->get('ids'), $client->userId());

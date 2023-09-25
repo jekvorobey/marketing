@@ -18,7 +18,7 @@ class MerchantConditionChecker extends AbstractConditionChecker
             ->isNotEmpty();
 
         if ($success) {
-            $this->saveMerchantList();
+            $this->saveConditionToStore();
         }
 
         return $success;
@@ -28,9 +28,8 @@ class MerchantConditionChecker extends AbstractConditionChecker
      * Сохраняем в стор, чтобы потом проверять при применении к каждому basketItem
      * @return void
      */
-    private function saveMerchantList(): void
+    private function saveConditionToStore(): void
     {
-        info('saveMerchantList', [$this->condition->id]);
         DiscountConditionStore::put(spl_object_hash($this->condition), $this->condition);
     }
 }

@@ -37,6 +37,30 @@ class InputParams
     }
 
     /**
+     * @param int $customerId
+     * @return array
+     * @throws PimException
+     */
+    public function paramsWithCustomerId(int $customerId): array
+    {
+        return [
+            'customer' =>  [
+                'id' => $customerId
+            ],
+            'items' => [],
+            'promoCode' => '',
+            'deliveries' => [],
+            'payment' =>  [
+                'method' => 0
+            ],
+            'bonus' => 0,
+            'regionFiasId' => null,
+            'roleId' => '103',
+            'basketItems' =>  $this->getBasketItems()
+        ];
+    }
+
+    /**
      * @return array
      * @throws PimException
      */
