@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\Discount\Discount;
 use App\Models\PromoCode\PromoCode;
 use App\Services\PromoCode\PromoCodeHelper;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,7 +10,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -204,7 +202,6 @@ class PromoCodeController extends Controller
             })
             ->first();
         $status = $item ? 'error' : 'ok';
-        Log::info('check', ['status' => $status, 'item' => $item]);
 
         return response()->json([
             'status' => $status,
