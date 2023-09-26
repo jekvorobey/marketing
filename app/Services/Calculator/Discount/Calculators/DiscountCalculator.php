@@ -700,7 +700,7 @@ class DiscountCalculator extends AbstractCalculator
      */
     private function calcDiscountChange(Discount $discount): ?float
     {
-        //TODO: refactor
+        //TODO: refactor to match{}
         switch ($discount->type) {
             case Discount::DISCOUNT_TYPE_OFFER:
                 $offerIds = $discount->offers->pluck('offer_id');

@@ -13,7 +13,7 @@ abstract class AbstractConditionChecker implements CheckerInterface
 
     public function __construct(
         protected ?InputCalculator $input = null,
-        protected ?DiscountCondition $condition
+        protected ?DiscountCondition $condition = null
     ) {}
 
     /**

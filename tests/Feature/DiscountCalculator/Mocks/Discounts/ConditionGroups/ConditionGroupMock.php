@@ -1,6 +1,6 @@
 <?php
 
-namespace tests\Feature\DiscountCalculator\Mocks\Discounts\ConditionGroups;
+namespace Tests\Feature\DiscountCalculator\Mocks\Discounts\ConditionGroups;
 
 class ConditionGroupMock
 {
@@ -9,7 +9,7 @@ class ConditionGroupMock
      * @param array $conditions
      * @return array
      */
-    public static function create(int $logicalOperator, array $conditions): array
+    public static function make(int $logicalOperator, array $conditions): array
     {
         return [
             'logical_operator' => $logicalOperator,

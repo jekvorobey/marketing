@@ -4,11 +4,10 @@ namespace App\Services\Discount;
 
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountBrand;
-use App\Models\Discount\DiscountCondition;
 use App\Models\Discount\DiscountConditionGroup;
 use App\Models\Discount\DiscountOffer;
+use App\Models\Discount\LogicalOperator;
 use Carbon\Carbon;
-use Greensight\Marketing\Dto\Discount\DiscountConditionGroupDto;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -137,6 +136,7 @@ class DiscountHelper
         $discount->max_priority = $data['max_priority'] ?? false;
         $discount->summarizable_with_all = $data['summarizable_with_all'] ?? false;
         $discount->comment = $data['comment'] ?? null;
+        $discount->conditions_logical_operator = $data['conditions_logical_operator'] ?? LogicalOperator::AND;
         $discount->show_on_showcase = $data['show_on_showcase'] ?? true;
         $discount->showcase_value_type = $data['showcase_value_type'] ?? Discount::DISCOUNT_VALUE_TYPE_PERCENT;
         $discount->show_original_price = $data['show_original_price'] ?? true;
