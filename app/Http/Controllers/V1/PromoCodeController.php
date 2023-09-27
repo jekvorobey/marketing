@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Discount\Discount;
 use App\Models\PromoCode\PromoCode;
 use App\Services\PromoCode\PromoCodeHelper;
 use Illuminate\Database\Eloquent\Builder;
@@ -191,6 +192,9 @@ class PromoCodeController extends Controller
             ->where(function ($query) {
                 $query->whereNull('end_date')
                     ->orWhere('end_date', '>=', now());
+            })
+            ->whereHas('discounts', function ($query) {
+                $query->where('status', Discount::STATUS_ACTIVE);
             })
             ->whereHas('discounts', function ($query) {
                 $query->whereNull('start_date')
