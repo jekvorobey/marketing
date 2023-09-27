@@ -8,6 +8,7 @@ use App\Models\Discount\DiscountUserRole;
 use App\Models\Price\Price;
 use App\Services\Calculator\Catalog\CatalogCalculator;
 use App\Services\Price\PriceWriter;
+use Exception;
 use Greensight\CommonMsa\Dto\Front;
 use Greensight\CommonMsa\Dto\RoleDto;
 use Greensight\CommonMsa\Rest\RestQuery;
@@ -16,8 +17,12 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use MerchantManagement\Dto\MerchantPricesDto;
+use MerchantManagement\Services\MerchantService\Dto\GetMerchantPricesDto;
+use MerchantManagement\Services\MerchantService\MerchantService;
 use Pim\Core\PimException;
 use Pim\Dto\Offer\OfferDto;
+use Pim\Dto\Search\IndexType;
 use Pim\Services\OfferService\OfferService;
 use Pim\Services\SearchService\SearchService;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -262,10 +267,15 @@ class PriceController extends Controller
      * Пересчитать все цены на товары мерчанта
      * @return mixed
      */
-    public function updatePriceByMerchant(int $merchantId, PriceWriter $priceWriter)
+    public function updatePriceByMerchant(int $merchantId, Request $request, PriceWriter $priceWriter)
     {
+        $merchantPriceId = (int) $request->input('price_id');
         /** @var OfferService $offerService */
         $offerService = resolve(OfferService::class);
+        /** @var SearchService $searchService */
+        $searchService = resolve(SearchService::class);
+        /** @var MerchantService $merchantService */
+        $merchantService = resolve(MerchantService::class);
 
         $offersId = $offerService->offers(
             (new RestQuery())
@@ -297,10 +307,43 @@ class PriceController extends Controller
             } catch (PimException) {
             }
         }
-        
-        /** @var SearchService $searchService */
-        $searchService = resolve(SearchService::class);
-        $searchService->markForIndexByMerchant($merchantId);
+
+        try {
+            $merchantPrices = $merchantService->merchantPrices(
+                (new GetMerchantPricesDto())
+                    ->addType(MerchantPricesDto::TYPE_GLOBAL)
+                    ->addType(MerchantPricesDto::TYPE_MERCHANT)
+                    ->addType(MerchantPricesDto::TYPE_BRAND)
+                    ->addType(MerchantPricesDto::TYPE_CATEGORY)
+                    ->addType(MerchantPricesDto::TYPE_SKU)
+                    ->setMerchantId($merchantId)
+            );
+
+            /** @var MerchantPricesDto|null $merchantPrice */
+            $merchantPrice = $merchantPrices->filter(function ($item) use ($merchantPriceId) {
+                return $item->id === $merchantPriceId;
+            })->first();
+            if (!$merchantPrice || !$merchantPrice->type) {
+                $searchService->markForIndexByMerchant($merchantId);
+            } else {
+                switch ($merchantPrice->type) {
+                    case MerchantPricesDto::TYPE_BRAND:
+                        $searchService->markForIndexByMerchantAndBrands($merchantId, [$merchantPrice->brand_id]);
+                        break;
+                    case MerchantPricesDto::TYPE_CATEGORY:
+                        $searchService->markForIndexByMerchantAndCategories($merchantId, [$merchantPrice->category_id]);
+                        break;
+                    case MerchantPricesDto::TYPE_SKU:
+                            $searchService->markForIndexByIds(IndexType::PRODUCT, [$merchantPrice->product_id]);
+                        break;
+                    case MerchantPricesDto::TYPE_GLOBAL:
+                    case MerchantPricesDto::TYPE_MERCHANT:
+                    default:
+                        $searchService->markForIndexByMerchant($merchantId);
+                }
+            }
+        } catch (Exception) {
+        }
 
         return response('', 204);
     }
