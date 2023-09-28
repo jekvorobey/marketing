@@ -45,6 +45,7 @@
         "php": "^8.1",
         "ext-json": "*",
         "ext-pdo": "*",
+        "doctrine/dbal": "^3.3",
         "ibt/cm-lib": "dev-master",
         "ibt/common-lib": "dev-master",
         "ibt/logistics-lib": "dev-master",
@@ -53,10 +54,10 @@
         "ibt/oms-lib": "dev-master",
         "ibt/pim-lib": "dev-master",
         "laravel/framework": "9.0",
+        "laravel/horizon": "^5.21",
         "laravel/tinker": "^2.7",
         "letsgoi/laravel-health-check": "dev-master",
-        "sentry/sentry-laravel": "^2.12",
-        "doctrine/dbal": "^3.3"
+        "sentry/sentry-laravel": "^2.12"
     },
     "require-dev": {
         "beyondcode/laravel-dump-server": "^1.0",
