@@ -182,7 +182,7 @@ return [
     'defaults' => [
         'default' => [
             'connection' => 'redis',
-            'queue' => ['default'],
+            'queue' => ['ibt_marketing_ms_default'],
             'balance' => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses' => 1,
