@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Discount\Discount;
 use App\Models\PromoCode\PromoCode;
 use App\Services\PromoCode\PromoCodeHelper;
 use Illuminate\Database\Eloquent\Builder;
@@ -10,7 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-                                    use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -189,6 +190,17 @@ class PromoCodeController extends Controller
                     ->orWhere('start_date', '<=', now());
             })
             ->where(function ($query) {
+                $query->whereNull('end_date')
+                    ->orWhere('end_date', '>=', now());
+            })
+            ->whereHas('discounts', function ($query) {
+                $query->where('status', Discount::STATUS_ACTIVE);
+            })
+            ->whereHas('discounts', function ($query) {
+                $query->whereNull('start_date')
+                    ->orWhere('start_date', '<=', now());
+            })
+            ->whereHas('discounts', function ($query) {
                 $query->whereNull('end_date')
                     ->orWhere('end_date', '>=', now());
             })
