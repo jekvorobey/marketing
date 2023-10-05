@@ -7,6 +7,8 @@ use App\Services\Calculator\Discount\DiscountConditionStore;
 
 class DifferentProductsConditionChecker extends AbstractConditionChecker
 {
+    public const STORE_KEY = 'different_products';
+
     /**
      * @return bool
      */
@@ -32,16 +34,14 @@ class DifferentProductsConditionChecker extends AbstractConditionChecker
      */
     private function saveConditionAdditionalAmount(): void
     {
-        $hash = spl_object_hash($this->condition);
-
         /** @var DiscountCondition|null $savedCondition */
-        $savedCondition = DiscountConditionStore::get($hash);
+        $savedCondition = DiscountConditionStore::get(self::STORE_KEY);
 
         /** Если там уже есть условие из этой скидки с большим числом товаров */
         if ($savedCondition && $savedCondition->getCount() > $this->condition->getCount()) {
             return;
         }
 
-        DiscountConditionStore::put($hash, $this->condition);
+        DiscountConditionStore::put(self::STORE_KEY, $this->condition);
     }
 }

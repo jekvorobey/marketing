@@ -56,7 +56,7 @@ class DifferentProductsConditionCheckerTest extends TestCase
         $this->assertTrue($checker->check());
 
         /** @var DiscountCondition $savedCondition */
-        $savedCondition = DiscountConditionStore::get(spl_object_hash($this->condition));
+        $savedCondition = DiscountConditionStore::get(DifferentProductsConditionChecker::STORE_KEY);
 
         $this->assertEquals(
             $this->additionalDiscount,

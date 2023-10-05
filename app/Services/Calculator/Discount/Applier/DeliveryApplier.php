@@ -71,10 +71,10 @@ class DeliveryApplier extends AbstractApplier
         $checker = new DiscountChecker($this->input, $discount);
         $checker
             ->addExtraParam(
-                DeliveryMethodConditionChecker::KEY_DELIVERY_METHOD,
+                DeliveryMethodConditionChecker::DELIVERY_METHOD_PARAM,
                 $this->currentDelivery['method']
             )->addExtraParam(
-                MinPriceOrderConditionChecker::KEY_USE_PRICE,
+                MinPriceOrderConditionChecker::USE_PRICE_PARAM,
                 true
             );
 

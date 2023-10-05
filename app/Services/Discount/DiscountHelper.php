@@ -276,6 +276,7 @@ class DiscountHelper
         foreach ($conditionGroupDtos as $groupDto) {
             $conditionGroup = new DiscountConditionGroup();
             $conditionGroup->discount_id = $discount->id;
+            $conditionGroup->logical_operator = $groupDto['logical_operator'] ?? LogicalOperator::AND;
             $conditionGroup->save();
             self::saveConditions($conditionGroup, $groupDto['conditions'] ?? []);
         }

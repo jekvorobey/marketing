@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CopyAndDeleteDiscountRequest;
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountCondition;
+use App\Models\Discount\LogicalOperator;
 use App\Services\Discount\DiscountHelper;
 use App\Services\Calculator\Checkout\CheckoutCalculatorBuilder;
 use Carbon\Carbon;
@@ -18,6 +19,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 use Pim\Core\PimException;
 use Pim\Dto\Offer\OfferDto;
 use Pim\Dto\Product\ProductDto;
@@ -182,6 +184,7 @@ class DiscountController extends Controller
             'show_on_showcase' => 'boolean|required',
             'showcase_value_type' => 'numeric|required_if:show_on_showcase,true',
             'show_original_price' => 'boolean|required',
+            'conditions_logical_operator' => ['numeric', 'nullable', Rule::in(LogicalOperator::all())]
         ]);
 
         foreach ($data as $field => $value) {
@@ -250,6 +253,7 @@ class DiscountController extends Controller
                 'show_on_showcase' => 'boolean|required',
                 'showcase_value_type' => 'numeric|required_if:show_on_showcase,true',
                 'show_original_price' => 'boolean|required',
+                'conditions_logical_operator' => ['numeric', 'nullable', Rule::in(LogicalOperator::all())]
             ]);
 
             $data['user_id'] = $client->userId();

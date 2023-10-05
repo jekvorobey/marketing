@@ -4,21 +4,21 @@ namespace App\Services\Calculator\Discount\Checker\ConditionCheckers;
 
 class DeliveryMethodConditionChecker extends AbstractConditionChecker
 {
-    public const KEY_DELIVERY_METHOD = 'delivery_method';
+    public const DELIVERY_METHOD_PARAM = 'delivery_method';
 
     /**
      * @return bool
      */
     public function check(): bool
     {
-        $deliveryMethod = $this->getExtraParam(self::KEY_DELIVERY_METHOD);
+        $deliveryMethod = $this->getExtraParam(self::DELIVERY_METHOD_PARAM);
 
         if (is_null($deliveryMethod)) {
             return false;
         }
 
         return in_array(
-            $this->getExtraParam(self::KEY_DELIVERY_METHOD),
+            $deliveryMethod,
             $this->condition->getDeliveryMethods()
         );
     }

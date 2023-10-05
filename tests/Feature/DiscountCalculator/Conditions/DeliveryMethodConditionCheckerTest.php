@@ -54,7 +54,7 @@ class DeliveryMethodConditionCheckerTest extends TestCase
 
         $checker = new DeliveryMethodConditionChecker($input, $this->condition);
         $checker->addExtraParam(
-            DeliveryMethodConditionChecker::KEY_DELIVERY_METHOD,
+            DeliveryMethodConditionChecker::DELIVERY_METHOD_PARAM,
             $this->deliveryMethod
         );
         $this->assertTrue($checker->check());
@@ -71,7 +71,7 @@ class DeliveryMethodConditionCheckerTest extends TestCase
 
         $checker = new DeliveryMethodConditionChecker($input, $this->condition);
         $checker->addExtraParam(
-            DeliveryMethodConditionChecker::KEY_DELIVERY_METHOD,
+            DeliveryMethodConditionChecker::DELIVERY_METHOD_PARAM,
             999
         );
         $this->assertFalse($checker->check());
