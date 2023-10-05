@@ -199,11 +199,11 @@ return [
 
     'environments' => [
         'production' => [
-            'default' => [],
+            'ibt_marketing_ms' => [],
         ],
 
         'local' => [
-            'default' => [],
+            'ibt_marketing_ms' => [],
         ],
     ],
 ];
