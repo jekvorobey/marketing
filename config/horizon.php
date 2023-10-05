@@ -180,9 +180,9 @@ return [
     */
 
     'defaults' => [
-        'ibt_marketing_ms' => [
+        'ibt_marketing_ms_default' => [
             'connection' => 'redis',
-            'queue' => ['default'],
+            'queue' => ['ibt_marketing_ms_default'],
             'balance' => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses' => 1,
@@ -199,11 +199,11 @@ return [
 
     'environments' => [
         'production' => [
-            'ibt_marketing_ms' => [],
+            'ibt_marketing_ms_default' => [],
         ],
 
         'local' => [
-            'ibt_marketing_ms' => [],
+            'ibt_marketing_ms_default' => [],
         ],
     ],
 ];
