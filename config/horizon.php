@@ -182,12 +182,12 @@ return [
     'defaults' => [
         'default' => [
             'connection' => 'redis',
-            'queue' => ['default'],
+            'queue' => [env('REDIS_QUEUE', 'ibt_marketing_ms')],
             'balance' => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses' => 1,
             'maxTime' => 0,
-            'maxJobs' => 0,
+            'maxJobs' => 256,
             'memory' => 256,
             'tries' => 3,
             'timeout' => 60,
