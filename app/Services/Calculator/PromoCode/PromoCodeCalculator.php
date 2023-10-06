@@ -86,10 +86,14 @@ class PromoCodeCalculator extends AbstractCalculator
         $discountCalculator->calculate();
 
         if ($this->output->anyDiscountWasApplied()) {
+            /* убираем скидки на доставку, чтобы на чекауте не путать клиентов */
+            $noDeliveryPromocodeDiscounts = $promocodeDiscounts->reject(
+                fn ($d) => $d->type === Discount::DISCOUNT_TYPE_DELIVERY
+            );
             $change = $this->output
                 ->appliedDiscounts
                 ->filter(
-                    fn($appliedDiscount) => $promocodeDiscounts->pluck('id')->contains($appliedDiscount['id'])
+                    fn ($appliedDiscount) => $noDeliveryPromocodeDiscounts->pluck('id')->contains($appliedDiscount['id'])
                 )
                 ->sum('change');
 
