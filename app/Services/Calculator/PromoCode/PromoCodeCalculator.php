@@ -7,7 +7,7 @@ use App\Models\PromoCode\PromoCode;
 use App\Services\Calculator\AbstractCalculator;
 use App\Services\Calculator\Bonus\BonusCalculator;
 use App\Services\Calculator\CalculatorChangePrice;
-use App\Services\Calculator\Discount\DiscountCalculator;
+use App\Services\Calculator\Discount\Calculators\DiscountCalculator;
 use App\Services\Calculator\PromoCode\Dto\PromoCodeResult;
 use Greensight\Oms\Services\OrderService\OrderService;
 

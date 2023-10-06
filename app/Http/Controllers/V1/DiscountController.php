@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CopyAndDeleteDiscountRequest;
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountCondition;
+use App\Models\Discount\LogicalOperator;
 use App\Services\Discount\DiscountHelper;
 use App\Services\Calculator\Checkout\CheckoutCalculatorBuilder;
 use Carbon\Carbon;
@@ -18,6 +19,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 use Pim\Core\PimException;
 use Pim\Dto\Offer\OfferDto;
 use Pim\Dto\Product\ProductDto;
@@ -43,6 +45,11 @@ class DiscountController extends Controller
         ];
     }
 
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     * @throws PimException
+     */
     public function count(Request $request): JsonResponse
     {
         $query = Discount::query();
@@ -50,6 +57,10 @@ class DiscountController extends Controller
         return response()->json(['total' => $total]);
     }
 
+    /**
+     * @param $id
+     * @return JsonResponse
+     */
     public function find($id): JsonResponse
     {
         $discount = Discount::query()
@@ -68,6 +79,11 @@ class DiscountController extends Controller
         return response()->json($discount);
     }
 
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     * @throws PimException
+     */
     public function read(Request $request): JsonResponse
     {
         $id = $request->route('id');
@@ -82,6 +98,10 @@ class DiscountController extends Controller
         ]);
     }
 
+    /**
+     * @param Request $request
+     * @return Response
+     */
     public function updateStatus(Request $request): Response
     {
         $data = $request->validate([
@@ -111,6 +131,11 @@ class DiscountController extends Controller
         return response('', 204);
     }
 
+    /**
+     * @param CopyAndDeleteDiscountRequest $request
+     * @return Response
+     * @throws \Throwable
+     */
     public function delete(CopyAndDeleteDiscountRequest $request): Response
     {
         DB::transaction(function () use ($request) {
@@ -129,6 +154,12 @@ class DiscountController extends Controller
         return response('', 204);
     }
 
+    /**
+     * @param int $id
+     * @param Request $request
+     * @return Response
+     * @throws \Throwable
+     */
     public function update(int $id, Request $request): Response
     {
         /** @var Discount $discount */
@@ -153,6 +184,7 @@ class DiscountController extends Controller
             'show_on_showcase' => 'boolean|required',
             'showcase_value_type' => 'numeric|required_if:show_on_showcase,true',
             'show_original_price' => 'boolean|required',
+            'conditions_logical_operator' => ['numeric', 'nullable', Rule::in(LogicalOperator::all())]
         ]);
 
         foreach ($data as $field => $value) {
@@ -192,8 +224,15 @@ class DiscountController extends Controller
         return response('', 204);
     }
 
+    /**
+     * @param Request $request
+     * @param RequestInitiator $client
+     * @return JsonResponse
+     * @throws \Throwable
+     */
     public function create(Request $request, RequestInitiator $client): JsonResponse
     {
+
         try {
             $data = $request->validate([
                 'name' => 'string|required',
@@ -211,10 +250,10 @@ class DiscountController extends Controller
                 'relations' => 'array',
                 'comment' => 'string|nullable',
                 'promoCodes' => 'array|required_if:promo_code_only,true',
-                'promo_code_only' => 'boolean|required',
                 'show_on_showcase' => 'boolean|required',
                 'showcase_value_type' => 'numeric|required_if:show_on_showcase,true',
                 'show_original_price' => 'boolean|required',
+                'conditions_logical_operator' => ['numeric', 'nullable', Rule::in(LogicalOperator::all())]
             ]);
 
             $data['user_id'] = $client->userId();
@@ -247,6 +286,11 @@ class DiscountController extends Controller
         ], 201);
     }
 
+    /**
+     * @param CopyAndDeleteDiscountRequest $request
+     * @param RequestInitiator $client
+     * @return Response
+     */
     public function copy(CopyAndDeleteDiscountRequest $request, RequestInitiator $client): Response
     {
         DiscountHelper::copy($request->get('ids'), $client->userId());
@@ -373,8 +417,11 @@ class DiscountController extends Controller
                 case Discount::DISCOUNT_USER_ROLE_RELATION:
                     $query->with('roles');
                     break;
-                case Discount::DISCOUNT_CONDITION_RELATION:
+                case Discount::DISCOUNT_CONDITION_RELATION: //deprecated
                     $query->with('conditions');
+                    break;
+                case Discount::DISCOUNT_CONDITION_GROUP_RELATION:
+                    $query->with('conditionGroups.conditions');
                     break;
                 case Discount::DISCOUNT_PUBLIC_EVENT_RELATION:
                     $query->with('publicEvents');

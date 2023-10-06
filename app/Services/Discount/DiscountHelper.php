@@ -4,7 +4,9 @@ namespace App\Services\Discount;
 
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountBrand;
+use App\Models\Discount\DiscountConditionGroup;
 use App\Models\Discount\DiscountOffer;
+use App\Models\Discount\LogicalOperator;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -79,7 +81,7 @@ class DiscountHelper
                 })->isEmpty(),
             Discount::DISCOUNT_TYPE_BRAND => $offers->filter(function (DiscountOffer $offer) {
                     return !$offer->except;
-            })->isEmpty()
+                })->isEmpty()
                 && $brands->isNotEmpty()
                 && $categories->isEmpty()
                 && $publicEvents->isEmpty()
@@ -88,7 +90,7 @@ class DiscountHelper
                 })->isEmpty(),
             Discount::DISCOUNT_TYPE_CATEGORY => $offers->filter(function (DiscountOffer $offer) {
                     return !$offer->except;
-            })->isEmpty()
+                })->isEmpty()
                 && $brands->filter(function (DiscountBrand $brand) {
                     return !$brand->except;
                 })->isEmpty()
@@ -98,10 +100,15 @@ class DiscountHelper
                 && $brands->isEmpty()
                 && $categories->isEmpty()
                 && $publicEvents->isNotEmpty(),
-            Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS,
-            Discount::DISCOUNT_TYPE_ANY_OFFER, Discount::DISCOUNT_TYPE_ANY_BUNDLE, Discount::DISCOUNT_TYPE_ANY_BRAND,
+            Discount::DISCOUNT_TYPE_BUNDLE_OFFER,
+            Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS,
+            Discount::DISCOUNT_TYPE_ANY_OFFER,
+            Discount::DISCOUNT_TYPE_ANY_BUNDLE,
+            Discount::DISCOUNT_TYPE_ANY_BRAND,
             Discount::DISCOUNT_TYPE_ANY_CATEGORY => true,
-            Discount::DISCOUNT_TYPE_ANY_MASTERCLASS, Discount::DISCOUNT_TYPE_DELIVERY, Discount::DISCOUNT_TYPE_CART_TOTAL => $offers->isEmpty()
+            Discount::DISCOUNT_TYPE_ANY_MASTERCLASS,
+            Discount::DISCOUNT_TYPE_DELIVERY,
+            Discount::DISCOUNT_TYPE_CART_TOTAL => $offers->isEmpty()
                 && $brands->isEmpty()
                 && $categories->isEmpty()
                 && $publicEvents->isEmpty(),
@@ -129,6 +136,7 @@ class DiscountHelper
         $discount->max_priority = $data['max_priority'] ?? false;
         $discount->summarizable_with_all = $data['summarizable_with_all'] ?? false;
         $discount->comment = $data['comment'] ?? null;
+        $discount->conditions_logical_operator = $data['conditions_logical_operator'] ?? LogicalOperator::AND;
         $discount->show_on_showcase = $data['show_on_showcase'] ?? true;
         $discount->showcase_value_type = $data['showcase_value_type'] ?? Discount::DISCOUNT_VALUE_TYPE_PERCENT;
         $discount->show_original_price = $data['show_original_price'] ?? true;
@@ -139,12 +147,17 @@ class DiscountHelper
         }
 
         $relations = $data['relations'] ?? [];
+
         foreach ($discount->getMappingRelations() as $relation => $value) {
-            collect($relations[$relation] ?? [])->each(function (array $item) use ($discount, $value) {
+            collect($relations[$relation] ?? [])->each(function (array $item) use ($discount, $value, $relation) {
                 $item['discount_id'] = $discount->id;
                 /** @var Model $model */
                 $model = new $value['class']($item);
                 $model->save();
+
+                if ($relation === Discount::DISCOUNT_CONDITION_GROUP_RELATION) {
+                    self::saveConditions($model, $item['conditions'] ?? []);
+                }
             });
         }
 
@@ -157,6 +170,26 @@ class DiscountHelper
         return $discount->id;
     }
 
+    /**
+     * @param Model $conditionGroup
+     * @param array $conditions
+     * @return void
+     */
+    public static function saveConditions(Model $conditionGroup, array $conditions): void
+    {
+        foreach ($conditions as $condition) {
+            /** @var DiscountConditionGroup $conditionGroup */
+            $condition['discount_condition_group_id'] = $conditionGroup->id;
+            $condition['discount_id'] = $conditionGroup->discount_id; //TODO: убрать потом, @deprecated
+            $conditionGroup->conditions()->create($condition);
+        }
+    }
+
+    /**
+     * @param array $ids
+     * @param int $userId
+     * @return void
+     */
     public static function copy(array $ids, int $userId): void
     {
         $discounts = Discount::query()->whereIn('id', $ids)->get();
@@ -191,14 +224,23 @@ class DiscountHelper
         });
     }
 
+    /**
+     * @param Discount $discount
+     * @param array $relations
+     * @return bool
+     */
     public static function updateRelations(Discount $discount, array $relations): bool
     {
         $diffs = collect();
+
         foreach (Discount::availableRelations() as $relation) {
             $relations[$relation] = collect($relations[$relation] ?? []);
         }
 
         foreach ($discount->getMappingRelations() as $relation => $value) {
+            if ($relation === Discount::DISCOUNT_CONDITION_GROUP_RELATION) {
+                continue;
+            }
             $diffs->put($relation, $value['class']::hashDiffItems(
                 $value['items'],
                 $relations[$relation]->transform(function (array $item) use ($discount, $value) {
@@ -208,23 +250,36 @@ class DiscountHelper
             ));
         }
 
-        $diffs->map(function ($item) {
-            return $item['removed'];
-        })
-              ->map(function (Collection $items) {
-                  $items->each(function (Model $model) {
+        $diffs
+            ->map(function ($item) {
+                return $item['removed'];
+            })
+            ->map(function (Collection $items) {
+                $items->each(function (Model $model) {
                     $model->delete();
-                  });
-              });
+                });
+            });
 
-        $diffs->map(function ($item) {
-            return $item['added'];
-        })
+        $diffs
+            ->map(function ($item) {
+                return $item['added'];
+            })
             ->map(function (Collection $items) {
                 $items->each(function (Model $model) {
                     $model->save();
                 });
             });
+
+        $conditionGroupDtos = $relations[Discount::DISCOUNT_CONDITION_GROUP_RELATION] ?? [];
+        $discount->conditionGroups()->delete();
+
+        foreach ($conditionGroupDtos as $groupDto) {
+            $conditionGroup = new DiscountConditionGroup();
+            $conditionGroup->discount_id = $discount->id;
+            $conditionGroup->logical_operator = $groupDto['logical_operator'] ?? LogicalOperator::AND;
+            $conditionGroup->save();
+            self::saveConditions($conditionGroup, $groupDto['conditions'] ?? []);
+        }
 
         if (!self::validateRelations($discount, $relations)) {
             throw new HttpException(400, 'The discount relations are corrupted');

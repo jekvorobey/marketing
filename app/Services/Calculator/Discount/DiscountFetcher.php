@@ -46,6 +46,7 @@ class DiscountFetcher
                 'summarizable_with_all',
                 'merchant_id',
                 'product_qty_limit',
+                'conditions_logical_operator'
             ])
             ->where(function (Builder $query) {
                 $query->where('promo_code_only', false);
@@ -70,7 +71,8 @@ class DiscountFetcher
             ->with($this->withSegments())
             ->with($this->withRoles())
             ->with($this->withBundleItems())
-            ->with($this->withConditions())
+            ->with($this->withConditions()) //deprecated
+            ->with($this->withConditionGroups())
             ->with($this->withBundles());
 
         $this->discounts = $query
@@ -80,9 +82,9 @@ class DiscountFetcher
         $categories = InputCalculator::getAllCategories();
         $this->discounts->each(function (Discount $discount) use ($categories) {
             $filteredCategories = $discount->categories->filter(function ($discountCategory) use ($categories) {
-                $categoryLeaf = $categories[$discountCategory->category_id];
+                $categoryLeaf = $categories[$discountCategory->category_id] ?? null;
                 foreach ($this->input->categories->keys() as $categoryId) {
-                    if ($categoryLeaf->isSelfOrAncestorOf($categories[$categoryId])) {
+                    if ($categoryLeaf?->isSelfOrAncestorOf($categories[$categoryId])) {
                         return true;
                     }
                 }
@@ -194,22 +196,30 @@ class DiscountFetcher
     {
         return [
             'bundles' => function (Relation $builder): void {
-                $builder
-                    ->select(['discount_id', 'bundle_id']);
+                $builder->select(['discount_id', 'bundle_id']);
             },
         ];
     }
 
     /**
      * Получаем все возможные условия из DiscountCondition
+     * @deprecated
      */
     private function withConditions(): array
     {
         return [
             'conditions' => function (Relation $builder): void {
-                $builder
-                    ->select(['discount_id', 'type', 'condition']);
+                $builder->select(['discount_id', 'type', 'condition']);
             },
         ];
+    }
+
+    /**
+     * Получаем группы условий
+     * @return string[]
+     */
+    private function withConditionGroups(): array
+    {
+        return ['conditionGroups.conditions'];
     }
 }
