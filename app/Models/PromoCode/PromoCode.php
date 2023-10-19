@@ -108,6 +108,8 @@ class PromoCode extends AbstractModel
     const SPONSOR_IBT = 'ibt';
     const SPONSOR_MERCHANT = 'merchant';
 
+    public const HAPPY2U_PROMOCODE = 'HAPPY2U';
+
     /**
      * Заполняемые поля модели
      */
