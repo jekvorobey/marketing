@@ -8,7 +8,7 @@ use App\Services\Calculator\Discount\Checker\ConditionCheckers\CustomerCondition
 use App\Services\Calculator\Discount\Checker\ConditionCheckers\DeliveryMethodConditionChecker;
 use App\Services\Calculator\Discount\Checker\ConditionCheckers\DifferentProductsConditionChecker;
 use App\Services\Calculator\Discount\Checker\ConditionCheckers\EveryUnitProductConditionChecker;
-use app\Services\Calculator\Discount\Checker\ConditionCheckers\FalseConditionChecker;
+use App\Services\Calculator\Discount\Checker\ConditionCheckers\FalseConditionChecker;
 use App\Services\Calculator\Discount\Checker\ConditionCheckers\FirstOrderConditionChecker;
 use App\Services\Calculator\Discount\Checker\ConditionCheckers\MerchantConditionChecker;
 use App\Services\Calculator\Discount\Checker\ConditionCheckers\MinPriceBrandConditionChecker;
