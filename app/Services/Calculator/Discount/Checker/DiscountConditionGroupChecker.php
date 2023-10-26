@@ -2,13 +2,12 @@
 
 namespace App\Services\Calculator\Discount\Checker;
 
-use App\Models\Discount\DiscountCondition;
 use App\Models\Discount\DiscountConditionGroup;
+use App\Services\Calculator\Discount\Checker\ConditionCheckers\FalseConditionChecker;
 use App\Services\Calculator\Discount\Checker\Resolvers\DiscountConditionCheckerResolver;
 use App\Services\Calculator\Discount\Checker\Resolvers\LogicalOperatorCheckerResolver;
 use App\Services\Calculator\Discount\Checker\Traits\WithExtraParams;
 use App\Services\Calculator\InputCalculator;
-use Illuminate\Support\Collection;
 
 /**
  * Проверяет группу условий скидки
@@ -18,6 +17,7 @@ class DiscountConditionGroupChecker implements CheckerInterface
     use WithExtraParams;
 
     private array $exceptedConditionTypes = [];
+
     public function __construct(
         protected InputCalculator $input,
         protected DiscountConditionGroup $conditionGroup
@@ -28,10 +28,6 @@ class DiscountConditionGroupChecker implements CheckerInterface
      */
     public function check(): bool
     {
-        if ($this->getFilteredConditions()->isEmpty()) {
-            return true;
-        }
-
         return app(LogicalOperatorCheckerResolver::class)
             ->resolve($this->conditionGroup->logical_operator)
             ->check($this->makeCheckers());
@@ -55,9 +51,13 @@ class DiscountConditionGroupChecker implements CheckerInterface
     {
         $checkers = [];
 
-        foreach ($this->getFilteredConditions() as $condition) {
-            $checker = app(DiscountConditionCheckerResolver::class)
-                ->resolve($condition->type)
+        foreach ($this->conditionGroup->conditions as $condition) {
+            /* если условие в исключенных, то оно будет false */
+            $checker = in_array($condition->type, $this->exceptedConditionTypes)
+                ? new FalseConditionChecker()
+                : app(DiscountConditionCheckerResolver::class)->resolve($condition->type);
+
+            $checker
                 ->setInput($this->input)
                 ->setCondition($condition)
                 ->setExtraParams($this->extraParams);
@@ -66,15 +66,5 @@ class DiscountConditionGroupChecker implements CheckerInterface
         }
 
         return $checkers;
-    }
-
-    /**
-     * @return Collection
-     */
-    protected function getFilteredConditions(): Collection
-    {
-        return $this->conditionGroup->conditions->reject(
-            fn (DiscountCondition $condition) => in_array($condition->type, $this->exceptedConditionTypes)
-        );
     }
 }
