@@ -1,6 +1,6 @@
 <?php
 
-namespace app\Services\Calculator\PromoCode\Dto;
+namespace App\Services\Calculator\PromoCode\Dto;
 
 class PromoCodeResult
 {

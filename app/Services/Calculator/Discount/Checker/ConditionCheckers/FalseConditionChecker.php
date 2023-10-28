@@ -1,6 +1,6 @@
 <?php
 
-namespace app\Services\Calculator\Discount\Checker\ConditionCheckers;
+namespace App\Services\Calculator\Discount\Checker\ConditionCheckers;
 
 /**
  * Класс заглушка всегда FALSE
