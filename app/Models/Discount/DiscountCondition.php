@@ -16,9 +16,11 @@ use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationSe
  * App\Models\Discount\Discount
  *
  * @property int $discount_id
+ * @property int $discount_condition_group_id
  * @property int $type
  * @property array $condition
- * @property-read Discount $discount
+ * @property-read Discount $discount @deprecated
+ * @property DiscountConditionGroup $conditionGroup
  */
 class DiscountCondition extends AbstractModel
 {
@@ -102,6 +104,11 @@ class DiscountCondition extends AbstractModel
 
     /** @var array */
     protected $fillable = self::FILLABLE;
+
+    public function conditionGroup(): BelongsTo
+    {
+        return $this->belongsTo(DiscountConditionGroup::class, 'discount_condition_group_id');
+    }
 
     public function getMinPrice(): ?float
     {
