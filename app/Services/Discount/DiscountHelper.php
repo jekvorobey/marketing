@@ -4,6 +4,7 @@ namespace App\Services\Discount;
 
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountBrand;
+use App\Models\Discount\DiscountCondition;
 use App\Models\Discount\DiscountConditionGroup;
 use App\Models\Discount\DiscountOffer;
 use App\Models\Discount\LogicalOperator;
@@ -208,10 +209,27 @@ class DiscountHelper
             }
 
             foreach ($discount->getMappingRelations() as $relationKey => $relation) {
+                if ($relationKey === Discount::DISCOUNT_CONDITION_RELATION) {
+                    //TODO: костыль, так как это отношение deprecated, потом убрать
+                    continue;
+                }
                 $relation['items']->each(function ($item) use ($copyDiscount, $relationKey) {
                     $copyRelation = $item->replicate();
                     $copyRelation->discount_id = $copyDiscount->id;
                     $relationSaveOk = $copyRelation->save();
+
+                    if ($relationKey === Discount::DISCOUNT_CONDITION_GROUP_RELATION) {
+                        foreach ($item->conditions as $condition) {
+                            $copyCondition = $condition->replicate();
+                            $copyCondition->discount_condition_group_id = $copyRelation->id;
+                            $conditionSaved = $copyCondition->save();
+
+                            if (!$conditionSaved) {
+                                DB::rollBack();
+                                throw new HttpException(500, "Error when copying discount condition {$relationKey}");
+                            }
+                        }
+                    }
 
                     if (!$relationSaveOk) {
                         DB::rollBack();
