@@ -2,6 +2,7 @@
 
 namespace App\Services\Calculator\Discount;
 
+use App\Models\Discount\DiscountCondition;
 use Illuminate\Support\Collection;
 
 /**
@@ -80,8 +81,26 @@ class DiscountConditionStore
     /**
      * @return bool
      */
-    public function isNotEmpty(): bool
+    public static function isNotEmpty(): bool
     {
         return !self::isEmpty();
+    }
+
+    /**
+     * @param int $type
+     * @return Collection
+     */
+    public static function getByType(int $type): Collection
+    {
+        return self::getConditions()->where('type', $type);
+    }
+
+    /**
+     * @param int $type
+     * @return DiscountCondition|null
+     */
+    public static function findByType(int $type): ?DiscountCondition
+    {
+        return self::getByType($type)->first();
     }
 }

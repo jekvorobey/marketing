@@ -177,11 +177,8 @@ abstract class AbstractApplier
     private function getStoredMerchantConditions(Discount $discount): Collection
     {
         $conditionGroupIds = $discount->conditionGroups->pluck('id');
-
-        return DiscountConditionStore::getConditions()->where(
-            'type',
-            DiscountCondition::MERCHANT
-        )->filter(
+        //TODO:19558
+        return DiscountConditionStore::getByType(DiscountCondition::MERCHANT)->filter(
             fn (DiscountCondition $condition) => $conditionGroupIds->contains($condition->discount_condition_group_id)
         );
     }

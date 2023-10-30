@@ -16,6 +16,7 @@ use App\Services\Calculator\Discount\Checker\ConditionCheckers\MinPriceCategoryC
 use App\Services\Calculator\Discount\Checker\ConditionCheckers\MinPriceOrderConditionChecker;
 use App\Services\Calculator\Discount\Checker\ConditionCheckers\OrderSequenceNumberConditionChecker;
 use App\Services\Calculator\Discount\Checker\ConditionCheckers\PayMethodConditionChecker;
+use App\Services\Calculator\Discount\Checker\ConditionCheckers\PropertyConditionChecker;
 use App\Services\Calculator\Discount\Checker\ConditionCheckers\RegionConditionChecker;
 use App\Services\Calculator\Discount\Checker\ConditionCheckers\TrueConditionChecker;
 use App\Services\Calculator\Discount\Checker\Traits\WithExtraParams;
@@ -42,6 +43,7 @@ class DiscountConditionCheckerResolver
         DiscountCondition::DISCOUNT_SYNERGY,
         DiscountCondition::DIFFERENT_PRODUCTS_COUNT,
         DiscountCondition::MERCHANT,
+        DiscountCondition::PROPERTY,
     ];
 
     /**
@@ -63,6 +65,7 @@ class DiscountConditionCheckerResolver
             DiscountCondition::ORDER_SEQUENCE_NUMBER => OrderSequenceNumberConditionChecker::class,
             DiscountCondition::DIFFERENT_PRODUCTS_COUNT => DifferentProductsConditionChecker::class,
             DiscountCondition::DELIVERY_METHOD => DeliveryMethodConditionChecker::class,
+            DiscountCondition::PROPERTY => PropertyConditionChecker::class,
             //проверяются отдельно потом или не реализовано
             DiscountCondition::BUNDLE,
             DiscountCondition::DISCOUNT_SYNERGY => TrueConditionChecker::class,
