@@ -20,7 +20,7 @@ class GeneratePricesByRoles extends Command
      *
      * @var string
      */
-    protected $signature = 'price:generate-prices-by-roles {--merchant_id=}';
+    protected $signature = 'price:generate-prices-by-roles {--merchant_id=} {--product_id=} {--offer_id=}';
 
     /**
      * The console command description.
@@ -55,6 +55,14 @@ class GeneratePricesByRoles extends Command
 
         if ((int) $this->option('merchant_id')) {
             $offersQuery->setFilter('merchant_id', $this->option('merchant_id'));
+        }
+
+        if ((int) $this->option('product_id')) {
+            $offersQuery->setFilter('product_id', $this->option('product_id'));
+        }
+
+        if ((int) $this->option('offer_id')) {
+            $offersQuery->setFilter('id', $this->option('offer_id'));
         }
 
         $offersCount = $offerService->offersCount($offersQuery);
