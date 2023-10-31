@@ -183,7 +183,7 @@ class PromoCodeController extends Controller
         $data = $this->validate(request(), [
             'code' => 'required|string|max:32',
         ]);
-        $item = PromoCode::query()
+        $query = PromoCode::query()
             ->where('code', $data['code'])
             ->where(function ($query) {
                 $query->whereNull('start_date')
@@ -192,19 +192,26 @@ class PromoCodeController extends Controller
             ->where(function ($query) {
                 $query->whereNull('end_date')
                     ->orWhere('end_date', '>=', now());
-            })
-            ->whereHas('discounts', function ($query) {
-                $query->where('status', Discount::STATUS_ACTIVE);
-            })
-            ->whereHas('discounts', function ($query) {
-                $query->whereNull('start_date')
-                    ->orWhere('start_date', '<=', now());
-            })
-            ->whereHas('discounts', function ($query) {
-                $query->whereNull('end_date')
-                    ->orWhere('end_date', '>=', now());
-            })
-            ->first();
+            });
+
+        /** @var PromoCode $item */
+        $item = $query->first();
+
+        if ($item->discount_id) {
+            $item = $query
+                ->whereHas('discounts', function ($query) {
+                    $query->where('status', Discount::STATUS_ACTIVE);
+                })
+                ->whereHas('discounts', function ($query) {
+                    $query->whereNull('start_date')
+                        ->orWhere('start_date', '<=', now());
+                })
+                ->whereHas('discounts', function ($query) {
+                    $query->whereNull('end_date')
+                        ->orWhere('end_date', '>=', now());
+                })
+                ->first();
+        }
         $status = $item ? 'error' : 'ok';
 
         return response()->json([
