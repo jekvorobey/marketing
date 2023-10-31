@@ -157,12 +157,16 @@ class DiscountCalculator extends AbstractCalculator
      */
     protected function apply(): self
     {
+        /* скидки на доставку применяются отдельно */
+        $possibleDiscounts = $this->possibleDiscounts
+            ->where('type', '!=', Discount::DISCOUNT_TYPE_DELIVERY);
+
         /** @var Discount $discount */
-        foreach ($this->possibleDiscounts as $discount) {
+        foreach ($possibleDiscounts as $discount) {
             $this->applyDiscount($discount);
         }
 
-        $this->applyDeliveryDiscount();
+        $this->applyDeliveryDiscounts();
 
         return $this->processFreeProducts();
     }
@@ -454,18 +458,33 @@ class DiscountCalculator extends AbstractCalculator
     }
 
     /**
-     * Применить скидку на доставку
+     * Применить скидки на доставку (применяется первая, которая сработала)
      * @return void
      */
-    protected function applyDeliveryDiscount(): void
+    protected function applyDeliveryDiscounts(): void
     {
-        $deliveryDiscount = $this->discounts->firstWhere(
-            'type',
-            Discount::DISCOUNT_TYPE_DELIVERY
-        );
+        $deliveryDiscounts = $this->discounts
+            ->where('type', Discount::DISCOUNT_TYPE_DELIVERY);
 
-        if ($deliveryDiscount) {
-            $this->applyDiscount($deliveryDiscount);
+        $percentDiscounts = $deliveryDiscounts
+            ->where('value_type', Discount::DISCOUNT_VALUE_TYPE_PERCENT)
+            ->sortByDesc('value');
+
+        $rubDiscounts = $deliveryDiscounts
+            ->where('value_type', Discount::DISCOUNT_VALUE_TYPE_RUB)
+            ->sortByDesc('value');
+
+        /* сначала пробуем применять самые выгодные скидки */
+        foreach ($percentDiscounts as $discount) {
+            if ($this->applyDiscount($discount)) {
+                return;
+            }
+        }
+
+        foreach ($rubDiscounts as $discount) {
+            if ($this->applyDiscount($discount)) {
+                return;
+            }
         }
     }
 
