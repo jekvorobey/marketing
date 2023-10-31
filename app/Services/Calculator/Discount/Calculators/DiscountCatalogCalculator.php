@@ -40,6 +40,7 @@ class DiscountCatalogCalculator extends DiscountCalculator
             [
                 DiscountCondition::DISCOUNT_SYNERGY,
                 DiscountCondition::MERCHANT,
+                DiscountCondition::PROPERTY
             ]
         );
     }
