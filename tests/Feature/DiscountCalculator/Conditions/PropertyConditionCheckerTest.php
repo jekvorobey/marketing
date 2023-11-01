@@ -117,7 +117,7 @@ class PropertyConditionCheckerTest extends TestCase
         return DiscountConditionMock::create(
             DiscountCondition::PROPERTY,
             [
-                DiscountCondition::FIELD_PROPERTY => 99,
+                DiscountCondition::FIELD_PROPERTY => $this->propertyId,
                 DiscountCondition::FIELD_PROPERTY_VALUES => [99999]
             ]
         );
