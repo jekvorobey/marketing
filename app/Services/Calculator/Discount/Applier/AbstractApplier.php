@@ -156,7 +156,6 @@ abstract class AbstractApplier
      */
     protected function checkStoredDiscountConditions(Discount $discount, Collection $basketItem): bool
     {
-        //TODO:19558 refactor
         if ($this->discountHasTrueMerchantCondition($discount) &&
             !$this->basketItemSatisfiesMerchantCondition($discount, $basketItem)) {
             return false;
