@@ -180,7 +180,6 @@ class DiscountHelper
     {
         foreach ($conditions as $condition) {
             /** @var DiscountConditionGroup $conditionGroup */
-            $condition['discount_condition_group_id'] = $conditionGroup->id;
             $condition['discount_id'] = $conditionGroup->discount_id; //TODO: убрать потом, @deprecated
             $conditionGroup->conditions()->create($condition);
         }
