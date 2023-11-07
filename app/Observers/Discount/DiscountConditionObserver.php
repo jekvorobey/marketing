@@ -123,13 +123,17 @@ class DiscountConditionObserver
             return;
         }
 
+        if (!$deletedCondition->conditionGroup) {
+            return;
+        }
+
         $discountId = $deletedCondition->conditionGroup->discount_id;
 
         $conditions = DiscountCondition::query()
             ->where('type', DiscountCondition::DISCOUNT_SYNERGY)
             ->whereJsonContains('condition->synergy', $discountId)
             ->orWhere(function ($builder) use ($discountId) {
-                return $builder->whereJsonContains('condition->synergy', "{$discountId}");
+                return $builder->whereJsonContains('condition->synergy', $discountId);
             })
             ->get();
 
@@ -141,10 +145,10 @@ class DiscountConditionObserver
                 unset($synergy[$key]);
                 $synergy = array_values($synergy);
                 if (empty($synergy)) {
-                    if ($condition->conditionGroup->conditions->containsOneItem()) {
+                    if ($condition->conditionGroup && $condition->conditionGroup->conditions->containsOneItem()) {
                         $condition->conditionGroup->delete();
                     }
-                    $condition->delete();
+                    $condition->deleteQuietly();
                 } else {
                     $condition->condition = array_merge(
                         $condition->condition,
