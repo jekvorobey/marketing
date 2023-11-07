@@ -95,7 +95,7 @@ class DiscountCondition extends AbstractModel
     /**
      * Заполняемые поля модели
      */
-    public const FILLABLE = ['discount_id', 'type', 'condition'];
+    public const FILLABLE = ['discount_id', 'type', 'condition', 'discount_condition_group_id'];
 
     /** @var array */
     protected $casts = [
