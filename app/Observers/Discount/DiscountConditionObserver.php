@@ -148,7 +148,7 @@ class DiscountConditionObserver
                     if ($condition->conditionGroup && $condition->conditionGroup->conditions->containsOneItem()) {
                         $condition->conditionGroup->delete();
                     }
-                    $condition->deleteQuietly();
+                    DiscountCondition::withoutEvents(fn () => $condition->delete());
                 } else {
                     $condition->condition = array_merge(
                         $condition->condition,
