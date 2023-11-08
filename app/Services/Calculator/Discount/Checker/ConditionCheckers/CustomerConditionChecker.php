@@ -9,6 +9,8 @@ class CustomerConditionChecker extends AbstractConditionChecker
      */
     public function check(): bool
     {
-        return in_array($this->input->getCustomerId(), $this->condition->getCustomerIds());
+        $conditionCustomers = $this->condition->getCustomerIds();
+
+        return empty($conditionCustomers) || in_array($this->input->getCustomerId(), $conditionCustomers);
     }
 }
