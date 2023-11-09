@@ -2,9 +2,10 @@
 
 namespace App\Models\Discount;
 
+use App\Models\Hash;
 use Greensight\CommonMsa\Models\AbstractModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\Hash;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Класс-модель для сущности "Скидка на товары категории"
@@ -35,5 +36,10 @@ class DiscountCategory extends AbstractModel
     public function discount(): BelongsTo
     {
         return $this->belongsTo(Discount::class);
+    }
+
+    public function additionalCategories(): HasMany
+    {
+        return $this->hasMany(DiscountAdditionalCategory::class);
     }
 }

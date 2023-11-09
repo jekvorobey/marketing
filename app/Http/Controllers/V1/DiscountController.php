@@ -409,7 +409,7 @@ class DiscountController extends Controller
                     $query->with('brands');
                     break;
                 case Discount::DISCOUNT_CATEGORY_RELATION:
-                    $query->with('categories');
+                    $query->with('categories.additionalCategories');
                     break;
                 case Discount::DISCOUNT_SEGMENT_RELATION:
                     $query->with('segments');
