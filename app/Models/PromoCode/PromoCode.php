@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Ramsey\Collection\Collection;
+use Illuminate\Support\Collection;
 
 /**
  * Class PromoCode
