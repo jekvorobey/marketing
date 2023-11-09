@@ -197,7 +197,7 @@ class PromoCodeController extends Controller
         /** @var PromoCode $item */
         $item = $query->first();
 
-        if ($item->discount_id) {
+        if (!is_null($item) && $item->discount_id) {
             $item = $query
                 ->whereHas('discounts', function ($query) {
                     $query->where('status', Discount::STATUS_ACTIVE);
