@@ -347,7 +347,8 @@ class Discount extends AbstractModel
 
     public function categories(): HasMany
     {
-        return $this->hasMany(DiscountCategory::class, 'discount_id');
+        return $this->hasMany(DiscountCategory::class, 'discount_id')
+            ->with('additionalCategories');
     }
 
     public function roles(): HasMany
