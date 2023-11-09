@@ -229,7 +229,7 @@ class BirthdayDiscounts extends Command
     {
         return $this->customerService->customers(
             $this->customerService->newQuery()
-                ->setFilter('birthday', now()->addDays($daysBeforeBirthday)->toDateString())
+                ->setFilter('birthday_by_month_and_day', now()->addDays($daysBeforeBirthday)->toDateString())
                 ->setFilter('status', CustomerDto::STATUS_ACTIVE)
         );
     }
