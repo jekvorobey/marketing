@@ -41,6 +41,10 @@ use Pim\Core\PimException;
  * @property bool $summarizable_with_all
  * @property string $comment
  * @property int $conditions_logical_operator
+ * @property bool $show_on_showcase
+ * @property bool $showcase_value_type
+ * @property bool $show_original_price
+ * @property bool $except_additional_categories - исключить дополнительные категории
  *
  * @property-read Collection|DiscountOffer[] $offers
  * @property-read Collection|BundleItem[] $bundleItems
@@ -182,6 +186,7 @@ class Discount extends AbstractModel
         'show_on_showcase',
         'showcase_value_type',
         'show_original_price',
+        'except_additional_categories',
     ];
 
     /** @var array */

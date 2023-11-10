@@ -184,7 +184,8 @@ class DiscountController extends Controller
             'show_on_showcase' => 'boolean|required',
             'showcase_value_type' => 'numeric|required_if:show_on_showcase,true',
             'show_original_price' => 'boolean|required',
-            'conditions_logical_operator' => ['numeric', 'nullable', Rule::in(LogicalOperator::all())]
+            'conditions_logical_operator' => ['numeric', 'nullable', Rule::in(LogicalOperator::all())],
+            'except_additional_categories' => 'boolean|nullable',
         ]);
 
         foreach ($data as $field => $value) {
@@ -253,7 +254,8 @@ class DiscountController extends Controller
                 'show_on_showcase' => 'boolean|required',
                 'showcase_value_type' => 'numeric|required_if:show_on_showcase,true',
                 'show_original_price' => 'boolean|required',
-                'conditions_logical_operator' => ['numeric', 'nullable', Rule::in(LogicalOperator::all())]
+                'conditions_logical_operator' => ['numeric', 'nullable', Rule::in(LogicalOperator::all())],
+                'except_additional_categories' => 'boolean|nullable',
             ]);
 
             $data['user_id'] = $client->userId();

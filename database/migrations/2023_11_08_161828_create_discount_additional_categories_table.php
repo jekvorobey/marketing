@@ -18,7 +18,6 @@ return new class extends Migration
             $table->id();
             $table->foreignIdFor(DiscountCategory::class);
             $table->bigInteger('category_id')->unsigned();
-            $table->boolean('except')->default(false);
             $table->timestamps();
 
             $table->foreign('discount_category_id')

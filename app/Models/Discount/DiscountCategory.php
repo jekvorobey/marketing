@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $except
  *
  * @property-read Discount $discount
+ * @property-read DiscountAdditionalCategory[] $additionalCategories
  */
 class DiscountCategory extends AbstractModel
 {
