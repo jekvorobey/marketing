@@ -41,6 +41,9 @@ use Pim\Core\PimException;
  * @property bool $summarizable_with_all
  * @property string $comment
  * @property int $conditions_logical_operator
+ * @property bool $show_on_showcase
+ * @property bool $showcase_value_type
+ * @property bool $show_original_price
  *
  * @property-read Collection|DiscountOffer[] $offers
  * @property-read Collection|BundleItem[] $bundleItems
@@ -347,7 +350,8 @@ class Discount extends AbstractModel
 
     public function categories(): HasMany
     {
-        return $this->hasMany(DiscountCategory::class, 'discount_id');
+        return $this->hasMany(DiscountCategory::class, 'discount_id')
+            ->with('additionalCategories');
     }
 
     public function roles(): HasMany

@@ -5,6 +5,7 @@ namespace App\Services\Calculator\Bonus;
 use App\Models\Bonus\Bonus;
 use App\Models\Option\Option;
 use App\Services\Calculator\AbstractCalculator;
+use App\Services\Calculator\Discount\Filters\OfferCategoryFilter;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
 use Illuminate\Support\Collection;
@@ -110,8 +111,15 @@ class BonusCalculator extends AbstractCalculator
                     $exceptBrandIds = $bonus->brands->pluck('brand_id');
                     # За исключением офферов
                     $exceptOfferIds = $bonus->offers->pluck('offer_id');
+
                     # Отбираем нужные офферы
-                    $offerIds = $this->filterForCategory($categoryIds, $exceptBrandIds, $exceptOfferIds, null);
+                    $filter = new OfferCategoryFilter();
+                    $filter
+                        ->setCategoryIds($categoryIds)
+                        ->setExceptBrandIds($exceptBrandIds)
+                        ->setExceptOfferIds($exceptOfferIds)
+                        ->setBasketItems($this->input->basketItems);
+                    $offerIds = $filter->getFilteredOfferIds();
                     $basketItemsIds = $this->input->basketItems->whereIn('offer_id', $offerIds->toArray())->pluck('id');
                     $bonusValue = $this->applyBonusToBasketItem($bonus, $basketItemsIds);
                     break;

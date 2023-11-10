@@ -74,40 +74,6 @@ abstract class AbstractCalculator
     }
 
     /**
-     * @param $categoryIds
-     * @param $exceptBrandIds
-     * @param $exceptOfferIds
-     * @param $merchantId
-     * @return Collection
-     */
-    protected function filterForCategory($categoryIds, $exceptBrandIds, $exceptOfferIds, $merchantId): Collection
-    {
-        return $this->input->basketItems->filter(function ($basketItem) use (
-            $categoryIds,
-            $exceptBrandIds,
-            $exceptOfferIds,
-            $merchantId
-        ) {
-            $categories = InputCalculator::getAllCategories();
-            $offerCategory = $categories->has($basketItem['category_id'])
-                ? $categories[$basketItem['category_id']]
-                : null;
-
-            return $offerCategory
-                && $categoryIds->reduce(function ($carry, $categoryId) use ($offerCategory, $categories) {
-                    return $carry ||
-                        (
-                            $categories->has($categoryId)
-                            && $categories[$categoryId]->isSelfOrAncestorOf($offerCategory)
-                        );
-                })
-                && !$exceptBrandIds->contains($basketItem['brand_id'])
-                && !$exceptOfferIds->contains($basketItem['offer_id'])
-                && (!$merchantId || $basketItem['merchant_id'] == $merchantId);
-        })->pluck('offer_id');
-    }
-
-    /**
      * Получить опцию по ключу (с кэшем в рамках процесса)
      * @param mixed $key
      */

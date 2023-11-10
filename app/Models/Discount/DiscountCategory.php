@@ -2,9 +2,11 @@
 
 namespace App\Models\Discount;
 
+use App\Models\Hash;
 use Greensight\CommonMsa\Models\AbstractModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\Hash;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 /**
  * Класс-модель для сущности "Скидка на товары категории"
@@ -13,8 +15,10 @@ use App\Models\Hash;
  * @property int $discount_id
  * @property int $category_id
  * @property bool $except
+ * @property bool $except_additional_categories - исключить дополнительные категории
  *
  * @property-read Discount $discount
+ * @property-read Collection|DiscountAdditionalCategory[] $additionalCategories
  */
 class DiscountCategory extends AbstractModel
 {
@@ -23,7 +27,7 @@ class DiscountCategory extends AbstractModel
     /**
      * Заполняемые поля модели
      */
-    public const FILLABLE = ['discount_id', 'category_id', 'except'];
+    public const FILLABLE = ['discount_id', 'category_id', 'except', 'except_additional_categories'];
 
     /** @var array */
     protected $fillable = self::FILLABLE;
@@ -35,5 +39,10 @@ class DiscountCategory extends AbstractModel
     public function discount(): BelongsTo
     {
         return $this->belongsTo(Discount::class);
+    }
+
+    public function additionalCategories(): HasMany
+    {
+        return $this->hasMany(DiscountAdditionalCategory::class);
     }
 }

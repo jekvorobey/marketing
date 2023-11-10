@@ -258,6 +258,10 @@ class InputCalculator
                 'qty' => $basketItem->qty ?? 1,
                 'brand_id' => $offerDto->product->brand_id ?? null,
                 'category_id' => $offerDto->product->category_id ?? null,
+                'additional_category_ids' => $offerDto->product
+                    ?->additionalCategories
+                    ->pluck('id')
+                    ->toArray() ?? [],
                 'product_id' => $offerDto->product_id,
                 'merchant_id' => $offerDto->merchant_id,
                 'bundle_id' => $basketItem->bundleId,
@@ -284,7 +288,7 @@ class InputCalculator
             $offerService = resolve(OfferService::class);
             $query = $offerService->newQuery()
                 ->setFilter('id', $offersIds)
-                ->include(ProductDto::entity())
+                ->include('product.additionalCategories')
                 ->addFields(OfferDto::entity(), 'id', 'product_id', 'merchant_id', 'ticket_type_id')
                 ->addFields(ProductDto::entity(), 'id', 'category_id', 'brand_id');
 

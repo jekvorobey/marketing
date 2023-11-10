@@ -46,7 +46,7 @@ class DiscountFetcher
                 'summarizable_with_all',
                 'merchant_id',
                 'product_qty_limit',
-                'conditions_logical_operator'
+                'conditions_logical_operator',
             ])
             ->where(function (Builder $query) {
                 $query->where('promo_code_only', false);
@@ -127,12 +127,7 @@ class DiscountFetcher
      */
     private function withCategories(): array
     {
-        return [
-            'categories' => function (Relation $builder): void {
-                $builder
-                    ->select(['discount_id', 'category_id', 'except']);
-            },
-        ];
+        return ['categories.additionalCategories'];
     }
 
     /**
