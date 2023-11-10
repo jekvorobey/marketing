@@ -105,7 +105,7 @@ class BirthdayDiscounts extends Command
                 $discount2 = $this->copyDiscountFrom(static::DISCOUNT_2_COPY_FROM_ID, $customer);
 
                 $this->notificationService->send($customer->user_id, 'birthday_discount_created', [
-                    'EXPIRES_AT' => $discount1->end_date->format('d.m.Y')
+                    'EXPIRES_AT' => $discount1->end_date->format('d.m')
                 ]);
 
             } catch (\Throwable $exception) {
