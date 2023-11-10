@@ -6,6 +6,7 @@ use App\Models\Hash;
 use Greensight\CommonMsa\Models\AbstractModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 /**
  * Класс-модель для сущности "Скидка на товары категории"
@@ -14,9 +15,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $discount_id
  * @property int $category_id
  * @property bool $except
+ * @property bool $except_additional_categories - исключить дополнительные категории
  *
  * @property-read Discount $discount
- * @property-read DiscountAdditionalCategory[] $additionalCategories
+ * @property-read Collection|DiscountAdditionalCategory[] $additionalCategories
  */
 class DiscountCategory extends AbstractModel
 {
@@ -25,7 +27,7 @@ class DiscountCategory extends AbstractModel
     /**
      * Заполняемые поля модели
      */
-    public const FILLABLE = ['discount_id', 'category_id', 'except'];
+    public const FILLABLE = ['discount_id', 'category_id', 'except', 'except_additional_categories'];
 
     /** @var array */
     protected $fillable = self::FILLABLE;

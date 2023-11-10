@@ -3,6 +3,7 @@
 namespace App\Services\Calculator\Discount\Calculators;
 
 use App\Models\Discount\Discount;
+use App\Models\Discount\DiscountCategory;
 use App\Models\Discount\DiscountCondition;
 use App\Models\Discount\DiscountCondition as DiscountConditionModel;
 use App\Services\Calculator\AbstractCalculator;
@@ -12,6 +13,7 @@ use App\Services\Calculator\Discount\Applier\OfferApplier;
 use App\Services\Calculator\Discount\Checker\DiscountChecker;
 use App\Services\Calculator\Discount\DiscountFetcher;
 use App\Services\Calculator\Discount\DiscountOutput;
+use App\Services\Calculator\Discount\Filters\OfferCategoryFilter;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
 use Illuminate\Support\Collection;
@@ -309,19 +311,24 @@ class DiscountCalculator extends AbstractCalculator
         # За исключением категорий
         $exceptCategoryIds = $this->getExceptCategoriesForDiscount($discount);
         $categoryIds = $categoryIds->diff($exceptCategoryIds);
+        # Дополнительные категории
+        $additionalCategories = $this->getAdditionalCategories($discount);
         # За исключением брендов
         $exceptBrandIds = $this->getExceptBrandsForDiscount($discount);
         # За исключением офферов
         $exceptOfferIds = $this->getExceptOffersForDiscount($discount);
-        # Отбираем нужные офферы
-        $offerIds = $this->filterForCategory(
-            $categoryIds,
-            $exceptBrandIds,
-            $exceptOfferIds,
-            $discount->merchant_id
-        );
 
-        return $this->applyDiscountToOffers($discount, $offerIds);
+        # Отбираем нужные офферы
+        $filter = new OfferCategoryFilter();
+        $filter
+            ->setCategoryIds($categoryIds)
+            ->setExceptBrandIds($exceptBrandIds)
+            ->setExceptOfferIds($exceptOfferIds)
+            ->setMerchantId($discount->merchant_id)
+            ->setAdditionalCategories($additionalCategories)
+            ->setBasketItems($this->input->basketItems);
+
+        return $this->applyDiscountToOffers($discount, $filter->getFilteredOfferIds());
     }
 
     /**
@@ -660,6 +667,23 @@ class DiscountCalculator extends AbstractCalculator
     }
 
     /**
+     * @param Discount $discount
+     * @return Collection [[category_id => ['except' => bool, 'ids' => int[]]], ...]
+     */
+    protected function getAdditionalCategories(Discount $discount): Collection
+    {
+        return $discount
+            ->categories
+            ->filter(fn (DiscountCategory $item) => $item->additionalCategories->isNotEmpty())
+            ->mapWithKeys(fn (DiscountCategory $item) => [
+                $item->category_id => collect([
+                    'except' => $item->except_additional_categories,
+                    'ids' => $item->additionalCategories->pluck('category_id'),
+                ])
+            ]);
+    }
+
+    /**
      * Совместимы ли скидки (даже если они не пересекаются)
      * @param Discount $discount
      * @return bool
@@ -781,17 +805,18 @@ class DiscountCalculator extends AbstractCalculator
 
                 $exceptCategoryIds = $this->getExceptCategoriesForDiscount($discount);
                 $categoryIds = $categoryIds->diff($exceptCategoryIds);
-
                 $exceptBrandIds = $this->getExceptBrandsForDiscount($discount);
-
                 $exceptOfferIds = $this->getExceptOffersForDiscount($discount);
 
-                $offerIds = $this->filterForCategory(
-                    $categoryIds,
-                    $exceptBrandIds,
-                    $exceptOfferIds,
-                    $discount->merchant_id
-                );
+                $filter = new OfferCategoryFilter();
+                $filter
+                    ->setCategoryIds($categoryIds)
+                    ->setExceptBrandIds($exceptBrandIds)
+                    ->setExceptOfferIds($exceptOfferIds)
+                    ->setMerchantId($discount->merchant_id)
+                    ->setBasketItems($this->input->basketItems);
+
+                $offerIds = $filter->getFilteredOfferIds();
                 $offerApplier = new OfferApplier($this->input, $this->basketItemsByDiscounts, $this->appliedDiscounts);
                 $offerApplier->setOfferIds($offerIds);
                 return $offerApplier->apply($discount, true);

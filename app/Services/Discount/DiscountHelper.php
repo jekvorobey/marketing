@@ -143,7 +143,6 @@ class DiscountHelper
         $discount->show_on_showcase = $data['show_on_showcase'] ?? true;
         $discount->showcase_value_type = $data['showcase_value_type'] ?? Discount::DISCOUNT_VALUE_TYPE_PERCENT;
         $discount->show_original_price = $data['show_original_price'] ?? true;
-        $discount->except_additional_categories = $data['except_additional_categories'] ?? false;
 
         $ok = $discount->save();
         if (!$ok) {

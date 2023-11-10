@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('discounts', function (Blueprint $table) {
+        Schema::table('discount_categories', function (Blueprint $table) {
             $table->boolean('except_additional_categories')->default(false);
         });
     }
@@ -25,7 +25,7 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('discounts', function (Blueprint $table) {
+        Schema::table('discount_categories', function (Blueprint $table) {
             $table->dropColumn('except_additional_categories');
         });
     }
