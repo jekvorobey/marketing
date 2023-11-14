@@ -105,7 +105,12 @@ class BirthdayDiscounts extends Command
                 $discount2 = $this->copyDiscountFrom(static::DISCOUNT_2_COPY_FROM_ID, $customer);
 
                 $this->notificationService->send($customer->user_id, 'birthday_discount_created', [
-                    'EXPIRES_AT' => $discount1->end_date->format('d.m')
+                    'TITLE' => 'Есть догадки!',
+                    'TEXT' => 'Привет, Бессовестно Талантливый!<br><br>
+                        Мы знаем, что у тебя скоро день рождения. Именно поэтому очень хочется сделать тебе приятно. Так сказать, выразить всю нашу любовь…<br><br>
+                        По промокоду HAPPY2U будет доступна дополнительная скидка на всё! Она будет настолько максимальной, насколько это возможно. Все-таки такой день, да и только раз в году.<br><br>
+                        Скидкой можно воспользоваться за 7 дней до праздничной даты и в течение 14 дней после. Сможешь тщательно подумать и повыбирать. Всё для тебя!<br><br>
+                        Спасибо за то, что ты с нами! Любим и ценим ❤️'
                 ]);
 
             } catch (\Throwable $exception) {
@@ -187,12 +192,24 @@ class BirthdayDiscounts extends Command
 
             if ($orders->isEmpty() && $activeBithdayDiscount) {
                 $this->notificationService->send($customer->user_id, 'birthday_congratulation_has_not_used_promocode', [
-                    'EXPIRES_AT' => Carbon::parse($activeBithdayDiscount->end_date)->format('d.m.Y')
+                        'TITLE' => 'Помнишь про подарок?',
+                        'TEXT' => 'Привет, Бессовестно Талантливый! <br><br>
+                            Спешим от всей души поздравить тебя с днем рождения! Искренне желаем оставаться таким же бессовестным, но в то же время таким же талантливым. У тебя это отлично получается. <br><br>
+                            Хотели бы напомнить, что тебе все еще доступен подарок от нас — промокод HAPPY2U, который действует НА ВСЁ! <br><br>
+                            Скидкой можно воспользоваться еще в течение 14 дней.<br><br>
+                            Еще раз с днем рождения, Бессовестно Талантливый! ❤️'
                 ]);
             }
 
             if ($orders->isNotEmpty()) {
-                $this->notificationService->send($customer->user_id, 'birthday_congratulation_has_used_promocode');
+                $this->notificationService->send($customer->user_id, 'birthday_congratulation_has_used_promocode', [
+                    'TITLE' => 'Скорее открывай поздравление',
+                    'TEXT' => 'Привет, Бессовестно Талантливый! <br><br>
+                        Спешим от всей души поздравить тебя с днем рождения! Искренне желаем оставаться таким же бессовестным, но в то же время таким же талантливым. У тебя это отлично получается. <br><br>
+                        И спасибо, что воспользовался праздничным промокодом! Мы хотели, чтобы ты мог порадовать себя с максимальной выгодой. <br><br>
+                        Этот день для тебя. Каждый день для тебя. Каждая наша акция тоже для тебя. Только на https://ibt.ru/promo/ <br><br>
+                        Будь счастлив! Еще раз с днем рождения! ❤️'
+                ]);
             }
         }
     }
@@ -231,6 +248,7 @@ class BirthdayDiscounts extends Command
             $this->customerService->newQuery()
                 ->setFilter('birthday_by_month_and_day', now()->addDays($daysBeforeBirthday)->toDateString())
                 ->setFilter('status', CustomerDto::STATUS_ACTIVE)
+                ->setFilter('id', 13172)
         );
     }
 }
