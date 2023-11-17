@@ -59,8 +59,6 @@ class BirthdayDiscounts extends Command
         $this->customerService = app(CustomerService::class);
         $this->notificationService = app(ServiceNotificationService::class);
         $this->orderService = app(OrderService::class);
-
-        $this->preloadData();
     }
 
     protected function preloadData(): void
@@ -83,6 +81,8 @@ class BirthdayDiscounts extends Command
      */
     public function handle()
     {
+        $this->preloadData();
+        
         $this->createBirthdayDiscounts();
         $this->sendBithdayNotifications();
 
