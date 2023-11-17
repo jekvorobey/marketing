@@ -721,7 +721,9 @@ class Discount extends AbstractModel
             case self::DISCOUNT_TYPE_ANY_OFFER:
             case self::DISCOUNT_TYPE_ANY_BRAND:
             case self::DISCOUNT_TYPE_ANY_CATEGORY:
-                UpdatePimContent::dispatch('markAllProductsForIndex');
+                if (!$this->promo_code_only) {
+                    UpdatePimContent::dispatch('markAllProductsForIndex');
+                }
                 break;
             case self::DISCOUNT_TYPE_MASTERCLASS:
                 $reindexRelations('markPublicEventsForIndexByTicketTypeIds', 'publicEvents', 'ticket_type_id');
