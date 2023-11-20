@@ -82,7 +82,7 @@ class BirthdayDiscounts extends Command
     public function handle()
     {
         $this->preloadData();
-        
+
         $this->createBirthdayDiscounts();
         $this->sendBithdayNotifications();
 
