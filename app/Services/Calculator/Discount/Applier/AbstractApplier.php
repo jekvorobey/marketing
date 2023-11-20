@@ -86,6 +86,11 @@ abstract class AbstractApplier
             return true;
         }
 
+        // для скидок промокода проверяется при применении
+        if ($discount->promo_code_only) {
+            return true;
+        }
+
         // если суммируется со всеми остальными скидками
         if ($discount->summarizable_with_all) {
             return true;
@@ -96,21 +101,11 @@ abstract class AbstractApplier
             ->get($basketItem->get('id'))
             ->pluck('id');
 
-        /** @var DiscountCondition $synergyCondition */
-        $synergyCondition = $discount->conditionGroups
-            ->pluck('conditions')
-            ->flatten()
-            ->firstWhere('type', DiscountCondition::DISCOUNT_SYNERGY);
-
-        if (!$synergyCondition) {
+        if (!$discount->isSynergyWithDiscounts($discountIdsForBasketItem)) {
             return false;
         }
 
-        $synergyDiscountIds = $synergyCondition->getSynergy();
-
-        if ($discountIdsForBasketItem->intersect($synergyDiscountIds)->count() !== $discountIdsForBasketItem->count()) {
-            return false;
-        }
+        $synergyCondition = $discount->getSynergyCondition();
 
         if ($synergyCondition->getMaxValueType()) {
             $this->maxValueByDiscount[$discount->id] = [
