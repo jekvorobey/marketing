@@ -733,4 +733,33 @@ class Discount extends AbstractModel
                 break;
         }
     }
+
+    /** Суммируется ли со скидками
+     * @param array|IlluminateCollection $ids
+     * @return bool
+     */
+    public function isSynergyWithDiscounts(array|IlluminateCollection $ids): bool
+    {
+        $ids = is_array($ids) ? collect($ids) : $ids;
+        $synergyCondition = $this->getSynergyCondition();
+
+        if (!$synergyCondition) {
+            return false;
+        }
+
+        $synergyDiscountIds = $synergyCondition->getSynergy();
+
+        return $ids->intersect($synergyDiscountIds)->count() == $ids->count();
+    }
+
+    /**
+     * @return DiscountCondition|null
+     */
+    public function getSynergyCondition(): ?DiscountCondition
+    {
+        return $this->conditionGroups
+            ->pluck('conditions')
+            ->flatten()
+            ->firstWhere('type', DiscountCondition::DISCOUNT_SYNERGY);
+    }
 }
