@@ -52,7 +52,7 @@ class OfferApplier extends AbstractApplier
 
         $hasProductQtyLimit = $discount->product_qty_limit > 0;
         $restProductQtyLimit = $discount->product_qty_limit;
-        $changed = 0;
+        $totalChange = 0;
 
         foreach ($basketItems as $basketItemId => $basketItem) {
             $lowestPossiblePrice = $basketItem['product_id']
@@ -112,19 +112,64 @@ class OfferApplier extends AbstractApplier
             $change = $changedPrice['discountValue'];
 
             if (!$justCalculate) {
-                $basketItem = $calculatorChangePrice->syncItemWithChangedPrice($basketItem, $changedPrice);
+                /* для скидок по промокоду возможность применения проверяется здесь,
+                   так как нужно проверять все скидки для каждого элемента корзины */
+                if ($discount->promo_code_only) {
+                    /** @var Collection|null $basketItemDiscounts */
+                    $basketItemDiscounts = $this->basketItemsByDiscounts->get($basketItemId);
+                    $promocodeDiscountIds = $this->input->promoCodeDiscounts
+                        ->where('id', '!=', $discount->id)
+                        ->pluck('id')
+                        ->values();
+                    $maxPromocodeDiscount = $basketItemDiscounts
+                        ?->whereIn('id', $promocodeDiscountIds)
+                        ->sortByDesc('change')
+                        ->first();
 
+                    $maxChange = $maxPromocodeDiscount['change'] ?? 0;
+                    $discountIsSummarizable = $discount->summarizable_with_all ||
+                        $discount->isSynergyWithDiscounts($promocodeDiscountIds);
+
+                    // подсчет самой выгодной скидки для каждого элемента
+                    if (!$discountIsSummarizable) {
+                        if ($change > $maxChange) {
+                            if ($basketItemDiscounts && isset($maxPromocodeDiscount['id'])) {
+                                $this->basketItemsByDiscounts->put(
+                                    $basketItemId,
+                                    $basketItemDiscounts->where('id', '!=', $maxPromocodeDiscount['id'])
+                                );
+
+                                $basketItem['price'] += $maxChange;
+                                $basketItem['discount'] -= $maxChange;
+                                $this->input->basketItems->put($basketItemId, $basketItem);
+
+                                $totalChange -= $maxChange;
+
+                                $changedPrice = $calculatorChangePrice->changePrice(
+                                    $basketItem,
+                                    $valueOfLimitDiscount ?? $value,
+                                    $valueType,
+                                    $lowestPossiblePrice,
+                                    $discount
+                                );
+                                $change = $changedPrice['discountValue'];
+                            }
+                        } else {
+                           continue;
+                        }
+                    }
+                }
+
+                $basketItem = $calculatorChangePrice->syncItemWithChangedPrice($basketItem, $changedPrice);
                 $this->addBasketItemByDiscount($basketItemId, $discount, $change);
             }
 
-            if ($change <= 0) {
-                continue;
+            if ($change > 0) {
+                $totalChange += $change * $basketItem['qty'];
             }
-
-            $changed += $change * $basketItem['qty'];
         }
 
-        return $changed;
+        return $totalChange;
     }
 
     /**
