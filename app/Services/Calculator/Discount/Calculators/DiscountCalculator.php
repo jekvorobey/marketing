@@ -76,31 +76,24 @@ class DiscountCalculator extends AbstractCalculator
 
         if ($this->input->hasDeliveries()) {
             if (!$this->input->freeDelivery) {
-                $this->filter()->sort()->apply()->rollback();
+                $this->prepare()->sort()->apply()->rollback();
             }
             $this->input->setSelectedDelivery();
         }
 
         // Считаются окончательные скидки + бонусы
-        $this->filter()->sort()->apply();
+        $this->prepare()->sort()->apply();
 
         $this->getDiscountOutput();
     }
 
     /**
-     * Фильтрует все актуальные скидки и оставляет только те, которые можно применить
+     * Подготавливает скидки
      * @return $this
      */
-    protected function filter(): self
+    protected function prepare(): self
     {
-        $this->possibleDiscounts = $this->discounts
-            ->filter(function (Discount $discount) {
-                $checker = new DiscountChecker($this->input, $discount);
-                $checker->exceptConditionTypes($this->getExceptingConditionTypes());
-                return $checker->check();
-            })
-            ->values();
-
+        $this->possibleDiscounts = $this->discounts;
         return $this->compileSynegry();
     }
 
@@ -167,12 +160,28 @@ class DiscountCalculator extends AbstractCalculator
 
         /** @var Discount $discount */
         foreach ($possibleDiscounts as $discount) {
-            $this->applyDiscount($discount);
+            /* важно именно так последовательно проверять каждую скидку после применения предыдущих */
+            if ($this->checkDiscount($discount)) {
+                $this->applyDiscount($discount);
+            }
         }
 
         $this->applyDeliveryDiscounts();
 
         return $this->processFreeProducts();
+    }
+
+    /**
+     * Проверить можно ли применить скидку
+     * @param Discount $discount
+     * @return bool
+     */
+    protected function checkDiscount(Discount $discount): bool
+    {
+        $checker = new DiscountChecker($this->input, $discount);
+        $checker->exceptConditionTypes($this->getExceptingConditionTypes());
+
+        return $checker->check();
     }
 
     /**
