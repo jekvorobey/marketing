@@ -202,9 +202,7 @@ class DiscountCalculator extends AbstractCalculator
 
         $change = $change ?? false;
 
-        if ($change) {
-            $this->addDiscountToApplied($discount, $change);
-        }
+        $this->addDiscountToApplied($discount, $change);
 
         return $change;
     }

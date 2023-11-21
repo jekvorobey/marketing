@@ -169,12 +169,7 @@ class OfferApplier extends AbstractApplier
             }
         }
 
-        $discountChangeSomething = $this->basketItemsByDiscounts
-            ->flatten(1)
-            ->pluck('id')
-            ->contains($discount->id);
-
-        return $discountChangeSomething ? $totalChange : 0;
+        return $totalChange;
     }
 
     /**
