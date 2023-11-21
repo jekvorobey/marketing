@@ -204,9 +204,11 @@ class DiscountCalculator extends AbstractCalculator
 
         $change = $change ?? false;
 
-        if ($change) {
-            $this->addDiscountToApplied($discount, $change);
-        }
+        /*
+         * Добавляем все скидку к примененным.
+         * Даже если не повлияла на цену, т.к. она тоже участвовала в подсчете общей скидки
+         */
+        $this->addDiscountToApplied($discount, $change);
 
         return $change;
     }
