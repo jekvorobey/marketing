@@ -15,6 +15,7 @@ use App\Services\Calculator\Discount\DiscountOutput;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class DiscountCalculator
@@ -145,7 +146,8 @@ class DiscountCalculator extends AbstractCalculator
         $this->possibleDiscounts = $this->sortDiscountsByProfit($this->possibleDiscounts)->values();
         $discountsWithoutPriority = $this->possibleDiscounts->where('max_priority', 0);
         $discountsWithPriority = $this->possibleDiscounts->where('max_priority', 1);
-        $this->possibleDiscounts = $discountsWithPriority->concat($discountsWithoutPriority);
+        $discountsWithPriority = $this->sortDiscountsByProfit($discountsWithPriority)->values();
+        $this->possibleDiscounts = $discountsWithPriority->merge($discountsWithoutPriority);
 
         return $this;
     }
@@ -202,6 +204,10 @@ class DiscountCalculator extends AbstractCalculator
 
         $change = $change ?? false;
 
+        /*
+         * Добавляем все скидку к примененным.
+         * Даже если не повлияла на цену, т.к. она тоже участвовала в подсчете общей скидки
+         */
         $this->addDiscountToApplied($discount, $change);
 
         return $change;
