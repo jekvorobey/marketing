@@ -477,7 +477,9 @@ class DiscountCalculator extends AbstractCalculator
     protected function applyCartTotalDiscounts(): void
     {
         $cartTotalDiscounts = $this->discounts->where('type', Discount::DISCOUNT_TYPE_CART_TOTAL);
-        $cartTotalDiscounts = $this->sortDiscountsByProfit($cartTotalDiscounts);
+        $cartTotalDiscounts = $this->sortDiscountsByProfit($cartTotalDiscounts)->values();
+        [$withPriority, $noPriority] = $cartTotalDiscounts->partition('max_priority', 1);
+        $cartTotalDiscounts = $withPriority->merge($noPriority);
 
         foreach ($cartTotalDiscounts as $cartDiscount) {
             if ($this->checkDiscount($cartDiscount)) {
