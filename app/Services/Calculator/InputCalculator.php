@@ -436,7 +436,7 @@ class InputCalculator
     /**
      * Сумма заказа без учета скидки
      */
-    public function getCostOrders(): float
+    public function getOrderCost(): float
     {
         return $this->basketItems->map(function ($basketItem) {
             return ($basketItem['cost'] ?? $basketItem['price']) * $basketItem['qty'];
@@ -444,9 +444,9 @@ class InputCalculator
     }
 
     /**
-     * Заказ от определенной суммы
+     * Сумма заказа со скидкой
      */
-    public function getPriceOrders(): float
+    public function getOrderPrice(): float
     {
         return $this->basketItems->map(function ($basketItem) {
             return $basketItem['price'] * $basketItem['qty'];

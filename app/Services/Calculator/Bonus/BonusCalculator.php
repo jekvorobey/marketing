@@ -128,7 +128,7 @@ class BonusCalculator extends AbstractCalculator
                     // todo
                     break;
                 case Bonus::TYPE_CART_TOTAL:
-                    $price = $this->input->getPriceOrders();
+                    $price = $this->input->getOrderPrice();
                     $bonusValue = $this->priceToBonusValue($price, $bonus);
                     break;
             }

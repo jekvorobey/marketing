@@ -73,9 +73,6 @@ class DeliveryApplier extends AbstractApplier
             ->addExtraParam(
                 DeliveryMethodConditionChecker::DELIVERY_METHOD_PARAM,
                 $this->currentDelivery['method']
-            )->addExtraParam(
-                MinPriceOrderConditionChecker::USE_PRICE_PARAM,
-                true
             );
 
         return $checker->checkDiscountConditionGroups();
