@@ -5,12 +5,10 @@ namespace App\Services\Discount;
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountBrand;
 use App\Models\Discount\DiscountCategory;
-use App\Models\Discount\DiscountCondition;
 use App\Models\Discount\DiscountConditionGroup;
 use App\Models\Discount\DiscountOffer;
 use App\Models\Discount\LogicalOperator;
 use Carbon\Carbon;
-use Greensight\Marketing\Dto\Discount\DiscountCategoryDto;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -108,7 +106,8 @@ class DiscountHelper
             Discount::DISCOUNT_TYPE_ANY_OFFER,
             Discount::DISCOUNT_TYPE_ANY_BUNDLE,
             Discount::DISCOUNT_TYPE_ANY_BRAND,
-            Discount::DISCOUNT_TYPE_ANY_CATEGORY => true,
+            Discount::DISCOUNT_TYPE_ANY_CATEGORY,
+            Discount::DISCOUNT_TYPE_MULTI => true,
             Discount::DISCOUNT_TYPE_ANY_MASTERCLASS,
             Discount::DISCOUNT_TYPE_DELIVERY,
             Discount::DISCOUNT_TYPE_CART_TOTAL => $offers->isEmpty()
@@ -143,6 +142,7 @@ class DiscountHelper
         $discount->show_on_showcase = $data['show_on_showcase'] ?? true;
         $discount->showcase_value_type = $data['showcase_value_type'] ?? Discount::DISCOUNT_VALUE_TYPE_PERCENT;
         $discount->show_original_price = $data['show_original_price'] ?? true;
+        $discount->parent_discount_id = $data['parent_discount_id'] ?? null;
 
         $ok = $discount->save();
         if (!$ok) {

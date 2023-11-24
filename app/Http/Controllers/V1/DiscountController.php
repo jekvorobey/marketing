@@ -7,6 +7,7 @@ use App\Http\Requests\CopyAndDeleteDiscountRequest;
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountCondition;
 use App\Models\Discount\LogicalOperator;
+use App\Services\Discount\ChildDiscountService;
 use App\Services\Discount\DiscountHelper;
 use App\Services\Calculator\Checkout\CheckoutCalculatorBuilder;
 use Carbon\Carbon;
@@ -185,10 +186,11 @@ class DiscountController extends Controller
             'showcase_value_type' => 'numeric|required_if:show_on_showcase,true',
             'show_original_price' => 'boolean|required',
             'conditions_logical_operator' => ['numeric', 'nullable', Rule::in(LogicalOperator::all())],
+            'child_discounts' => 'array|nullable'
         ]);
 
         foreach ($data as $field => $value) {
-            if (!in_array($field, ['relations', 'promoCodes'])) {
+            if (!in_array($field, ['relations', 'promoCodes', 'child_discounts'])) {
                 $discount[$field] = $value;
             }
         }
@@ -215,6 +217,8 @@ class DiscountController extends Controller
                 DiscountHelper::validateRelations($discount, []);
             }
             $discount->save();
+            $childDiscountService =  new ChildDiscountService();
+            $childDiscountService->updateChildDiscounts($discount, $data);
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -254,6 +258,7 @@ class DiscountController extends Controller
                 'showcase_value_type' => 'numeric|required_if:show_on_showcase,true',
                 'show_original_price' => 'boolean|required',
                 'conditions_logical_operator' => ['numeric', 'nullable', Rule::in(LogicalOperator::all())],
+                'child_discounts' => 'array|nullable',
             ]);
 
             $data['user_id'] = $client->userId();
@@ -273,8 +278,11 @@ class DiscountController extends Controller
         try {
             DB::beginTransaction();
             $discountId = DiscountHelper::create($data);
+            $childDiscountService =  new ChildDiscountService();
+            $childDiscountService->createChildDiscounts(Discount::find($discountId), $data);
             DB::commit();
         } catch (\Throwable $e) {
+            report($e->getMessage());
             DB::rollBack();
             return response()->json([
                 'error' => $e->getMessage(),
@@ -431,6 +439,11 @@ class DiscountController extends Controller
                     break;
                 case Discount::DISCOUNT_PROMO_CODES_RELATION:
                     $query->with('promoCodes');
+                    break;
+                case Discount::DISCOUNT_CHILD_DISCOUNTS_RELATION:
+                    $query->with('childDiscounts', function($query) {
+                        $query->with(['brands', 'categories', 'offers']);
+                    });
                     break;
             }
         }

@@ -44,6 +44,7 @@ use Pim\Core\PimException;
  * @property bool $show_on_showcase
  * @property bool $showcase_value_type
  * @property bool $show_original_price
+ * @property int $parent_discount_id
  *
  * @property-read Collection|DiscountOffer[] $offers
  * @property-read Collection|BundleItem[] $bundleItems
@@ -56,6 +57,7 @@ use Pim\Core\PimException;
  * @property-read Collection|DiscountPublicEvent[] $publicEvents
  * @property-read Collection|DiscountBundle[] $bundles
  * @property-read Collection|PromoCode[] $promoCodes
+ * @property-read Collection|Discount[] $children
  */
 class Discount extends AbstractModel
 {
@@ -125,6 +127,9 @@ class Discount extends AbstractModel
     /** Скидка на все мастер-классы */
     public const DISCOUNT_TYPE_ANY_MASTERCLASS = 12;
 
+    /** Скидка из нескольких скидок */
+    public const DISCOUNT_TYPE_MULTI = 13;
+
     /**
      * Тип скидки для вывода в корзину/чекаут
      */
@@ -164,6 +169,7 @@ class Discount extends AbstractModel
     public const DISCOUNT_BUNDLE_ID_RELATION = 9;
     public const DISCOUNT_PROMO_CODES_RELATION = 10;
     public const DISCOUNT_CONDITION_GROUP_RELATION = 11;
+    public const DISCOUNT_CHILD_DISCOUNTS_RELATION = 12;
 
     /**
      * Заполняемые поля модели
@@ -185,6 +191,7 @@ class Discount extends AbstractModel
         'show_on_showcase',
         'showcase_value_type',
         'show_original_price',
+        'parent_discount_id',
     ];
 
     /** @var array */
@@ -234,6 +241,7 @@ class Discount extends AbstractModel
             self::DISCOUNT_TYPE_CART_TOTAL,
             self::DISCOUNT_TYPE_MASTERCLASS,
             self::DISCOUNT_TYPE_ANY_MASTERCLASS,
+            self::DISCOUNT_TYPE_MULTI,
         ];
     }
 
@@ -382,6 +390,11 @@ class Discount extends AbstractModel
     public function bundles(): HasMany
     {
         return $this->hasMany(DiscountBundle::class, 'discount_id');
+    }
+
+    public function childDiscounts(): HasMany
+    {
+        return $this->hasMany(static::class, 'parent_discount_id');
     }
 
     public function scopeExpired(Builder $query): void
