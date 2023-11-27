@@ -217,6 +217,7 @@ class DiscountController extends Controller
                 DiscountHelper::validateRelations($discount, []);
             }
             $discount->save();
+
             $childDiscountService =  new ChildDiscountService();
             $childDiscountService->updateChildDiscounts($discount, $data);
             DB::commit();

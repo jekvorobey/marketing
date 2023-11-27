@@ -63,6 +63,7 @@ class DiscountHelper
      */
     public static function validateRelations(Discount $discount, array $relations): bool
     {
+
         /** @var Collection $offers */
         $offers = $relations[Discount::DISCOUNT_OFFER_RELATION] ?? $discount->offers;
         /** @var Collection $brands */
@@ -327,7 +328,7 @@ class DiscountHelper
 
             if ($discountCategory) {
                 $discountCategory->additionalCategories()->delete();
-                self::saveAdditionalCategories($discountCategory, $discountCategoryDto['additionalCategories']);
+                self::saveAdditionalCategories($discountCategory, $discountCategoryDto['additionalCategories'] ?? []);
             }
         }
 

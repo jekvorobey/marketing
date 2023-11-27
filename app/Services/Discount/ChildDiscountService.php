@@ -62,7 +62,7 @@ class ChildDiscountService
         $this->discount
             ->childDiscounts()
             ->whereNotIn('id', $old->pluck('id'))
-            ->delete(); //TODO:19031 check observers
+            ->delete();
 
         foreach ($old as $childDiscount) {
             $this->updateChildDiscount($childDiscount);
@@ -85,7 +85,7 @@ class ChildDiscountService
             $childRawData[$key] = $this->parentDiscountData[$key];
         }
 
-        $childRawData['name'] .= '_' . $this->discount->childDiscounts()->count() + 1; //TODO:19031 нейминг
+        $childRawData['name'] = "{$this->parentDiscountData['name']}_" . $this->discount->childDiscounts()->count() + 1;
         $childRawData['parent_discount_id'] = $this->discount->id;
         $childRawData['relations'] = $this->prepareRelations($childRawData);
 
@@ -109,12 +109,8 @@ class ChildDiscountService
             $localDiscount[$key] = $childRawData[$key];
         }
 
-        $relations = $this->parentDiscountData['relations'] ?? null;
-
-        if ($relations) {
-            $relations = $this->prepareRelations($childRawData);
-            DiscountHelper::updateRelations($localDiscount, $relations);
-        }
+        $relations = $this->prepareRelations($childRawData);
+        DiscountHelper::updateRelations($localDiscount, $relations);
 
         $localDiscount->save();
 
@@ -160,7 +156,25 @@ class ChildDiscountService
                     $childRawData['brands']
                 );
                 break;
-            //TODO:19031 categories and others
+            case Discount::DISCOUNT_TYPE_CATEGORY:
+                $relations[Discount::DISCOUNT_CATEGORY_RELATION] = array_map(
+                    fn (int $categoryId) => ['except' => false, 'category_id' => $categoryId],
+                    $childRawData['categories']
+                );
+                break;
+            case Discount::DISCOUNT_TYPE_OFFER:
+                $relations[Discount::DISCOUNT_OFFER_RELATION] = array_map(
+                    fn (int $offerId) => ['except' => false, 'offer_id' => $offerId],
+                    explode(',', $childRawData['offers'])
+                );
+                break;
+        }
+
+        if (isset($childRawData['except']['offers'])) {
+            $relations[Discount::DISCOUNT_OFFER_RELATION] = array_map(
+                fn (int $offerId) => ['except' => true, 'offer_id' => $offerId],
+                $childRawData['except']['offers']
+            );
         }
 
         return $relations;
