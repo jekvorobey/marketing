@@ -608,6 +608,11 @@ class Discount extends AbstractModel
                 foreach ($operators as $operator) {
                     $serviceNotificationService->send($operator->user_id, $type, $data);
                 }
+
+                foreach ($discount->childDiscounts as $childDiscount) {
+                    $childDiscount->status = $discount->status;
+                    $childDiscount->save();
+                }
             }
 
             if ($discount->value != $discount->getOriginal('value') || $discount->wasRecentlyCreated) {
@@ -697,6 +702,8 @@ class Discount extends AbstractModel
 
             $serviceNotificationService = app(ServiceNotificationService::class);
             $serviceNotificationService->sendToAdmin('aozskidkaskidka_udalena');
+
+            $discount->childDiscounts()->delete();
         });
     }
 
