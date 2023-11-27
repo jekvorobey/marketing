@@ -66,10 +66,13 @@ class CalculatorChangePrice
 
         $currentDiscount = $item['discount'] ?? 0;
         $currentCost = $item['cost'] ?? $item['price'];
-        $discountValue = $this->getDiscountValue($result['price'], $currentCost, $value, $valueType, $lowestPossiblePrice);
 
+        // Конечная цена товара в бандле всегда округляется до целого, скидка в большую сторону до целого
+        $discountValue = self::round(
+            $this->getDiscountValue($result['price'], $currentCost, $value, $valueType, $lowestPossiblePrice),
+            self::CEIL
+        );
         $result['discount'] = $currentDiscount + $discountValue;
-        // Конечная цена товара в бандле всегда округляется до целого
         $result['price'] = self::round($currentCost - $result['discount'], self::FLOOR);
         $result['cost'] = $currentCost;
 
