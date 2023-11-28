@@ -686,11 +686,11 @@ class Discount extends AbstractModel
             $serviceNotificationService->sendToAdmin('aozskidkaskidka_udalena');
         });
 
-        self::saving(function (self $discount) {
-            if (in_array($discount->type, [self::DISCOUNT_TYPE_BUNDLE_OFFER, self::DISCOUNT_TYPE_BUNDLE_MASTERCLASS], true)) {
-                $discount->summarizable_with_all = true;
-            }
-        });
+//        self::saving(function (self $discount) {
+//            if (in_array($discount->type, [self::DISCOUNT_TYPE_BUNDLE_OFFER, self::DISCOUNT_TYPE_BUNDLE_MASTERCLASS], true)) {
+//                $discount->summarizable_with_all = true;
+//            }
+//        });
     }
 
     /**
