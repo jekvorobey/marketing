@@ -102,9 +102,9 @@ class BirthdayDiscounts extends Command
             }
 
             try {
-                $discount1 = $this->copyDiscountFrom(static::DISCOUNT_1_COPY_FROM_ID, $customer, true);
-                $discount2 = $this->copyDiscountFrom(static::DISCOUNT_2_COPY_FROM_ID, $customer, true);
-                $discount3 = $this->copyDiscountFrom(static::DISCOUNT_FREE_DELIVERY_COPY_FROM_ID, $customer, false);
+                $discount1 = $this->copyDiscountFrom(static::DISCOUNT_1_COPY_FROM_ID, $customer);
+                $discount2 = $this->copyDiscountFrom(static::DISCOUNT_2_COPY_FROM_ID, $customer);
+                $discount3 = $this->copyDiscountFrom(static::DISCOUNT_FREE_DELIVERY_COPY_FROM_ID, $customer);
 
                 $this->notificationService->send($customer->user_id, 'birthday_discount_created', $this->getEmailData([
                     'TITLE' => 'Есть догадки!',
@@ -132,7 +132,7 @@ class BirthdayDiscounts extends Command
         ], $data);
     }
 
-    protected function copyDiscountFrom(int $discountId, CustomerDto $customer, bool $summarizableWithAll = true): Discount
+    protected function copyDiscountFrom(int $discountId, CustomerDto $customer): Discount
     {
         $originalDiscount = Discount::whereId($discountId)->firstOrFail();
 
@@ -145,7 +145,6 @@ class BirthdayDiscounts extends Command
             $discount->start_date = now();
             $discount->end_date = now()->addDays(static::DAYS_BEFORE_BITHDAY + static::DAYS_AFTER_BITHDAY)->setTime(23,59,59);
             $discount->promo_code_only = true;
-            $discount->summarizable_with_all = $summarizableWithAll;
             $discount->push();
 
             $this->replicateRelations($originalDiscount, $discount, 'brands');
