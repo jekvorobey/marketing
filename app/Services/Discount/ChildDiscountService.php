@@ -177,6 +177,13 @@ class ChildDiscountService
             );
         }
 
+        if (isset($childRawData['merchants'])) {
+            $relations[Discount::DISCOUNT_MERCHANT_RELATION] = array_map(
+                fn (int $merchantId) => ['except' => true, 'merchant_id' => $merchantId],
+                $childRawData['merchants']
+            );
+        }
+
         return $relations;
     }
 }

@@ -83,6 +83,10 @@ abstract class AbstractApplier
      */
     protected function applicableToBasketItem(Discount $discount, Collection $basketItem): bool
     {
+        if (!$this->checkOfferSegment($discount, $basketItem)) {
+            return false;
+        }
+
         if (!$this->checkStoredDiscountConditions($discount, $basketItem)) {
             return false;
         }
@@ -143,8 +147,30 @@ abstract class AbstractApplier
     }
 
     /**
+     * Проверка оффера на условия сегментов (мерчант, характеристика товара и тд.)
+     * @param Discount $discount
+     * @param Collection $basketItem
+     * @return bool
+     */
+    protected function checkOfferSegment(Discount $discount, Collection $basketItem): bool
+    {
+        if ($discount->merchants->isNotEmpty()) {
+            $merchantIsValid = $discount->merchants
+                ->pluck('merchant_id')
+                ->contains($basketItem->get('merchant_id'));
+
+            if (!$merchantIsValid) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Поверить сохраненные в сторе условия скидки.
      * Сохраняются туда на этапе проверки условий.
+     * @deprecated После переноса мерчантов и свойств в скидку нужно будет удалить
      * @param Discount $discount
      * @param Collection $basketItem
      * @return bool

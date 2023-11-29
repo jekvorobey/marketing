@@ -443,8 +443,11 @@ class DiscountController extends Controller
                     break;
                 case Discount::DISCOUNT_CHILD_DISCOUNTS_RELATION:
                     $query->with('childDiscounts', function($query) {
-                        $query->with(['brands', 'categories', 'offers']);
+                        $query->with(['brands', 'categories', 'offers', 'merchants']);
                     });
+                    break;
+                case Discount::DISCOUNT_MERCHANT_RELATION:
+                    $query->with('merchants');
                     break;
             }
         }
