@@ -42,7 +42,7 @@ class MinPriceOrderConditionCheckerTest extends TestCase
 
         $condition = DiscountConditionMock::create(
             DiscountCondition::MIN_PRICE_ORDER,
-            [DiscountCondition::FIELD_MIN_PRICE => $input->getPriceOrders() - 10]
+            [DiscountCondition::FIELD_MIN_PRICE => $input->getOrderPrice() - 10]
         );
 
         $checker = new MinPriceOrderConditionChecker($input, $condition);
@@ -61,7 +61,7 @@ class MinPriceOrderConditionCheckerTest extends TestCase
 
         $condition = DiscountConditionMock::create(
             DiscountCondition::MIN_PRICE_ORDER,
-            [DiscountCondition::FIELD_MIN_PRICE => $input->getPriceOrders() + 10,]
+            [DiscountCondition::FIELD_MIN_PRICE => $input->getOrderPrice() + 10,]
         );
 
         $checker = new MinPriceOrderConditionChecker($input, $condition);

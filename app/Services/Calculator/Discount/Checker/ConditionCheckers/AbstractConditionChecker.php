@@ -5,6 +5,7 @@ namespace App\Services\Calculator\Discount\Checker\ConditionCheckers;
 use App\Models\Discount\DiscountCondition;
 use App\Services\Calculator\Discount\Checker\CheckerInterface;
 use App\Services\Calculator\Discount\Checker\Traits\WithExtraParams;
+use App\Services\Calculator\Discount\DiscountConditionStore;
 use App\Services\Calculator\InputCalculator;
 
 abstract class AbstractConditionChecker implements CheckerInterface
@@ -36,5 +37,12 @@ abstract class AbstractConditionChecker implements CheckerInterface
         return $this;
     }
 
-
+    /**
+     * Сохраняем в стор, чтобы потом проверять при применении к каждому basketItem
+     * @return void
+     */
+    protected function saveConditionToStore(): void
+    {
+        DiscountConditionStore::put(spl_object_hash($this->condition), $this->condition);
+    }
 }

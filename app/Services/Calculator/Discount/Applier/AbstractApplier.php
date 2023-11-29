@@ -6,7 +6,12 @@ use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountCondition;
 use App\Services\Calculator\Discount\DiscountConditionStore;
 use App\Services\Calculator\InputCalculator;
+use Greensight\CommonMsa\Rest\RestQuery;
 use Illuminate\Support\Collection;
+use Pim\Core\PimException;
+use Pim\Dto\Product\ProductDto;
+use Pim\Dto\Product\ProductPropertyValueDto;
+use Pim\Services\ProductService\ProductService;
 
 abstract class AbstractApplier
 {
@@ -25,6 +30,7 @@ abstract class AbstractApplier
     protected InputCalculator $input;
     protected Collection $basketItemsByDiscounts;
     protected Collection $appliedDiscounts;
+    protected Collection $basketProducts;
 
     public function __construct(
         InputCalculator $input,
@@ -77,8 +83,7 @@ abstract class AbstractApplier
      */
     protected function applicableToBasketItem(Discount $discount, Collection $basketItem): bool
     {
-        if ($this->discountHasTrueMerchantCondition($discount)
-            && !$this->basketItemSatisfiesMerchantCondition($discount, $basketItem)) {
+        if (!$this->checkStoredDiscountConditions($discount, $basketItem)) {
             return false;
         }
 
@@ -138,13 +143,45 @@ abstract class AbstractApplier
     }
 
     /**
+     * Поверить сохраненные в сторе условия скидки.
+     * Сохраняются туда на этапе проверки условий.
+     * @param Discount $discount
+     * @param Collection $basketItem
+     * @return bool
+     */
+    protected function checkStoredDiscountConditions(Discount $discount, Collection $basketItem): bool
+    {
+        if ($this->discountHasTrueMerchantCondition($discount) &&
+            !$this->basketItemSatisfiesMerchantCondition($discount, $basketItem)) {
+            return false;
+        }
+
+        if ($this->discountHasTruePropertyCondition($discount) &&
+            !$this->basketItemSatisfiesPropertyCondition($discount, $basketItem)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Содержит ли скидка условие по мерчанту, которое выполнилось
      * @param Discount $discount
      * @return bool
      */
-    private function discountHasTrueMerchantCondition(Discount $discount): bool
+    protected function discountHasTrueMerchantCondition(Discount $discount): bool
     {
-        return $this->getStoredMerchantConditions($discount)->isNotEmpty();
+        return $this->getStoredConditions($discount, DiscountCondition::MERCHANT)->isNotEmpty();
+    }
+
+    /**
+     * Содержит ли скидка условие по характеристике, которое выполнилось
+     * @param Discount $discount
+     * @return bool
+     */
+    protected function discountHasTruePropertyCondition(Discount $discount): bool
+    {
+        return $this->getStoredConditions($discount, DiscountCondition::PROPERTY)->isNotEmpty();
     }
 
     /**
@@ -153,9 +190,9 @@ abstract class AbstractApplier
      * @param Collection $basketItem
      * @return bool
      */
-    private function basketItemSatisfiesMerchantCondition(Discount $discount, Collection $basketItem): bool
+    protected function basketItemSatisfiesMerchantCondition(Discount $discount, Collection $basketItem): bool
     {
-        return $this->getStoredMerchantConditions($discount)
+        return $this->getStoredConditions($discount, DiscountCondition::MERCHANT)
             ->filter(fn (DiscountCondition $condition) => in_array(
                 $basketItem->get('merchant_id'),
                 $condition->getMerchants()
@@ -164,20 +201,59 @@ abstract class AbstractApplier
     }
 
     /**
-     * Получить сохраненные условия по мерчанту
-     * в DiscountConditionStore данные записываются в MerchantConditionChecker
+     * Подходит ли под условие характеристики basketItem
      * @param Discount $discount
+     * @param Collection $basketItem
+     * @return bool
+     */
+    protected function basketItemSatisfiesPropertyCondition(Discount $discount, Collection $basketItem): bool
+    {
+        $product = $this->getBasketProducts()->get($basketItem->get('product_id'));
+
+        return $product && $this->getStoredConditions($discount, DiscountCondition::PROPERTY)
+            ->filter(function (DiscountCondition $condition) use ($product) {
+                return collect($product->properties)->contains(
+                        fn (ProductPropertyValueDto $dto) => $dto->property_id == $condition->getProperty() &&
+                            in_array($dto->value, $condition->getPropertyValues())
+                    );
+            })
+            ->isNotEmpty();
+    }
+
+    /**
+     * Получить сохраненные условия
+     * @param Discount $discount
+     * @param int $type
      * @return Collection
      */
-    private function getStoredMerchantConditions(Discount $discount): Collection
+    protected function getStoredConditions(Discount $discount, int $type): Collection
     {
         $conditionGroupIds = $discount->conditionGroups->pluck('id');
-
-        return DiscountConditionStore::getConditions()->where(
-            'type',
-            DiscountCondition::MERCHANT
-        )->filter(
+        return DiscountConditionStore::getByType($type)->filter(
             fn (DiscountCondition $condition) => $conditionGroupIds->contains($condition->discount_condition_group_id)
         );
+    }
+
+    /**
+     * Получить товары корзины
+     * @return Collection [[id => product],... ]
+     */
+    protected function getBasketProducts(): Collection
+    {
+        try {
+            if (!isset($this->basketProducts)) {
+                $this->basketProducts = app(ProductService::class)->products(
+                    (new RestQuery())
+                        ->addFields(ProductDto::entity(), 'id', 'properties')
+                        ->include('properties')
+                        ->setFilter('id', $this->input->basketItems->pluck('product_id')->toArray())
+                )->keyBy('id');
+            }
+
+            return $this->basketProducts;
+        } catch (PimException $e) {
+            report($e);
+            return new Collection();
+        }
     }
 }

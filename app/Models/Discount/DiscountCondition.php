@@ -69,10 +69,13 @@ class DiscountCondition extends AbstractModel
     public const BUNDLE = 12;
 
     /** @var int - условие на количество разных товаров в корзине */
-    const DIFFERENT_PRODUCTS_COUNT  = 13;
+    public const DIFFERENT_PRODUCTS_COUNT  = 13;
 
-    /* Товары определенного поставщика(ов)*/
-    const MERCHANT = 14;
+    /** Товары определенного поставщика(ов) */
+    public const MERCHANT = 14;
+
+    /** Товары с определенными характеристиками */
+    public const PROPERTY = 15;
 
     /** Свойства условий скидки (для поля condition) */
     public const FIELD_MIN_PRICE = 'minPrice';
@@ -91,6 +94,8 @@ class DiscountCondition extends AbstractModel
     public const FIELD_MAX_VALUE = 'maxValue';
     public const FIELD_ADDITIONAL_DISCOUNT = 'additionalDiscount';
     public const FIELD_MERCHANTS = 'merchants';
+    public const FIELD_PROPERTY = 'property';
+    public const FIELD_PROPERTY_VALUES = 'propertyValues';
 
     /**
      * Заполняемые поля модели
@@ -188,6 +193,16 @@ class DiscountCondition extends AbstractModel
     public function getMerchants(): array
     {
         return $this->condition[self::FIELD_MERCHANTS] ?? [];
+    }
+
+    public function getProperty(): ?int
+    {
+        return $this->condition[self::FIELD_PROPERTY] ?? null;
+    }
+
+    public function getPropertyValues(): array
+    {
+        return $this->condition[self::FIELD_PROPERTY_VALUES] ?? [];
     }
 
     public function setSynergy(array $value): void

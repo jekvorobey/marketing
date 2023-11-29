@@ -184,7 +184,7 @@ class DiscountController extends Controller
             'show_on_showcase' => 'boolean|required',
             'showcase_value_type' => 'numeric|required_if:show_on_showcase,true',
             'show_original_price' => 'boolean|required',
-            'conditions_logical_operator' => ['numeric', 'nullable', Rule::in(LogicalOperator::all())]
+            'conditions_logical_operator' => ['numeric', 'nullable', Rule::in(LogicalOperator::all())],
         ]);
 
         foreach ($data as $field => $value) {
@@ -253,7 +253,7 @@ class DiscountController extends Controller
                 'show_on_showcase' => 'boolean|required',
                 'showcase_value_type' => 'numeric|required_if:show_on_showcase,true',
                 'show_original_price' => 'boolean|required',
-                'conditions_logical_operator' => ['numeric', 'nullable', Rule::in(LogicalOperator::all())]
+                'conditions_logical_operator' => ['numeric', 'nullable', Rule::in(LogicalOperator::all())],
             ]);
 
             $data['user_id'] = $client->userId();
@@ -409,7 +409,7 @@ class DiscountController extends Controller
                     $query->with('brands');
                     break;
                 case Discount::DISCOUNT_CATEGORY_RELATION:
-                    $query->with('categories');
+                    $query->with('categories.additionalCategories');
                     break;
                 case Discount::DISCOUNT_SEGMENT_RELATION:
                     $query->with('segments');

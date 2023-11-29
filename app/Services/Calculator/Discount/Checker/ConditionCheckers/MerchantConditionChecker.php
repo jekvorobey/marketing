@@ -2,8 +2,6 @@
 
 namespace App\Services\Calculator\Discount\Checker\ConditionCheckers;
 
-use App\Services\Calculator\Discount\DiscountConditionStore;
-
 class MerchantConditionChecker extends AbstractConditionChecker
 {
     /**
@@ -22,14 +20,5 @@ class MerchantConditionChecker extends AbstractConditionChecker
         }
 
         return $success;
-    }
-
-    /**
-     * Сохраняем в стор, чтобы потом проверять при применении к каждому basketItem
-     * @return void
-     */
-    private function saveConditionToStore(): void
-    {
-        DiscountConditionStore::put(spl_object_hash($this->condition), $this->condition);
     }
 }

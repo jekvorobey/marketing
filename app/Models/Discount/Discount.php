@@ -41,6 +41,9 @@ use Pim\Core\PimException;
  * @property bool $summarizable_with_all
  * @property string $comment
  * @property int $conditions_logical_operator
+ * @property bool $show_on_showcase
+ * @property bool $showcase_value_type
+ * @property bool $show_original_price
  *
  * @property-read Collection|DiscountOffer[] $offers
  * @property-read Collection|BundleItem[] $bundleItems
@@ -347,7 +350,8 @@ class Discount extends AbstractModel
 
     public function categories(): HasMany
     {
-        return $this->hasMany(DiscountCategory::class, 'discount_id');
+        return $this->hasMany(DiscountCategory::class, 'discount_id')
+            ->with('additionalCategories');
     }
 
     public function roles(): HasMany
@@ -681,6 +685,12 @@ class Discount extends AbstractModel
             $serviceNotificationService = app(ServiceNotificationService::class);
             $serviceNotificationService->sendToAdmin('aozskidkaskidka_udalena');
         });
+
+//        self::saving(function (self $discount) {
+//            if (in_array($discount->type, [self::DISCOUNT_TYPE_BUNDLE_OFFER, self::DISCOUNT_TYPE_BUNDLE_MASTERCLASS], true)) {
+//                $discount->summarizable_with_all = true;
+//            }
+//        });
     }
 
     /**
@@ -717,7 +727,9 @@ class Discount extends AbstractModel
             case self::DISCOUNT_TYPE_ANY_OFFER:
             case self::DISCOUNT_TYPE_ANY_BRAND:
             case self::DISCOUNT_TYPE_ANY_CATEGORY:
-                UpdatePimContent::dispatch('markAllProductsForIndex');
+                if (!$this->promo_code_only) {
+                    UpdatePimContent::dispatch('markAllProductsForIndex');
+                }
                 break;
             case self::DISCOUNT_TYPE_MASTERCLASS:
                 $reindexRelations('markPublicEventsForIndexByTicketTypeIds', 'publicEvents', 'ticket_type_id');

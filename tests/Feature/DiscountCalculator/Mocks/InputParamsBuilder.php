@@ -19,6 +19,7 @@ class InputParamsBuilder
     private ?array $exceptedBasketItemsMerchantIds = null;
     protected ?array $basketItemsBrandIds = null;
     protected ?array $basketItemsCategoryIds = null;
+    protected ?array $productIds = null;
     protected ?int $paymentMethod = null;
     protected ?string $regionFiasId = null;
 
@@ -111,6 +112,10 @@ class InputParamsBuilder
             $query->setFilter('brand_id', 'in', $this->basketItemsBrandIds);
         }
 
+        if ($this->productIds) {
+            $query->setFilter('product_id', 'in', $this->productIds);
+        }
+
         $offers = app(OfferService::class)->offers(
             $query->pageNumber(1, $this->basketItemsCount)
         );
@@ -193,6 +198,16 @@ class InputParamsBuilder
     public function setExceptedBasketItemsMerchantIds(?array $exceptedBasketItemsMerchantIds): InputParamsBuilder
     {
         $this->exceptedBasketItemsMerchantIds = $exceptedBasketItemsMerchantIds;
+        return $this;
+    }
+
+    /**
+     * @param array|null $productIds
+     * @return $this
+     */
+    public function setProductIds(?array $productIds): InputParamsBuilder
+    {
+        $this->productIds = $productIds;
         return $this;
     }
 }

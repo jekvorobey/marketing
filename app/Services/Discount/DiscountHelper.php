@@ -4,11 +4,13 @@ namespace App\Services\Discount;
 
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountBrand;
+use App\Models\Discount\DiscountCategory;
 use App\Models\Discount\DiscountCondition;
 use App\Models\Discount\DiscountConditionGroup;
 use App\Models\Discount\DiscountOffer;
 use App\Models\Discount\LogicalOperator;
 use Carbon\Carbon;
+use Greensight\Marketing\Dto\Discount\DiscountCategoryDto;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -159,6 +161,10 @@ class DiscountHelper
                 if ($relation === Discount::DISCOUNT_CONDITION_GROUP_RELATION) {
                     self::saveConditions($model, $item['conditions'] ?? []);
                 }
+
+                if ($relation === Discount::DISCOUNT_CATEGORY_RELATION) {
+                    self::saveAdditionalCategories($model, $item['additionalCategories'] ?? []);
+                }
             });
         }
 
@@ -182,6 +188,19 @@ class DiscountHelper
             /** @var DiscountConditionGroup $conditionGroup */
             $condition['discount_id'] = $conditionGroup->discount_id; //TODO: убрать потом, @deprecated
             $conditionGroup->conditions()->create($condition);
+        }
+    }
+
+    /**
+     * @param Model $discountCategory
+     * @param array $additionalCategories
+     * @return void
+     */
+    public static function saveAdditionalCategories(Model $discountCategory, array $additionalCategories): void
+    {
+        foreach ($additionalCategories as $additionalCategory) {
+            /** @var DiscountCategory $discountCategory */
+            $discountCategory->additionalCategories()->create($additionalCategory);
         }
     }
 
@@ -249,6 +268,7 @@ class DiscountHelper
     public static function updateRelations(Discount $discount, array $relations): bool
     {
         $diffs = collect();
+        $relationsCopy = $relations;
 
         foreach (Discount::availableRelations() as $relation) {
             $relations[$relation] = collect($relations[$relation] ?? []);
@@ -258,6 +278,7 @@ class DiscountHelper
             if ($relation === Discount::DISCOUNT_CONDITION_GROUP_RELATION) {
                 continue;
             }
+
             $diffs->put($relation, $value['class']::hashDiffItems(
                 $value['items'],
                 $relations[$relation]->transform(function (array $item) use ($discount, $value) {
@@ -296,6 +317,18 @@ class DiscountHelper
             $conditionGroup->logical_operator = $groupDto['logical_operator'] ?? LogicalOperator::AND;
             $conditionGroup->save();
             self::saveConditions($conditionGroup, $groupDto['conditions'] ?? []);
+        }
+
+        $discountCategoryDtos = $relationsCopy[Discount::DISCOUNT_CATEGORY_RELATION] ?? [];
+        $discount = $discount->fresh(['categories']);
+        // сохранить дополнительные категории
+        foreach ($discountCategoryDtos as $discountCategoryDto) {
+            $discountCategory = $discount->categories->firstWhere('category_id', $discountCategoryDto['category_id']);
+
+            if ($discountCategory) {
+                $discountCategory->additionalCategories()->delete();
+                self::saveAdditionalCategories($discountCategory, $discountCategoryDto['additionalCategories']);
+            }
         }
 
         if (!self::validateRelations($discount, $relations)) {
