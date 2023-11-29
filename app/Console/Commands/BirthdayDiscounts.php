@@ -27,6 +27,7 @@ class BirthdayDiscounts extends Command
 
     protected const DISCOUNT_1_COPY_FROM_ID = 2229;
     protected const DISCOUNT_2_COPY_FROM_ID = 2230;
+    protected const DISCOUNT_FREE_DELIVERY_COPY_FROM_ID = 2447;
 
     /**
      * The name and signature of the console command.
@@ -103,6 +104,7 @@ class BirthdayDiscounts extends Command
             try {
                 $discount1 = $this->copyDiscountFrom(static::DISCOUNT_1_COPY_FROM_ID, $customer);
                 $discount2 = $this->copyDiscountFrom(static::DISCOUNT_2_COPY_FROM_ID, $customer);
+                $discount3 = $this->copyDiscountFrom(static::DISCOUNT_FREE_DELIVERY_COPY_FROM_ID, $customer);
 
                 $this->notificationService->send($customer->user_id, 'birthday_discount_created', $this->getEmailData([
                     'TITLE' => 'Есть догадки!',
@@ -125,13 +127,9 @@ class BirthdayDiscounts extends Command
 
     private function getEmailData(array $data): array
     {
-        return array_merge($data, [
-            'BUTTON' => [
-                'text' => 'ПЕРЕЙТИ В ЛИЧНЫЙ КАБИНЕТ',
-                'link' => config('app.showcase_host') . '/profile/',
-            ],
+        return array_merge([
             'finisher_text' => 'Если вы получили это письмо по ошибке,<br>просто проигнорируйте его',
-        ]);
+        ], $data);
     }
 
     protected function copyDiscountFrom(int $discountId, CustomerDto $customer): Discount
@@ -145,9 +143,8 @@ class BirthdayDiscounts extends Command
             $discount->name = $this->generateDiscountName($customer);
             $discount->status = Discount::STATUS_ACTIVE;
             $discount->start_date = now();
-            $discount->end_date = now()->addDays(static::DAYS_BEFORE_BITHDAY + static::DAYS_AFTER_BITHDAY);
+            $discount->end_date = now()->addDays(static::DAYS_BEFORE_BITHDAY + static::DAYS_AFTER_BITHDAY)->setTime(23,59,59);
             $discount->promo_code_only = true;
-            $discount->summarizable_with_all = true;
             $discount->push();
 
             $this->replicateRelations($originalDiscount, $discount, 'brands');
