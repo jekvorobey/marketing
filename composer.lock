@@ -1351,7 +1351,7 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.ibt.ru:iBT.studio/ibt-cm-lib",
-                "reference": "a23a1da6f2f06f9d8721e9af8f527a1c57647057"
+                "reference": "99ad401b96a6727e2ba6e530092316359407bcb7"
             },
             "require": {
                 "ext-json": "*",
@@ -1386,7 +1386,7 @@
                 }
             ],
             "description": "iBT Customer management client",
-            "time": "2023-11-10T06:30:45+00:00"
+            "time": "2023-11-28T12:42:29+00:00"
         },
         {
             "name": "ibt/common-lib",
@@ -1453,7 +1453,7 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.ibt.ru:iBT.studio/ibt-logistics-lib",
-                "reference": "d77178b15486d35895c9ffd5ac8bb3b7a3ec79d8"
+                "reference": "8da1e40f87da38b9dbc3c62badc7babd2b6ec3e0"
             },
             "require": {
                 "ext-json": "*",
@@ -1488,7 +1488,7 @@
                 }
             ],
             "description": "iBT logistics client",
-            "time": "2023-09-08T14:33:06+00:00"
+            "time": "2023-11-22T11:41:55+00:00"
         },
         {
             "name": "ibt/merchant-management-lib",
@@ -1615,7 +1615,7 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.ibt.ru:iBT.studio/ibt-pim-lib",
-                "reference": "619b7853ddb238c6134d7450bed6ade7b9639100"
+                "reference": "371c52533f21324322cf4f9f786b370aa545d1a9"
             },
             "require": {
                 "ext-json": "*",
@@ -1639,7 +1639,7 @@
                 }
             ],
             "description": "iBT PIM service client",
-            "time": "2023-11-16T04:21:11+00:00"
+            "time": "2023-11-28T11:50:08+00:00"
         },
         {
             "name": "jean85/pretty-package-versions",
