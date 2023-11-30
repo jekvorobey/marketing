@@ -6,8 +6,6 @@ use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountCondition;
 use App\Models\Discount\DiscountConditionGroup;
 use App\Models\Discount\LogicalOperator;
-use App\Models\Order\Order;
-use Carbon\Carbon;
 use Greensight\CommonMsa\Rest\RestQuery;
 use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationService;
 use Greensight\Customer\Dto\CustomerDto;
