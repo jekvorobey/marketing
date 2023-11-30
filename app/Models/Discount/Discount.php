@@ -748,6 +748,10 @@ class Discount extends AbstractModel
      */
     public function isSynergyWithDiscounts(array|IlluminateCollection $ids): bool
     {
+        if ($this->summarizable_with_all) {
+            return true;
+        }
+
         $ids = is_array($ids) ? collect($ids) : $ids;
         $synergyCondition = $this->getSynergyCondition();
 
