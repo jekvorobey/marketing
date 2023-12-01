@@ -92,7 +92,10 @@ abstract class AbstractApplier
         }
 
         // для скидок промокода проверяется при применении
-        if ($discount->promo_code_only) {
+        if (
+            $discount->promo_code_only &&
+            !in_array($discount->type, [Discount::DISCOUNT_TYPE_CART_TOTAL, Discount::DISCOUNT_TYPE_DELIVERY])
+        ) {
             return true;
         }
 
