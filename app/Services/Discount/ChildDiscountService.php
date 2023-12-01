@@ -179,9 +179,19 @@ class ChildDiscountService
 
         if (isset($childRawData['merchants'])) {
             $relations[Discount::DISCOUNT_MERCHANT_RELATION] = array_map(
-                fn (int $merchantId) => ['except' => true, 'merchant_id' => $merchantId],
+                fn (int $merchantId) => ['except' => false, 'merchant_id' => $merchantId],
                 $childRawData['merchants']
             );
+        }
+
+        if (isset($childRawData['productProperty']) && $childRawData['productProperty']) {
+            $relations[Discount::DISCOUNT_PRODUCT_PROPERTY_RELATION] = [
+                [
+                    'except' => false,
+                    'property_id' => $childRawData['productProperty']['id'],
+                    'values' => $childRawData['productProperty']['values'],
+                ]
+            ];
         }
 
         return $relations;

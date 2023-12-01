@@ -4,6 +4,7 @@ namespace App\Services\Calculator\Discount\Applier;
 
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountCondition;
+use App\Models\Discount\DiscountProductProperty;
 use App\Services\Calculator\Discount\DiscountConditionStore;
 use App\Services\Calculator\InputCalculator;
 use Greensight\CommonMsa\Rest\RestQuery;
@@ -162,6 +163,17 @@ abstract class AbstractApplier
             if (!$merchantIsValid) {
                 return false;
             }
+        }
+
+        if ($discount->productProperties->isNotEmpty()) {
+            $product = $this->getBasketProducts()->get($basketItem->get('product_id'));
+            /** @var DiscountProductProperty $productProperty */
+            $productProperty = $discount->productProperties->first();
+
+            return $product && collect($product->properties)->contains(
+                fn (ProductPropertyValueDto $dto) => $dto->property_id == $productProperty->property_id &&
+                    in_array($dto->value, $productProperty->values)
+            );
         }
 
         return true;

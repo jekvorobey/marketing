@@ -266,6 +266,7 @@ class InputCalculator
                 'merchant_id' => $offerDto->merchant_id,
                 'bundle_id' => $basketItem->bundleId,
                 'ticket_type_id' => $offerDto->ticket_type_id ?? null,
+                'properties' => []
             ]));
         }
 

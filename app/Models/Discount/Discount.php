@@ -59,6 +59,7 @@ use Pim\Core\PimException;
  * @property-read Collection|PromoCode[] $promoCodes
  * @property-read Collection|Discount[] $childDiscounts
  * @property-read Collection|DiscountMerchant[] $merchants
+ * @property-read Collection|DiscountProductProperty[] $productProperties
  */
 class Discount extends AbstractModel
 {
@@ -172,6 +173,7 @@ class Discount extends AbstractModel
     public const DISCOUNT_CONDITION_GROUP_RELATION = 11;
     public const DISCOUNT_CHILD_DISCOUNTS_RELATION = 12;
     public const DISCOUNT_MERCHANT_RELATION = 13;
+    public const DISCOUNT_PRODUCT_PROPERTY_RELATION = 14;
 
     /**
      * Заполняемые поля модели
@@ -277,6 +279,7 @@ class Discount extends AbstractModel
             Discount::DISCOUNT_BUNDLE_ID_RELATION,
             Discount::DISCOUNT_PROMO_CODES_RELATION,
             Discount::DISCOUNT_MERCHANT_RELATION,
+            Discount::DISCOUNT_PRODUCT_PROPERTY_RELATION,
         ];
     }
 
@@ -338,6 +341,7 @@ class Discount extends AbstractModel
             Discount::DISCOUNT_PUBLIC_EVENT_RELATION => ['class' => DiscountPublicEvent::class, 'items' => $this->publicEvents],
             Discount::DISCOUNT_BUNDLE_ID_RELATION => ['class' => DiscountBundle::class, 'items' => $this->bundles],
             Discount::DISCOUNT_MERCHANT_RELATION => ['class' => DiscountMerchant::class, 'items' => $this->merchants],
+            Discount::DISCOUNT_PRODUCT_PROPERTY_RELATION => ['class' => DiscountProductProperty::class, 'items' => $this->productProperties],
         ];
     }
 
@@ -404,6 +408,11 @@ class Discount extends AbstractModel
     public function merchants(): HasMany
     {
         return $this->hasMany(DiscountMerchant::class, 'discount_id');
+    }
+
+    public function productProperties(): HasMany
+    {
+        return $this->hasMany(DiscountProductProperty::class, 'discount_id');
     }
 
     public function scopeExpired(Builder $query): void
