@@ -371,7 +371,7 @@ class Discount extends AbstractModel
 
     public function conditionGroups(): HasMany
     {
-        return $this->hasMany(DiscountConditionGroup::class);
+        return $this->hasMany(DiscountConditionGroup::class, 'discount_id');
     }
 
     public function publicEvents(): HasMany
