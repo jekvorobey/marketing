@@ -6,8 +6,6 @@ use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountCondition;
 use App\Models\Discount\DiscountConditionGroup;
 use App\Models\Discount\LogicalOperator;
-use App\Models\Order\Order;
-use Carbon\Carbon;
 use Greensight\CommonMsa\Rest\RestQuery;
 use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationService;
 use Greensight\Customer\Dto\CustomerDto;
@@ -27,6 +25,7 @@ class BirthdayDiscounts extends Command
 
     protected const DISCOUNT_1_COPY_FROM_ID = 2229;
     protected const DISCOUNT_2_COPY_FROM_ID = 2230;
+    protected const DISCOUNT_FREE_DELIVERY_COPY_FROM_ID = 2447;
 
     /**
      * The name and signature of the console command.
@@ -103,6 +102,7 @@ class BirthdayDiscounts extends Command
             try {
                 $discount1 = $this->copyDiscountFrom(static::DISCOUNT_1_COPY_FROM_ID, $customer);
                 $discount2 = $this->copyDiscountFrom(static::DISCOUNT_2_COPY_FROM_ID, $customer);
+                $discount3 = $this->copyDiscountFrom(static::DISCOUNT_FREE_DELIVERY_COPY_FROM_ID, $customer);
 
                 $this->notificationService->send($customer->user_id, 'birthday_discount_created', $this->getEmailData([
                     'TITLE' => 'Есть догадки!',
@@ -125,13 +125,9 @@ class BirthdayDiscounts extends Command
 
     private function getEmailData(array $data): array
     {
-        return array_merge($data, [
-            'BUTTON' => [
-                'text' => 'ПЕРЕЙТИ В ЛИЧНЫЙ КАБИНЕТ',
-                'link' => config('app.showcase_host') . '/profile/',
-            ],
+        return array_merge([
             'finisher_text' => 'Если вы получили это письмо по ошибке,<br>просто проигнорируйте его',
-        ]);
+        ], $data);
     }
 
     protected function copyDiscountFrom(int $discountId, CustomerDto $customer): Discount
@@ -145,21 +141,17 @@ class BirthdayDiscounts extends Command
             $discount->name = $this->generateDiscountName($customer);
             $discount->status = Discount::STATUS_ACTIVE;
             $discount->start_date = now();
-            $discount->end_date = now()->addDays(static::DAYS_BEFORE_BITHDAY + static::DAYS_AFTER_BITHDAY);
+            $discount->end_date = now()->addDays(static::DAYS_BEFORE_BITHDAY + static::DAYS_AFTER_BITHDAY)->setTime(23,59,59);
             $discount->promo_code_only = true;
-            $discount->summarizable_with_all = true;
             $discount->push();
 
             $this->replicateRelations($originalDiscount, $discount, 'brands');
             $this->replicateRelations($originalDiscount, $discount, 'categories');
+            $this->replicateRelations($originalDiscount, $discount, 'offers');
+            $this->replicateRelations($originalDiscount, $discount, 'roles');
+            $this->replicateRelations($originalDiscount, $discount, 'segments');
 
-            $discount->promoCodes()->save($this->birthdayPromocode);
-
-            $conditionGroup = new DiscountConditionGroup([
-                'discount_id' => $discount->id,
-                'logical_operator' => LogicalOperator::AND,
-            ]);
-            $conditionGroup->save();
+            $conditionGroup = $this->replicateConditionRelations($originalDiscount, $discount);
 
             $condition = new DiscountCondition([
                 'discount_id' => $discount->id,
@@ -168,6 +160,8 @@ class BirthdayDiscounts extends Command
                 'discount_condition_group_id' => $conditionGroup->id,
             ]);
             $condition->save();
+
+            $discount->promoCodes()->save($this->birthdayPromocode);
 
             DB::commit();
 
@@ -190,6 +184,27 @@ class BirthdayDiscounts extends Command
         foreach ($originalDiscount->{$relationName} as $relationModel) {
             $newDiscount->{$relationName}()->save($relationModel->replicate());
         }
+    }
+
+    protected function replicateConditionRelations(Discount $originalDiscount, Discount $newDiscount): DiscountConditionGroup
+    {
+        $originalDiscount->load('conditions');
+
+        $conditionGroup = new DiscountConditionGroup([
+            'discount_id' => $newDiscount->id,
+            'logical_operator' => LogicalOperator::AND,
+        ]);
+        $conditionGroup->save();
+
+        /** @var DiscountCondition $condition */
+        foreach ($originalDiscount->conditions as $condition) {
+            $condition = $condition->replicate();
+            $condition->discount_condition_group_id = $conditionGroup->id;
+            $condition->discount_id = $newDiscount->id;
+            $condition->push();
+        }
+
+        return $conditionGroup;
     }
 
     protected function sendBithdayNotifications(): void
@@ -249,7 +264,7 @@ class BirthdayDiscounts extends Command
 
     protected function generateDiscountName(CustomerDto $customer): string
     {
-        return join('_', [PromoCode::HAPPY2U_PROMOCODE, $customer->id, now()->toDateString()]);
+        return sprintf('%s Customer ID: %s', PromoCode::HAPPY2U_PROMOCODE, $customer->id);
     }
 
     protected function getBirthdayDiscountsForLastDays(CustomerDto $customer, int $lastDaysCount): \Illuminate\Database\Eloquent\Collection

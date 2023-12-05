@@ -113,49 +113,63 @@ class OfferApplier extends AbstractApplier
 
             if (!$justCalculate) {
                 /* для скидок по промокоду возможность применения проверяется здесь,
-                   так как нужно проверять все скидки для каждого элемента корзины */
+                   так как нужно проверять все скидки для каждого элемента корзины (нужен рефакторинг в будущем) */
                 if ($discount->promo_code_only) {
                     /** @var Collection|null $basketItemDiscounts */
                     $basketItemDiscounts = $this->basketItemsByDiscounts->get($basketItemId);
-                    $promocodeDiscountIds = $this->input->promoCodeDiscounts
-                        ->where('id', '!=', $discount->id)
-                        ->pluck('id')
-                        ->values();
+
+                    $appliedPromocodeDiscounts = $this->getAppliedPromocodeDiscounts();
+
+                    // примененные скидки, с которыми будет конкурировать скидка
+                    $targetDiscounts = $discount->max_priority
+                        ? $appliedPromocodeDiscounts->where('max_priority', true)
+                        : $appliedPromocodeDiscounts->where('max_priority', false);
+                    $targetDiscountIds = $targetDiscounts->pluck('id')->values();
+
+                    // максимальная примененная к элементу скидка
                     $maxPromocodeDiscount = $basketItemDiscounts
-                        ?->whereIn('id', $promocodeDiscountIds)
+                        ?->whereIn('id', $targetDiscountIds)
                         ->sortByDesc('change')
                         ->first();
 
                     $maxChange = $maxPromocodeDiscount['change'] ?? 0;
-                    $discountIsSummarizable = $discount->summarizable_with_all ||
-                        $discount->isSynergyWithDiscounts($promocodeDiscountIds);
 
-                    // подсчет самой выгодной скидки для каждого элемента
-                    if (!$discountIsSummarizable) {
-                        if ($change > $maxChange) {
-                            if ($basketItemDiscounts && isset($maxPromocodeDiscount['id'])) {
-                                $this->basketItemsByDiscounts->put(
-                                    $basketItemId,
-                                    $basketItemDiscounts->where('id', '!=', $maxPromocodeDiscount['id'])
-                                );
+                    if (!$discount->isSynergyWithDiscounts($targetDiscountIds)) {
+                        if ($change <= $maxChange) {
+                            continue;
+                        }
 
-                                $basketItem['price'] += $maxChange;
-                                $basketItem['discount'] -= $maxChange;
-                                $this->input->basketItems->put($basketItemId, $basketItem);
+                        if (!$discount->max_priority) {
+                            $maxPriorityDiscounts = $appliedPromocodeDiscounts
+                                ->where('max_priority', true)
+                                ->pluck('id');
 
-                                $totalChange -= $maxChange;
-
-                                $changedPrice = $calculatorChangePrice->changePrice(
-                                    $basketItem,
-                                    $valueOfLimitDiscount ?? $value,
-                                    $valueType,
-                                    $lowestPossiblePrice,
-                                    $discount
-                                );
-                                $change = $changedPrice['discountValue'];
+                            if ($basketItemDiscounts?->whereIn('id', $maxPriorityDiscounts)->isNotEmpty()) {
+                                continue;
                             }
-                        } else {
-                           continue;
+                        }
+
+                        if ($basketItemDiscounts && $maxPromocodeDiscount) {
+                            // замена скидки на более выгодную
+                            $this->basketItemsByDiscounts->put(
+                                $basketItemId,
+                                $basketItemDiscounts->where('id', '!=', $maxPromocodeDiscount['id'])
+                            );
+
+                            $basketItem['price'] += $maxChange;
+                            $basketItem['discount'] -= $maxChange;
+                            $this->input->basketItems->put($basketItemId, $basketItem);
+
+                            $totalChange -= $maxChange;
+
+                            $changedPrice = $calculatorChangePrice->changePrice(
+                                $basketItem,
+                                $valueOfLimitDiscount ?? $value,
+                                $valueType,
+                                $lowestPossiblePrice,
+                                $discount
+                            );
+                            $change = $changedPrice['discountValue'];
                         }
                     }
                 }
@@ -169,12 +183,17 @@ class OfferApplier extends AbstractApplier
             }
         }
 
-        $discountChangeSomething = $this->basketItemsByDiscounts
-            ->flatten(1)
-            ->pluck('id')
-            ->contains($discount->id);
+        return $totalChange;
+    }
 
-        return $discountChangeSomething ? $totalChange : 0;
+    /**
+     * Примененные скидки промокода, которые что-то изменили
+     * @return Collection
+     */
+    protected function getAppliedPromocodeDiscounts(): Collection
+    {
+        return $this->input->promoCodeDiscounts
+            ->whereIn('id', $this->appliedDiscounts->where('change', '>', 0)->keys());
     }
 
     /**

@@ -95,7 +95,7 @@ class DiscountOutput
         $basicError = $finalDiscount - $basketItem['discount'];
 
         $basicDiscountsNumber = $this->basketItemsByDiscounts[$basketItemId]->filter(function ($discount) {
-            return !$this->input->bundles->contains($discount['id']);
+            return true; //!$this->input->bundles->contains($discount['id']); //@todo почему то исключались бандлы из округления - убрал фильтрацию
         })->count();
 
         $diffPerDiscount = $basicDiscountsNumber > 0

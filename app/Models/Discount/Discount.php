@@ -387,7 +387,7 @@ class Discount extends AbstractModel
 
     public function conditionGroups(): HasMany
     {
-        return $this->hasMany(DiscountConditionGroup::class);
+        return $this->hasMany(DiscountConditionGroup::class, 'discount_id');
     }
 
     public function publicEvents(): HasMany
@@ -723,6 +723,12 @@ class Discount extends AbstractModel
 
             $discount->childDiscounts()->delete();
         });
+
+//        self::saving(function (self $discount) {
+//            if (in_array($discount->type, [self::DISCOUNT_TYPE_BUNDLE_OFFER, self::DISCOUNT_TYPE_BUNDLE_MASTERCLASS], true)) {
+//                $discount->summarizable_with_all = true;
+//            }
+//        });
     }
 
     /**
@@ -759,7 +765,9 @@ class Discount extends AbstractModel
             case self::DISCOUNT_TYPE_ANY_OFFER:
             case self::DISCOUNT_TYPE_ANY_BRAND:
             case self::DISCOUNT_TYPE_ANY_CATEGORY:
-                UpdatePimContent::dispatch('markAllProductsForIndex');
+                if (!$this->promo_code_only) {
+                    UpdatePimContent::dispatch('markAllProductsForIndex');
+                }
                 break;
             case self::DISCOUNT_TYPE_MASTERCLASS:
                 $reindexRelations('markPublicEventsForIndexByTicketTypeIds', 'publicEvents', 'ticket_type_id');
@@ -778,6 +786,10 @@ class Discount extends AbstractModel
      */
     public function isSynergyWithDiscounts(array|IlluminateCollection $ids): bool
     {
+        if ($this->summarizable_with_all) {
+            return true;
+        }
+
         $ids = is_array($ids) ? collect($ids) : $ids;
         $synergyCondition = $this->getSynergyCondition();
 

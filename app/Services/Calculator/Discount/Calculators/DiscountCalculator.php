@@ -76,31 +76,24 @@ class DiscountCalculator extends AbstractCalculator
 
         if ($this->input->hasDeliveries()) {
             if (!$this->input->freeDelivery) {
-                $this->filter()->sort()->apply()->rollback();
+                $this->prepare()->sort()->apply()->rollback();
             }
             $this->input->setSelectedDelivery();
         }
 
         // Считаются окончательные скидки + бонусы
-        $this->filter()->sort()->apply();
+        $this->prepare()->sort()->apply();
 
         $this->getDiscountOutput();
     }
 
     /**
-     * Фильтрует все актуальные скидки и оставляет только те, которые можно применить
+     * Подготавливает скидки
      * @return $this
      */
-    protected function filter(): self
+    protected function prepare(): self
     {
-        $this->possibleDiscounts = $this->discounts
-            ->filter(function (Discount $discount) {
-                $checker = new DiscountChecker($this->input, $discount);
-                $checker->exceptConditionTypes($this->getExceptingConditionTypes());
-                return $checker->check();
-            })
-            ->values();
-
+        $this->possibleDiscounts = $this->discounts;
         return $this->compileSynegry();
     }
 
@@ -115,9 +108,11 @@ class DiscountCalculator extends AbstractCalculator
     protected function sort(): self
     {
         /** @var Collection|Discount[] $discounts */
-        $discounts = $this->possibleDiscounts->sortBy(
-            fn (Discount $discount) => $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB
-        );
+        $discounts = $this->possibleDiscounts
+            ->whereNotIn('type', [Discount::DISCOUNT_TYPE_DELIVERY, Discount::DISCOUNT_TYPE_CART_TOTAL])
+            ->sortBy(
+                fn (Discount $discount) => $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB
+            );
         $promocodeDiscounts = $this->input->promoCodeDiscounts;
 
         if ($promocodeDiscounts->isNotEmpty()) {
@@ -125,12 +120,12 @@ class DiscountCalculator extends AbstractCalculator
                 fn(Discount $discount) => $promocodeDiscounts->pluck('id')->contains($discount->id)
             );
         }
-        [$deliveryDiscounts, $discounts] = $discounts->partition('type', Discount::DISCOUNT_TYPE_DELIVERY);
         [$promocodeDiscounts, $discounts] = $discounts->partition('promo_code_only', true);
         [$bundleDiscounts, $discounts] = $discounts->partition(
-            fn($discount) => in_array($discount->type, [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS])
+            fn($discount) => in_array($discount->type,
+                [Discount::DISCOUNT_TYPE_BUNDLE_OFFER, Discount::DISCOUNT_TYPE_BUNDLE_MASTERCLASS]
+            )
         );
-        [$cartTotalDiscounts, $discounts] = $discounts->partition('type', Discount::DISCOUNT_TYPE_CART_TOTAL);
         [$nonCatalogDiscounts, $catalogDiscounts] = $discounts->partition(function (Discount $discount) {
             return $discount->conditions->where('type', '!=', DiscountConditionModel::DISCOUNT_SYNERGY)->isNotEmpty();
         });
@@ -139,9 +134,7 @@ class DiscountCalculator extends AbstractCalculator
             ->merge($appliedPromocodeDiscounts ?? [])
             ->merge($catalogDiscounts)
             ->merge($promocodeDiscounts)
-            ->merge($nonCatalogDiscounts)
-            ->merge($cartTotalDiscounts)
-            ->merge($deliveryDiscounts);
+            ->merge($nonCatalogDiscounts);
 
         // сортируем скидки таким образом, чтобы первыми были скидки с максимальным приоритетом,
         // а затем скидки по убыванию выгодности для клиента
@@ -161,18 +154,31 @@ class DiscountCalculator extends AbstractCalculator
      */
     protected function apply(): self
     {
-        /* скидки на доставку применяются отдельно */
-        $possibleDiscounts = $this->possibleDiscounts
-            ->where('type', '!=', Discount::DISCOUNT_TYPE_DELIVERY);
-
         /** @var Discount $discount */
-        foreach ($possibleDiscounts as $discount) {
-            $this->applyDiscount($discount);
+        foreach ($this->possibleDiscounts as $discount) {
+            /* важно именно так последовательно проверять каждую скидку после применения предыдущих */
+            if ($this->checkDiscount($discount)) {
+                $this->applyDiscount($discount);
+            }
         }
 
+        $this->applyCartTotalDiscounts();
         $this->applyDeliveryDiscounts();
 
         return $this->processFreeProducts();
+    }
+
+    /**
+     * Проверить можно ли применить скидку
+     * @param Discount $discount
+     * @return bool
+     */
+    protected function checkDiscount(Discount $discount): bool
+    {
+        $checker = new DiscountChecker($this->input, $discount);
+        $checker->exceptConditionTypes($this->getExceptingConditionTypes());
+
+        return $checker->check();
     }
 
     /**
@@ -206,9 +212,11 @@ class DiscountCalculator extends AbstractCalculator
 
         $change = $change ?? false;
 
-        if ($change) {
-            $this->addDiscountToApplied($discount, $change);
-        }
+        /*
+         * Добавляем все скидку к примененным.
+         * Даже если не повлияла на цену, т.к. она тоже участвовала в подсчете общей скидки
+         */
+        $this->addDiscountToApplied($discount, $change);
 
         return $change;
     }
@@ -465,13 +473,31 @@ class DiscountCalculator extends AbstractCalculator
     }
 
     /**
+     * Применить скидки на корзину
+     * @return void
+     */
+    protected function applyCartTotalDiscounts(): void
+    {
+        $cartTotalDiscounts = $this->discounts->where('type', Discount::DISCOUNT_TYPE_CART_TOTAL);
+        $cartTotalDiscounts = $this->sortDiscountsByProfit($cartTotalDiscounts)->values();
+        [$withPriority, $noPriority] = $cartTotalDiscounts->partition('max_priority', 1);
+        $cartTotalDiscounts = $withPriority->merge($noPriority);
+
+        foreach ($cartTotalDiscounts as $cartDiscount) {
+            if ($this->checkDiscount($cartDiscount)) {
+                $this->applyDiscount($cartDiscount);
+            }
+        }
+
+    }
+
+    /**
      * Применить скидки на доставку (применяется первая, которая сработала)
      * @return void
      */
     protected function applyDeliveryDiscounts(): void
     {
-        $deliveryDiscounts = $this->discounts
-            ->where('type', Discount::DISCOUNT_TYPE_DELIVERY);
+        $deliveryDiscounts = $this->discounts->where('type', Discount::DISCOUNT_TYPE_DELIVERY);
 
         $percentDiscounts = $deliveryDiscounts
             ->where('value_type', Discount::DISCOUNT_VALUE_TYPE_PERCENT)
