@@ -9,6 +9,7 @@ use Greensight\CommonMsa\Dto\RoleDto;
 use Greensight\CommonMsa\Models\AbstractModel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Greensight\CommonMsa\Dto\UserDto;
@@ -60,6 +61,7 @@ use Pim\Core\PimException;
  * @property-read Collection|Discount[] $childDiscounts
  * @property-read Collection|DiscountMerchant[] $merchants
  * @property-read Collection|DiscountProductProperty[] $productProperties
+ * @property-read Discount $parentDiscount
  */
 class Discount extends AbstractModel
 {
@@ -405,6 +407,11 @@ class Discount extends AbstractModel
         return $this->hasMany(static::class, 'parent_discount_id');
     }
 
+    public function parentDiscount(): BelongsTo
+    {
+        return $this->belongsTo(static::class, 'parent_discount_id');
+    }
+
     public function merchants(): HasMany
     {
         return $this->hasMany(DiscountMerchant::class, 'discount_id');
@@ -663,7 +670,7 @@ class Discount extends AbstractModel
                     });
 
                 $discount
-                    ->conditions()
+                    ->conditions() // deprecated relation
                     ->whereJsonLength('condition->customerIds', '>=', 1)
                     ->get()
                     ->map(function (DiscountCondition $discountCondition) {
@@ -811,5 +818,14 @@ class Discount extends AbstractModel
             ->pluck('conditions')
             ->flatten()
             ->firstWhere('type', DiscountCondition::DISCOUNT_SYNERGY);
+    }
+
+    /**
+     * Является ли дочерней скидкой
+     * @return bool
+     */
+    public function isChild(): bool
+    {
+        return (bool) $this->parent_discount_id;
     }
 }

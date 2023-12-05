@@ -456,7 +456,6 @@ class DiscountController extends Controller
         }
 
         $filter = $request->get('filter', []);
-
         if ($params['page'] > 0 && $params['perPage'] > 0) {
             $offset = ($params['page'] - 1) * $params['perPage'];
             $query->offset($offset)->limit((int) $params['perPage']);
@@ -468,6 +467,7 @@ class DiscountController extends Controller
                 case 'merchant_id':
                 case 'user_id':
                 case 'promo_code_only':
+                case 'parent_discount_id':
                     if (is_array($value)) {
                         $values = collect($value);
                         $includeNull = $values->filter(function ($v) {
@@ -549,6 +549,9 @@ class DiscountController extends Controller
                             }
                         });
                     }
+                    break;
+                case 'no_child':
+                    $query->whereNull('parent_discount_id');
                     break;
             }
         }

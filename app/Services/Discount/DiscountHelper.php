@@ -179,11 +179,11 @@ class DiscountHelper
     }
 
     /**
-     * @param Model $conditionGroup
+     * @param Model|DiscountConditionGroup $conditionGroup
      * @param array $conditions
      * @return void
      */
-    public static function saveConditions(Model $conditionGroup, array $conditions): void
+    public static function saveConditions(Model|DiscountConditionGroup $conditionGroup, array $conditions): void
     {
         foreach ($conditions as $condition) {
             /** @var DiscountConditionGroup $conditionGroup */

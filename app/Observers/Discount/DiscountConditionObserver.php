@@ -72,41 +72,18 @@ class DiscountConditionObserver
 
         $discountIds = $createdCondition->condition[DiscountCondition::FIELD_SYNERGY];
         $discounts = Discount::with('conditionGroups.conditions')
+            ->whereNull('parent_discount_id')
             ->whereIn('id', $discountIds)
             ->get();
 
         /** @var Discount $discount */
         foreach ($discounts as $discount) {
-            $added = false;
+            $this->addDiscountToSynergy($discount, $createdCondition->conditionGroup->discount_id);
 
-            foreach ($discount->conditionGroups as $conditionGroup) {
-                $synergyCondition = $conditionGroup->conditions
-                    ->firstWhere('type', DiscountCondition::DISCOUNT_SYNERGY);
-
-                if ($synergyCondition) {
-                    $synergy = collect($synergyCondition->condition[DiscountCondition::FIELD_SYNERGY] ?? [])
-                        ->push($createdCondition->conditionGroup->discount_id)
-                        ->unique()
-                        ->values()
-                        ->toArray();
-
-                    $synergyCondition->setSynergy($synergy);
-                    $synergyCondition->saveQuietly();
-                    $added = true;
-                    break;
-                }
-            }
-
-            if (!$added) {
-                /** @var DiscountConditionGroup $conditionGroup */
-                $conditionGroup = $discount->conditionGroups()->create();
-
-                $condition = new DiscountCondition();
-                $condition->type = DiscountCondition::DISCOUNT_SYNERGY;
-                $condition->setSynergy([$createdCondition->conditionGroup->discount_id]);
-                $condition->discount_id = $discount->id; //deprecated
-                $condition->discount_condition_group_id = $conditionGroup->id;
-                $condition->saveQuietly();
+            // добавить все дочерние тоже
+            foreach ($discount->childDiscounts as $childDiscount) {
+                $this->addDiscountToSynergy($childDiscount, $createdCondition->conditionGroup->discount_id);
+                $this->addDiscountToSynergy($createdCondition->conditionGroup->discount, $childDiscount->id);
             }
         }
     }
@@ -157,6 +134,47 @@ class DiscountConditionObserver
                     $condition->saveQuietly();
                 }
             }
+        }
+    }
+
+    /**
+     * Добавить скидку в суммирование
+     * @param Discount $discount - в суммирование к какой скидке добавляем
+     * @param int $discountId - какую добавляем
+     * @return void
+     */
+    private function addDiscountToSynergy(Discount $discount, int $discountId): void
+    {
+        $added = false;
+
+        foreach ($discount->conditionGroups as $conditionGroup) {
+            $synergyCondition = $conditionGroup->conditions
+                ->firstWhere('type', DiscountCondition::DISCOUNT_SYNERGY);
+
+            if ($synergyCondition) {
+                $synergy = collect($synergyCondition->condition[DiscountCondition::FIELD_SYNERGY] ?? [])
+                    ->push($discountId)
+                    ->unique()
+                    ->values()
+                    ->toArray();
+
+                $synergyCondition->setSynergy($synergy);
+                $synergyCondition->saveQuietly();
+                $added = true;
+                break;
+            }
+        }
+
+        if (!$added) {
+            /** @var DiscountConditionGroup $conditionGroup */
+            $conditionGroup = $discount->conditionGroups()->create();
+
+            $condition = new DiscountCondition();
+            $condition->type = DiscountCondition::DISCOUNT_SYNERGY;
+            $condition->setSynergy([$discountId]);
+            $condition->discount_id = $discount->id; //deprecated
+            $condition->discount_condition_group_id = $conditionGroup->id;
+            $condition->saveQuietly();
         }
     }
 }
