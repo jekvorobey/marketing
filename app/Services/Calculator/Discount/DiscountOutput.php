@@ -66,7 +66,7 @@ class DiscountOutput
         $discounts = $this->basketItemsByDiscounts[$basketItemId];
 
         $discounts->transform(function ($discount) use (&$roundOff) {
-            $resultedDiff = $roundOff['error'] + $roundOff['correction'];
+            $resultedDiff = $roundOff['diffPerDiscount'] + $roundOff['correction'];
             $roundOff['correction'] = 0;
 
             $discount['change'] = round($discount['change'] + $resultedDiff, 2);
@@ -78,8 +78,22 @@ class DiscountOutput
             return $discount;
         });
 
-        $sum = round($this->basketItemsByDiscounts[$basketItemId]->sum('change'), 2);
-        $basketItem['discount'] = $sum;
+        //скидка basket_item после округлений
+        $finalDiscount = round($basketItem['cost'] - $basketItem['price'], 2);
+        //сумма всех скорректированных скидок basket_item
+        $correctedDiscountsSum = round($this->basketItemsByDiscounts[$basketItemId]->sum('change'), 2);
+
+        //если сумма скорректированных скидок отличается от итоговой округленной скидки,
+        //то добавляем разницу в одну из скидок
+        $finalDiff = round($finalDiscount - $correctedDiscountsSum, 2);
+        if ($finalDiff !== 0) {
+            $discountForCorrection = $discounts->last();
+            $appliedDiscount = $this->appliedDiscounts->get($discountForCorrection['id']);
+            $appliedDiscount['change'] = round($appliedDiscount['change'] + $finalDiff, 2);
+            $this->appliedDiscounts->put($discountForCorrection['id'], $appliedDiscount);
+        }
+
+        $basketItem['discount'] = $finalDiscount;
         $basketItem['discounts'] = $this->basketItemsByDiscounts[$basketItemId]->toArray();
     }
 
@@ -92,7 +106,7 @@ class DiscountOutput
 
         # Финальная скидка, в которую входит сама скидка и ошибка округления
         $finalDiscount = $basketItem['cost'] - $basketItem['price'];
-        $basicError = $finalDiscount - $basketItem['discount'];
+        $basicError = round($finalDiscount - $basketItem['discount'], 4);
 
         $basicDiscountsNumber = $this->basketItemsByDiscounts[$basketItemId]->filter(function ($discount) {
             return true; //!$this->input->bundles->contains($discount['id']); //@todo почему то исключались бандлы из округления - убрал фильтрацию
@@ -107,7 +121,8 @@ class DiscountOutput
             : 0;
 
         return [
-            'error' => $diffPerDiscount,
+            'basicError' => $basicError,
+            'diffPerDiscount' => $diffPerDiscount,
             'correction' => $correctionValue,
             'affectedQty' => $basketItem['qty'],
         ];
