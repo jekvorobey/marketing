@@ -9,6 +9,7 @@ use Greensight\CommonMsa\Dto\RoleDto;
 use Greensight\CommonMsa\Models\AbstractModel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Greensight\CommonMsa\Dto\UserDto;
@@ -44,6 +45,7 @@ use Pim\Core\PimException;
  * @property bool $show_on_showcase
  * @property bool $showcase_value_type
  * @property bool $show_original_price
+ * @property int $parent_discount_id
  *
  * @property-read Collection|DiscountOffer[] $offers
  * @property-read Collection|BundleItem[] $bundleItems
@@ -56,6 +58,10 @@ use Pim\Core\PimException;
  * @property-read Collection|DiscountPublicEvent[] $publicEvents
  * @property-read Collection|DiscountBundle[] $bundles
  * @property-read Collection|PromoCode[] $promoCodes
+ * @property-read Collection|Discount[] $childDiscounts
+ * @property-read Collection|DiscountMerchant[] $merchants
+ * @property-read Collection|DiscountProductProperty[] $productProperties
+ * @property-read Discount $parentDiscount
  */
 class Discount extends AbstractModel
 {
@@ -125,6 +131,9 @@ class Discount extends AbstractModel
     /** Скидка на все мастер-классы */
     public const DISCOUNT_TYPE_ANY_MASTERCLASS = 12;
 
+    /** Скидка из нескольких скидок */
+    public const DISCOUNT_TYPE_MULTI = 13;
+
     /**
      * Тип скидки для вывода в корзину/чекаут
      */
@@ -164,6 +173,9 @@ class Discount extends AbstractModel
     public const DISCOUNT_BUNDLE_ID_RELATION = 9;
     public const DISCOUNT_PROMO_CODES_RELATION = 10;
     public const DISCOUNT_CONDITION_GROUP_RELATION = 11;
+    public const DISCOUNT_CHILD_DISCOUNTS_RELATION = 12;
+    public const DISCOUNT_MERCHANT_RELATION = 13;
+    public const DISCOUNT_PRODUCT_PROPERTY_RELATION = 14;
 
     /**
      * Заполняемые поля модели
@@ -185,6 +197,7 @@ class Discount extends AbstractModel
         'show_on_showcase',
         'showcase_value_type',
         'show_original_price',
+        'parent_discount_id',
     ];
 
     /** @var array */
@@ -234,6 +247,7 @@ class Discount extends AbstractModel
             self::DISCOUNT_TYPE_CART_TOTAL,
             self::DISCOUNT_TYPE_MASTERCLASS,
             self::DISCOUNT_TYPE_ANY_MASTERCLASS,
+            self::DISCOUNT_TYPE_MULTI,
         ];
     }
 
@@ -266,6 +280,8 @@ class Discount extends AbstractModel
             Discount::DISCOUNT_PUBLIC_EVENT_RELATION,
             Discount::DISCOUNT_BUNDLE_ID_RELATION,
             Discount::DISCOUNT_PROMO_CODES_RELATION,
+            Discount::DISCOUNT_MERCHANT_RELATION,
+            Discount::DISCOUNT_PRODUCT_PROPERTY_RELATION,
         ];
     }
 
@@ -326,6 +342,8 @@ class Discount extends AbstractModel
             Discount::DISCOUNT_BUNDLE_RELATION => ['class' => BundleItem::class, 'items' => $this->bundleItems],
             Discount::DISCOUNT_PUBLIC_EVENT_RELATION => ['class' => DiscountPublicEvent::class, 'items' => $this->publicEvents],
             Discount::DISCOUNT_BUNDLE_ID_RELATION => ['class' => DiscountBundle::class, 'items' => $this->bundles],
+            Discount::DISCOUNT_MERCHANT_RELATION => ['class' => DiscountMerchant::class, 'items' => $this->merchants],
+            Discount::DISCOUNT_PRODUCT_PROPERTY_RELATION => ['class' => DiscountProductProperty::class, 'items' => $this->productProperties],
         ];
     }
 
@@ -382,6 +400,26 @@ class Discount extends AbstractModel
     public function bundles(): HasMany
     {
         return $this->hasMany(DiscountBundle::class, 'discount_id');
+    }
+
+    public function childDiscounts(): HasMany
+    {
+        return $this->hasMany(static::class, 'parent_discount_id');
+    }
+
+    public function parentDiscount(): BelongsTo
+    {
+        return $this->belongsTo(static::class, 'parent_discount_id');
+    }
+
+    public function merchants(): HasMany
+    {
+        return $this->hasMany(DiscountMerchant::class, 'discount_id');
+    }
+
+    public function productProperties(): HasMany
+    {
+        return $this->hasMany(DiscountProductProperty::class, 'discount_id');
     }
 
     public function scopeExpired(Builder $query): void
@@ -595,6 +633,11 @@ class Discount extends AbstractModel
                 foreach ($operators as $operator) {
                     $serviceNotificationService->send($operator->user_id, $type, $data);
                 }
+
+                foreach ($discount->childDiscounts as $childDiscount) {
+                    $childDiscount->status = $discount->status;
+                    $childDiscount->save();
+                }
             }
 
             if ($discount->value != $discount->getOriginal('value') || $discount->wasRecentlyCreated) {
@@ -627,7 +670,7 @@ class Discount extends AbstractModel
                     });
 
                 $discount
-                    ->conditions()
+                    ->conditions() // deprecated relation
                     ->whereJsonLength('condition->customerIds', '>=', 1)
                     ->get()
                     ->map(function (DiscountCondition $discountCondition) {
@@ -684,6 +727,8 @@ class Discount extends AbstractModel
 
             $serviceNotificationService = app(ServiceNotificationService::class);
             $serviceNotificationService->sendToAdmin('aozskidkaskidka_udalena');
+
+            $discount->childDiscounts()->delete();
         });
 
 //        self::saving(function (self $discount) {
@@ -773,5 +818,14 @@ class Discount extends AbstractModel
             ->pluck('conditions')
             ->flatten()
             ->firstWhere('type', DiscountCondition::DISCOUNT_SYNERGY);
+    }
+
+    /**
+     * Является ли дочерней скидкой
+     * @return bool
+     */
+    public function isChild(): bool
+    {
+        return (bool) $this->parent_discount_id;
     }
 }

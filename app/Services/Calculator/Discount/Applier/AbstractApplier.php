@@ -4,6 +4,7 @@ namespace App\Services\Calculator\Discount\Applier;
 
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountCondition;
+use App\Models\Discount\DiscountProductProperty;
 use App\Services\Calculator\Discount\DiscountConditionStore;
 use App\Services\Calculator\InputCalculator;
 use Greensight\CommonMsa\Rest\RestQuery;
@@ -83,6 +84,10 @@ abstract class AbstractApplier
      */
     protected function applicableToBasketItem(Discount $discount, Collection $basketItem): bool
     {
+        if (!$this->checkOfferSegment($discount, $basketItem)) {
+            return false;
+        }
+
         if (!$this->checkStoredDiscountConditions($discount, $basketItem)) {
             return false;
         }
@@ -146,8 +151,41 @@ abstract class AbstractApplier
     }
 
     /**
+     * Проверка оффера на условия сегментов (мерчант, характеристика товара и тд.)
+     * @param Discount $discount
+     * @param Collection $basketItem
+     * @return bool
+     */
+    protected function checkOfferSegment(Discount $discount, Collection $basketItem): bool
+    {
+        if ($discount->merchants->isNotEmpty()) {
+            $merchantIsValid = $discount->merchants
+                ->pluck('merchant_id')
+                ->contains($basketItem->get('merchant_id'));
+
+            if (!$merchantIsValid) {
+                return false;
+            }
+        }
+
+        if ($discount->productProperties->isNotEmpty()) {
+            $product = $this->getBasketProducts()->get($basketItem->get('product_id'));
+            /** @var DiscountProductProperty $productProperty */
+            $productProperty = $discount->productProperties->first();
+
+            return $product && collect($product->properties)->contains(
+                fn (ProductPropertyValueDto $dto) => $dto->property_id == $productProperty->property_id &&
+                    in_array($dto->value, $productProperty->values)
+            );
+        }
+
+        return true;
+    }
+
+    /**
      * Поверить сохраненные в сторе условия скидки.
      * Сохраняются туда на этапе проверки условий.
+     * @deprecated После переноса мерчантов и свойств в скидку нужно будет удалить
      * @param Discount $discount
      * @param Collection $basketItem
      * @return bool
