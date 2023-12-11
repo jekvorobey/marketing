@@ -3,6 +3,7 @@
 namespace App\Services\Calculator\PromoCode;
 
 use App\Models\Discount\Discount;
+use App\Models\Discount\DiscountCondition;
 use App\Models\PromoCode\PromoCode;
 use App\Services\Calculator\AbstractCalculator;
 use App\Services\Calculator\Bonus\BonusCalculator;
@@ -10,6 +11,7 @@ use App\Services\Calculator\CalculatorChangePrice;
 use App\Services\Calculator\Discount\Calculators\DiscountCalculator;
 use App\Services\Calculator\PromoCode\Dto\PromoCodeResult;
 use Greensight\Oms\Services\OrderService\OrderService;
+use Illuminate\Support\Collection;
 
 /**
  * Class PromoCodeCalculator
@@ -78,6 +80,10 @@ class PromoCodeCalculator extends AbstractCalculator
 
         if ($promocodeDiscounts->isEmpty()) {
             return PromoCodeResult::notApplied();
+        }
+
+        if ($this->promoCode->isHappyBirthdayPromocode()) {
+            $promocodeDiscounts = $this->rejectOtherCustomersDiscounts();
         }
 
         $this->input->promoCodeDiscounts = $promocodeDiscounts;
@@ -245,5 +251,30 @@ class PromoCodeCalculator extends AbstractCalculator
         }
 
         return $this;
+    }
+
+    /**
+     * Убираем все скидки, в которых есть пользователь и он не текущий
+     * (Не учитываются логические операторы)
+     * @return Discount[]|Collection
+     */
+    protected function rejectOtherCustomersDiscounts(): Collection
+    {
+        return $this->promoCode
+            ->discounts
+            ->reject(function (Discount $discount) {
+                foreach ($discount->conditionGroups as $conditionGroup) {
+                    foreach ($conditionGroup->conditions as $condition) {
+                        if (
+                            $condition->type === DiscountCondition::CUSTOMER &&
+                            !in_array($this->input->getCustomerId(), $condition->getCustomerIds())
+                        ) {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            });
     }
 }
