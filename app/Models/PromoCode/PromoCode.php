@@ -340,4 +340,12 @@ class PromoCode extends AbstractModel
             $discount->save();
         });
     }
+
+    /** Является ли промокодом на ДР
+     * @return bool
+     */
+    public function isHappyBirthdayPromocode(): bool
+    {
+        return $this->code === self::HAPPY2U_PROMOCODE;
+    }
 }
