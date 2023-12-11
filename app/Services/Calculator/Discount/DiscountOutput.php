@@ -101,7 +101,12 @@ class DiscountOutput
     private function calcRoundOffForBasketItem($basketItem, $basketItemId): ?array
     {
         if (!isset($basketItem['discount'])) {
-            return null;
+            return [
+                'basicError' => 0,
+                'diffPerDiscount' => 0,
+                'correction' => 0,
+                'affectedQty' => 0,
+            ];
         }
 
         # Финальная скидка, в которую входит сама скидка и ошибка округления
