@@ -6,6 +6,7 @@ services:
     env_file:
       - /home/iBT.studio/ENV/svc/ibt-marketing-ms/.env
     environment:
+      - SENTRY_RELEASE=${SENTRY_RELEASE}
       - PHP_SOCK_FILE=/sockets/ENV-ibt-marketing-ms_php
     volumes:
       - /sockets/:/sockets/

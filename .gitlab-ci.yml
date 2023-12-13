@@ -13,7 +13,7 @@ variables:
   variables:
     ANSIBLE_HOST_KEY_CHECKING: "False"
   before_script:
-    - apk update && apk add openssh-client
+    - apk update && apk add openssh-client git
     - mkdir -p ~/.ssh/
     - cat $SSH_CONFIG > ~/.ssh/config
     - cat $SSH_RSA > ~/.ssh/id_rsa
@@ -27,7 +27,7 @@ variables:
     - echo "deploy to $TARGET_HOST"
     - echo "$CONTAINER_IMAGE:$CONTAINER_IMAGE_TAG @ $LOCAL_PATH"
     - ssh -o StrictHostKeyChecking=no root@$TARGET_HOST "mkdir -p $LOCAL_PATH/"
-    - sed -r "s|(image:.).*:.*|\1$CONTAINER_IMAGE:$CONTAINER_IMAGE_TAG|;s|ENV|$ENV|g" -i docker-compose.yml
+    - sed -r "s|(image:.).*:.*|\1$CONTAINER_IMAGE:$CONTAINER_IMAGE_TAG|;s|ENV|$ENV|g;s|SENTRY_RELEASE.*|SENTRY_RELEASE="$(git describe --tags --abbrev=0)"|g" -i docker-compose.yml
     - scp -o StrictHostKeyChecking=no docker-compose.yml root@$TARGET_HOST:$LOCAL_PATH/docker-compose.yml
     - ssh -o StrictHostKeyChecking=no root@$TARGET_HOST "cd $LOCAL_PATH; docker-compose -f ../../../docker-compose.yml -f docker-compose.yml up -d; docker exec ibt-ingress nginx -s reload"
 
