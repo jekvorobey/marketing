@@ -8,6 +8,7 @@ use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountCondition;
 use App\Models\Discount\LogicalOperator;
 use App\Services\Discount\ChildDiscountService;
+use App\Models\PromoCode\PromoCode;
 use App\Services\Discount\DiscountHelper;
 use App\Services\Calculator\Checkout\CheckoutCalculatorBuilder;
 use Carbon\Carbon;
@@ -552,6 +553,13 @@ class DiscountController extends Controller
                     break;
                 case 'no_child':
                     $query->whereNull('parent_discount_id');
+                    break;
+                case 'exclude_happy2u_discounts':
+                    if (filter_var($value, FILTER_VALIDATE_BOOLEAN)) {
+                        $query->whereDoesntHave('promoCodes', function (Builder $query) use ($value) {
+                            $query->where('code', PromoCode::HAPPY2U_PROMOCODE);
+                        });
+                    }
                     break;
             }
         }
