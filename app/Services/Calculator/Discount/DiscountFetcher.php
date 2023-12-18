@@ -48,6 +48,7 @@ class DiscountFetcher
                 'product_qty_limit',
                 'conditions_logical_operator',
             ])
+            ->where('type', '!=', Discount::DISCOUNT_TYPE_MULTI)
             ->where(function (Builder $query) {
                 $query->where('promo_code_only', false);
                 $promoCodeDiscounts = $this->input->promoCodeDiscounts;

@@ -7,6 +7,7 @@ use App\Http\Requests\CopyAndDeleteDiscountRequest;
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountCondition;
 use App\Models\Discount\LogicalOperator;
+use App\Services\Discount\ChildDiscountService;
 use App\Models\PromoCode\PromoCode;
 use App\Services\Discount\DiscountHelper;
 use App\Services\Calculator\Checkout\CheckoutCalculatorBuilder;
@@ -186,10 +187,11 @@ class DiscountController extends Controller
             'showcase_value_type' => 'numeric|required_if:show_on_showcase,true',
             'show_original_price' => 'boolean|required',
             'conditions_logical_operator' => ['numeric', 'nullable', Rule::in(LogicalOperator::all())],
+            'child_discounts' => 'array|nullable'
         ]);
 
         foreach ($data as $field => $value) {
-            if (!in_array($field, ['relations', 'promoCodes'])) {
+            if (!in_array($field, ['relations', 'promoCodes', 'child_discounts'])) {
                 $discount[$field] = $value;
             }
         }
@@ -216,6 +218,9 @@ class DiscountController extends Controller
                 DiscountHelper::validateRelations($discount, []);
             }
             $discount->save();
+
+            $childDiscountService =  new ChildDiscountService();
+            $childDiscountService->updateChildDiscounts($discount, $data);
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -255,6 +260,7 @@ class DiscountController extends Controller
                 'showcase_value_type' => 'numeric|required_if:show_on_showcase,true',
                 'show_original_price' => 'boolean|required',
                 'conditions_logical_operator' => ['numeric', 'nullable', Rule::in(LogicalOperator::all())],
+                'child_discounts' => 'array|nullable',
             ]);
 
             $data['user_id'] = $client->userId();
@@ -274,8 +280,11 @@ class DiscountController extends Controller
         try {
             DB::beginTransaction();
             $discountId = DiscountHelper::create($data);
+            $childDiscountService =  new ChildDiscountService();
+            $childDiscountService->createChildDiscounts(Discount::find($discountId), $data);
             DB::commit();
         } catch (\Throwable $e) {
+            report($e->getMessage());
             DB::rollBack();
             return response()->json([
                 'error' => $e->getMessage(),
@@ -433,11 +442,21 @@ class DiscountController extends Controller
                 case Discount::DISCOUNT_PROMO_CODES_RELATION:
                     $query->with('promoCodes');
                     break;
+                case Discount::DISCOUNT_CHILD_DISCOUNTS_RELATION:
+                    $query->with('childDiscounts', function($query) {
+                        $query->with(['brands', 'categories', 'offers', 'merchants', 'productProperties']);
+                    });
+                    break;
+                case Discount::DISCOUNT_MERCHANT_RELATION:
+                    $query->with('merchants');
+                    break;
+                case Discount::DISCOUNT_PRODUCT_PROPERTY_RELATION:
+                    $query->with('productProperties');
+                    break;
             }
         }
 
         $filter = $request->get('filter', []);
-
         if ($params['page'] > 0 && $params['perPage'] > 0) {
             $offset = ($params['page'] - 1) * $params['perPage'];
             $query->offset($offset)->limit((int) $params['perPage']);
@@ -449,6 +468,7 @@ class DiscountController extends Controller
                 case 'merchant_id':
                 case 'user_id':
                 case 'promo_code_only':
+                case 'parent_discount_id':
                     if (is_array($value)) {
                         $values = collect($value);
                         $includeNull = $values->filter(function ($v) {
@@ -530,6 +550,9 @@ class DiscountController extends Controller
                             }
                         });
                     }
+                    break;
+                case 'no_child':
+                    $query->whereNull('parent_discount_id');
                     break;
                 case 'exclude_happy2u_discounts':
                     if (filter_var($value, FILTER_VALIDATE_BOOLEAN)) {

@@ -154,7 +154,12 @@ class PriceController extends Controller
             throw new BadRequestHttpException('offer_ids is required');
         }
 
-        $segments = DiscountSegment::query()->select(['id', 'segment_id'])->get()->pluck('segment_id')->unique()->all();
+        $segments = DiscountSegment::query()
+            ->select(['id', 'segment_id'])
+            ->get()
+            ->pluck('segment_id')
+            ->unique()
+            ->all();
         $segments[] = null;
         $roles = array_keys(RoleDto::rolesByFrontIds([Front::FRONT_SHOWCASE]));
         $roles[] = null;
