@@ -447,7 +447,7 @@ class DiscountCalculator extends AbstractCalculator
             $this->appliedDiscounts
         );
         $offerApplier->setOfferIds($offerIds);
-        $change = $offerApplier->apply($discount);
+        $change = $offerApplier->apply($discount, ($discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER));
 
         $this->basketItemsByDiscounts = $offerApplier->getModifiedBasketItemsByDiscounts();
         $this->input->basketItems = $offerApplier->getModifiedInputBasketItems();
