@@ -46,7 +46,7 @@ class PromoCodeHelper
                 break;
         }
 
-        if (!preg_match('/^[a-zа-я\d]+$/ui', $data['code'])) {
+        if (!preg_match('/^[a-zа-яёЁ\d]+$/ui', $data['code'])) {
             throw new HttpException(400, 'PromoCode code error');
         }
 
