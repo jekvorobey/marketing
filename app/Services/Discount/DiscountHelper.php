@@ -63,7 +63,6 @@ class DiscountHelper
      */
     public static function validateRelations(Discount $discount, array $relations): bool
     {
-
         /** @var Collection $offers */
         $offers = $relations[Discount::DISCOUNT_OFFER_RELATION] ?? $discount->offers;
         /** @var Collection $brands */
@@ -321,10 +320,10 @@ class DiscountHelper
         }
 
         $discountCategoryDtos = $relationsCopy[Discount::DISCOUNT_CATEGORY_RELATION] ?? [];
-        $discount = $discount->fresh(['categories']);
+        $freshDiscount = $discount->fresh(['categories']);
         // сохранить дополнительные категории
         foreach ($discountCategoryDtos as $discountCategoryDto) {
-            $discountCategory = $discount->categories->firstWhere('category_id', $discountCategoryDto['category_id']);
+            $discountCategory = $freshDiscount->categories->firstWhere('category_id', $discountCategoryDto['category_id']);
 
             if ($discountCategory) {
                 $discountCategory->additionalCategories()->delete();
