@@ -3,7 +3,6 @@
 namespace App\Services\Calculator\PromoCode;
 
 use App\Models\Discount\Discount;
-use App\Models\Discount\DiscountCondition;
 use App\Models\PromoCode\PromoCode;
 use App\Services\Calculator\AbstractCalculator;
 use App\Services\Calculator\Bonus\BonusCalculator;
@@ -12,6 +11,7 @@ use App\Services\Calculator\Discount\Calculators\DiscountCalculator;
 use App\Services\Calculator\PromoCode\Dto\PromoCodeResult;
 use Greensight\Oms\Services\OrderService\OrderService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Class PromoCodeCalculator
@@ -76,14 +76,14 @@ class PromoCodeCalculator extends AbstractCalculator
      */
     private function applyDiscountPromocode(): PromoCodeResult
     {
-        $promocodeDiscounts = $this->promoCode->discounts;
+        if ($this->promoCode->isHappyBirthdayPromocode()) {
+            $promocodeDiscounts = $this->rejectOtherCustomersDiscounts();
+        } else {
+            $promocodeDiscounts = $this->promoCode->discounts;
+        }
 
         if ($promocodeDiscounts->isEmpty()) {
             return PromoCodeResult::notApplied();
-        }
-
-        if ($this->promoCode->isHappyBirthdayPromocode()) {
-            $promocodeDiscounts = $this->rejectOtherCustomersDiscounts();
         }
 
         $this->input->promoCodeDiscounts = $promocodeDiscounts;
@@ -260,21 +260,25 @@ class PromoCodeCalculator extends AbstractCalculator
      */
     protected function rejectOtherCustomersDiscounts(): Collection
     {
-        return $this->promoCode
-            ->discounts
-            ->reject(function (Discount $discount) {
-                foreach ($discount->conditionGroups as $conditionGroup) {
-                    foreach ($conditionGroup->conditions as $condition) {
-                        if (
-                            $condition->type === DiscountCondition::CUSTOMER &&
-                            !in_array($this->input->getCustomerId(), $condition->getCustomerIds())
-                        ) {
-                            return true;
-                        }
-                    }
-                }
+        $discountQuery = Discount::query()
+            ->select([
+                DB::raw('discounts.id AS id'),
+            ])
+            ->join(DB::raw('discount_conditions'), function($join) {
+                $join->on('discounts.id', '=', 'discount_conditions.discount_id');
+            })
+            ->join(DB::raw('discount_promo_code'), function($join) {
+                $join->on('discounts.id', '=', 'discount_promo_code.discount_id');
+            })
+            ->join(DB::raw('promo_codes'), function($join) {
+                $join->on('discount_promo_code.promo_code_id', '=', 'promo_codes.id');
+            })
+            ->where('promo_codes.code', '=', PromoCode::HAPPY2U_PROMOCODE)
+            ->where('discount_conditions.condition', 'LIKE', "%customerIds%{$this->input->getCustomerId()}%");
 
-                return false;
-            });
+        $discounts = $discountQuery->get();
+        $discountIds = $discounts->pluck('id')->unique()->all();
+
+        return Discount::query()->whereIn('id', $discountIds)->get();
     }
 }
