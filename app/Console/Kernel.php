@@ -27,7 +27,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command(ExpiredDiscountStatus::class)->everyMinute();
+        $schedule->command(ExpiredDiscountStatus::class)->everyFiveMinutes();
         $schedule->command(ExpiredPromoCodeStatus::class)->dailyAt('00:00');
         $schedule->command(ExpiredBonusStatus::class)->dailyAt('00:00');
         $schedule->command(BirthdayDiscounts::class)->dailyAt('09:00');
