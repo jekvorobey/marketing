@@ -5,6 +5,7 @@ namespace App\Services\Discount;
 use App\Models\Discount\Discount;
 use App\Models\Discount\DiscountBrand;
 use App\Models\Discount\DiscountCategory;
+use App\Models\Discount\DiscountCondition;
 use App\Models\Discount\DiscountConditionGroup;
 use App\Models\Discount\DiscountOffer;
 use App\Models\Discount\LogicalOperator;
@@ -184,6 +185,7 @@ class DiscountHelper
      */
     public static function saveConditions(Model|DiscountConditionGroup $conditionGroup, array $conditions): void
     {
+        /** @var DiscountCondition $condition */
         foreach ($conditions as $condition) {
             /** @var DiscountConditionGroup $conditionGroup */
             $condition['discount_id'] = $conditionGroup->discount_id; //TODO: убрать потом, @deprecated
@@ -275,7 +277,7 @@ class DiscountHelper
         }
 
         foreach ($discount->getMappingRelations() as $relation => $value) {
-            if ($relation === Discount::DISCOUNT_CONDITION_GROUP_RELATION) {
+            if ($relation === Discount::DISCOUNT_CONDITION_GROUP_RELATION || $relation == Discount::DISCOUNT_CONDITION_RELATION) {
                 continue;
             }
 
@@ -308,13 +310,21 @@ class DiscountHelper
                 });
             });
 
+
         $conditionGroupDtos = $relations[Discount::DISCOUNT_CONDITION_GROUP_RELATION] ?? [];
+        /** @var DiscountConditionGroup $group */
+        $discount->conditionGroups->each(function ($group) {
+            $group->conditions->each(function ($condition) {
+                $condition->delete();
+            });
+        });
         $discount->conditionGroups()->delete();
 
         foreach ($conditionGroupDtos as $groupDto) {
-            $conditionGroup = new DiscountConditionGroup();
-            $conditionGroup->discount_id = $discount->id;
-            $conditionGroup->logical_operator = $groupDto['logical_operator'] ?? LogicalOperator::AND;
+            $conditionGroup = new DiscountConditionGroup([
+                'discount_id' => $discount->id,
+                'logical_operator' => $groupDto['logical_operator'] ?? LogicalOperator::AND,
+            ]);
             $conditionGroup->save();
             self::saveConditions($conditionGroup, $groupDto['conditions'] ?? []);
         }

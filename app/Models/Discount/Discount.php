@@ -337,7 +337,7 @@ class Discount extends AbstractModel
             Discount::DISCOUNT_CATEGORY_RELATION => ['class' => DiscountCategory::class, 'items' => $this->categories],
             Discount::DISCOUNT_SEGMENT_RELATION => ['class' => DiscountSegment::class, 'items' => $this->segments],
             Discount::DISCOUNT_USER_ROLE_RELATION => ['class' => DiscountUserRole::class, 'items' => $this->roles],
-            Discount::DISCOUNT_CONDITION_RELATION => ['class' => DiscountCondition::class, 'items' => $this->conditions], //deprecated
+            //Discount::DISCOUNT_CONDITION_RELATION => ['class' => DiscountCondition::class, 'items' => $this->conditions], //deprecated
             Discount::DISCOUNT_CONDITION_GROUP_RELATION => ['class' => DiscountConditionGroup::class, 'items' => $this->conditionGroups],
             Discount::DISCOUNT_BUNDLE_RELATION => ['class' => BundleItem::class, 'items' => $this->bundleItems],
             Discount::DISCOUNT_PUBLIC_EVENT_RELATION => ['class' => DiscountPublicEvent::class, 'items' => $this->publicEvents],
@@ -754,6 +754,7 @@ class Discount extends AbstractModel
                 $oldRelations->pluck($column)->all(),
                 $newRelations->pluck($column)->all()
             ));
+
             if (!empty($relations)) {
                 UpdatePimContent::dispatch($function, $relations);
             }
