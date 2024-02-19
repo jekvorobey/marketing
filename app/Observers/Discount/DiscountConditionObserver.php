@@ -10,6 +10,7 @@ use Greensight\CommonMsa\Dto\UserDto;
 use Greensight\CommonMsa\Services\AuthService\UserService;
 use Greensight\Customer\Services\CustomerService\CustomerService;
 use Greensight\Message\Services\ServiceNotificationService\ServiceNotificationService;
+use Illuminate\Support\Facades\Log;
 
 class DiscountConditionObserver
 {
@@ -145,27 +146,27 @@ class DiscountConditionObserver
      */
     private function addDiscountToSynergy(Discount $discount, int $discountId): void
     {
-        $added = false;
-
+        /** @var DiscountConditionGroup $conditionGroup */
         foreach ($discount->conditionGroups as $conditionGroup) {
+            /** @var DiscountCondition $synergyCondition */
             $synergyCondition = $conditionGroup->conditions
                 ->firstWhere('type', DiscountCondition::DISCOUNT_SYNERGY);
 
             if ($synergyCondition) {
-                $synergy = collect($synergyCondition->condition[DiscountCondition::FIELD_SYNERGY] ?? [])
-                    ->push($discountId)
-                    ->unique()
-                    ->values()
-                    ->toArray();
-
-                $synergyCondition->setSynergy($synergy);
-                $synergyCondition->saveQuietly();
-                $added = true;
                 break;
             }
         }
 
-        if (!$added) {
+        if ($synergyCondition) {
+            $synergy = collect($synergyCondition->condition[DiscountCondition::FIELD_SYNERGY] ?? [])
+                ->push($discountId)
+                ->unique()
+                ->values()
+                ->toArray();
+
+            $synergyCondition->setSynergy($synergy);
+            $synergyCondition->saveQuietly();
+        } else {
             /** @var DiscountConditionGroup $conditionGroup */
             $conditionGroup = $discount->conditionGroups()->create();
 
