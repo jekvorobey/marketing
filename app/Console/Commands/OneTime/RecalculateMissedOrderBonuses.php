@@ -39,12 +39,19 @@ class RecalculateMissedOrderBonuses extends Command
      */
     protected $description = 'Пересчитать бонусы для заказов, за которые не начислились бонусы';
 
+
     /**
      * Execute the console command.
      */
     public function handle()
     {
         $orders = $this->fetchOrders();
+
+        if ($count = $orders->count()) {
+            dump("Found $count orders.");
+        } else {
+            dump("No orders found");
+        }
 
         $orders->each(function (OrderDto $order) {
             dump("Recalculating bonuses for order id = {$order->id}");
@@ -57,13 +64,13 @@ class RecalculateMissedOrderBonuses extends Command
     {
         $orderService = resolve(OrderService::class);
 
-        $dateTo = Carbon::now()->subDay(7);
-        $dateFrom = $dateTo->subDay(90);
+        $dateTo = Carbon::now()->subDays(7)->format('Y-m-d H:i:s');
+        $dateFrom = Carbon::now()->subDays(97)->format('Y-m-d H:i:s');
 
         $ordersQuery  = $orderService->newQuery()
             ->setFilter('type', OrderType::PRODUCT)
-            ->setFilter('created_at', '>=', $dateFrom->format('Y-m-d H:i:s'))
-            ->setFilter('created_at', '<=', $dateTo->format('Y-m-d H:i:s'))
+            ->setFilter('created_at', '>=', $dateFrom)
+            ->setFilter('created_at', '<=', $dateTo)
             ->setFilter('added_bonus', 0)
             ->setFilter('is_canceled', false)
             ->setFilter('is_returned', false)
