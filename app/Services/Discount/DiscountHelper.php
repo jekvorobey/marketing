@@ -215,7 +215,8 @@ class DiscountHelper
     {
         $discounts = Discount::query()->whereIn('id', $ids)->get();
         $discounts->each(function (Discount $discount) use ($userId) {
-            DB::beginTransaction();
+            //TODO: Отключение транзаций при копировании скидок
+            //DB::beginTransaction();
             $copyDiscount = $discount->replicate();
 
             $copyDiscount->name = "Копия {$copyDiscount->name}";
@@ -224,7 +225,7 @@ class DiscountHelper
             $copyDiscountResult = $copyDiscount->save();
 
             if (!$copyDiscountResult) {
-                DB::rollBack();
+                //DB::rollBack();
                 throw new HttpException(500, 'Error when copying discount');
             }
 
@@ -245,20 +246,20 @@ class DiscountHelper
                             $conditionSaved = $copyCondition->save();
 
                             if (!$conditionSaved) {
-                                DB::rollBack();
+                                //DB::rollBack();
                                 throw new HttpException(500, "Error when copying discount condition {$relationKey}");
                             }
                         }
                     }
 
                     if (!$relationSaveOk) {
-                        DB::rollBack();
+                         //DB::rollBack();
                         throw new HttpException(500, "Error when copying discount relation {$relationKey}");
                     }
                 });
             }
 
-            DB::commit();
+            //DB::commit();
         });
     }
 
