@@ -176,9 +176,12 @@ class OfferApplier extends AbstractApplier
 
                 $basketItem = $calculatorChangePrice->syncItemWithChangedPrice($basketItem, $changedPrice);
                 $this->addBasketItemByDiscount($basketItemId, $discount, $change);
-            } else if ($discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
-                $basketItem = $calculatorChangePrice->syncItemWithChangedPrice($basketItem, $changedPrice);
+
             }
+            // TODO: remove this block
+            /*else if ($discount->type === Discount::DISCOUNT_TYPE_BUNDLE_OFFER) {
+                //$basketItem = $calculatorChangePrice->syncItemWithChangedPrice($basketItem, $changedPrice);
+            }*/
 
             if ($change > 0) {
                 $totalChange += $change * $basketItem['qty'];

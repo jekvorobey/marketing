@@ -82,7 +82,7 @@ class DiscountOutput
             return $discount;
         });
 
-        /*//скидка basket_item после округлений
+        //скидка basket_item после округлений
         $finalDiscount = round($basketItem['cost'] - $basketItem['price'], 2);
 
         //сумма всех скорректированных скидок basket_item
@@ -99,7 +99,7 @@ class DiscountOutput
             $this->appliedDiscounts->put($discountForCorrection['id'], $appliedDiscount);
         }
 
-        $basketItem['discount'] = $finalDiscount;*/
+        $basketItem['discount'] = $finalDiscount;
         $basketItem['discounts'] = $this->basketItemsByDiscounts[$basketItemId]->toArray();
     }
 
