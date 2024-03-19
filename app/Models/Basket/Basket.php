@@ -7,7 +7,6 @@ use App\Services\Calculator\Checkout\CheckoutCalculatorBuilder;
 use Greensight\Oms\Services\BasketService\BasketService;
 use Illuminate\Support\Collection;
 use Exception;
-use RuntimeException;
 
 class Basket implements \JsonSerializable
 {
@@ -16,6 +15,11 @@ class Basket implements \JsonSerializable
      * @var float
      */
     public $cost;
+    /**
+     * Стоимость корзины без скидок по РРЦ.
+     * @var float
+     */
+    public $retailCost;
     /**
      * Итоговая цена всей корзины (cost - discount).
      * @var float
@@ -139,6 +143,7 @@ class Basket implements \JsonSerializable
         $this->maxSpendableBonus = $calculation['maxSpendableBonus'];
 
         $totalCost = 0;
+        $totalRetailCost = 0;
         $totalItemDiscount = 0;
         $totalBonusSpent = 0;
         $totalBonusDiscount = 0;
@@ -146,8 +151,6 @@ class Basket implements \JsonSerializable
 
         foreach ($this->items as $key => $item) {
             if (!$calculation['basketItems']->has($item->id)) {
-                //throw new RuntimeException("basket item id {$item->id} without price");
-
                 //ToDo Принудительно удаление товара из корзины, у которого нет цены в prices
                 /** @var BasketService $basketService */
                 $basketService = resolve(BasketService::class);
@@ -165,7 +168,8 @@ class Basket implements \JsonSerializable
 
             $basketItem['cost'] ??= $price;
             $item->cost = $basketItem['cost'];
-            $item->totalCost = $basketItem['cost'] * $qty;
+            $item->priceRetail = ($basketItem['price_retail'] ?? 0);
+            $item->totalCost = $item->cost * $qty;
             $item->discount = $discount * $qty;
             $item->discounts = $basketItem['discounts'] ?? [];
             $item->unitPrice = $price;
@@ -176,6 +180,7 @@ class Basket implements \JsonSerializable
             $item->bonusDiscount = ($basketItem['bonusDiscount'] ?? 0);
 
             $totalCost += $item->totalCost;
+            $totalRetailCost += ($item->priceRetail ?: $item->cost) * $qty;
             $totalItemDiscount += $item->discount;
             $totalBonusSpent += $item->bonusSpent;
             $totalBonusDiscount += $item->bonusDiscount;
@@ -188,8 +193,9 @@ class Basket implements \JsonSerializable
         $basketDiscount = $this->discountByCertificates;
 
         $this->cost = $totalCost;
-        $this->discount = $totalItemDiscount + $basketDiscount;
-        $this->price = $totalCost - $this->discount;
+        $this->retailCost = $totalRetailCost;
+        $this->discount = $totalItemDiscount + $basketDiscount + ($totalRetailCost - $totalCost);
+        $this->price = ($this->retailCost ?: $this->cost) - $this->discount;
         $this->bonusSpent = $totalBonusSpent;
         $this->bonusDiscount = $totalBonusDiscount;
         $this->bonus = $totalBonusSpent;
@@ -284,6 +290,7 @@ class Basket implements \JsonSerializable
         return [
             'cost' => $this->cost,
             'price' => $this->price,
+            'retailCost' => $this->retailCost,
             'discounts' => $this->appliedDiscounts,
             'bonuses' => $this->appliedBonuses,
             'bonusSpent' => $this->bonusSpent,
