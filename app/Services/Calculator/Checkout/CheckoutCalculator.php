@@ -10,6 +10,7 @@ use App\Services\Calculator\Discount\Calculators\DiscountCalculator;
 use App\Services\Calculator\InputCalculator;
 use App\Services\Calculator\OutputCalculator;
 use App\Services\Calculator\PromoCode\PromoCodeCalculator;
+use Greensight\CommonMsa\Dto\RoleDto;
 use Illuminate\Support\Collection;
 
 /**
@@ -79,7 +80,7 @@ class CheckoutCalculator extends AbstractCalculator
                 'price' => $basketItem['price'],
                 'price_prof' => $basketItem['price'] ?? 0,
                 'price_base' => $basketItem['price_base'] ?? 0,
-                'price_retail' => $basketItem['price_retail'] ?? 0,
+                'price_retail' => $basketItem['prices_by_roles'][RoleDto::ROLE_SHOWCASE_CUSTOMER]['price'] ?? 0,
                 'qty' => (float) $basketItem['qty'],
                 'cost' => $basketItem['cost'] ?? $basketItem['price'],
                 'discount' => $basketItem['discount'] ?? 0,
