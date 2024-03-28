@@ -18,8 +18,9 @@ use Illuminate\Support\Facades\DB;
 
 class BirthdayDiscounts extends Command
 {
-    protected const DAYS_BEFORE_BITHDAY = 7;
-    protected const DAYS_AFTER_BITHDAY = 14;
+    protected int $daysBeforeBirthday;
+    protected int $daysAfterBirthday;
+
     protected const CHECK_DISCOUNTS_LAST_DAYS_COUNT = 357;
 
     /**
@@ -57,7 +58,7 @@ class BirthdayDiscounts extends Command
 
     protected function preloadData(): void
     {
-        $this->birthdayPromocode = PromoCode::where(['code' => PromoCode::HAPPY2U_PROMOCODE])->first();
+        $this->birthdayPromocode = PromoCode::where(['is_birthday_promo' => true])->first();
 
         if (!$this->birthdayPromocode) {
             throw new \LogicException('Promocode HAPPY2U not found');
@@ -66,6 +67,9 @@ class BirthdayDiscounts extends Command
         if ($this->birthdayPromocode->status !== PromoCode::STATUS_ACTIVE) {
             throw new \LogicException('Promocode HAPPY2U is not active');
         }
+
+        $this->daysBeforeBirthday = $this->birthdayPromocode->getDaysBeforeBirthday();
+        $this->daysAfterBirthday = $this->birthdayPromocode->getDaysAfterBirthday();
     }
 
     /**
@@ -85,7 +89,7 @@ class BirthdayDiscounts extends Command
 
     protected function sendFirstBirthdayNotification(): void
     {
-        $customers = $this->getCusotmers(static::DAYS_BEFORE_BITHDAY);
+        $customers = $this->getCusotmers($this->daysBeforeBirthday);
 
         /** @var CustomerDto $customer */
         foreach ($customers as $customer) {
@@ -173,7 +177,7 @@ class BirthdayDiscounts extends Command
     protected function getBirthdayDiscounts(): \Illuminate\Database\Eloquent\Collection
     {
         return Discount::whereHas('promoCodes', function ($promoCodeQuery) {
-                $promoCodeQuery->where('code', PromoCode::HAPPY2U_PROMOCODE);
+                $promoCodeQuery->where('is_birthday_promo', true);
             })
             ->get();
     }
