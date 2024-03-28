@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
 
@@ -36,6 +37,7 @@ use Illuminate\Support\Collection;
  * @property int|null $gift_id
  * @property int|null $bonus_id
  * @property array $conditions
+ * @property bool $is_birthday_promo
  *
  * @property-read Collection|Discount[]|null $discounts
  * @property-read Bonus|null $bonus
@@ -96,6 +98,10 @@ class PromoCode extends AbstractModel
     /** Для определенной(ых) роли(ей) */
     public const CONDITION_TYPE_ROLE_IDS = 'roles';
 
+    /** Для промокода на ДР */
+    public const CONDITION_TYPE_DAYS_BEFORE_BIRTHDAY = 'days_before_birthday';
+    public const CONDITION_TYPE_DAYS_AFTER_BIRTHDAY = 'days_after_birthday';
+
     /**
      * Тип ограничения количества использований
      */
@@ -128,6 +134,7 @@ class PromoCode extends AbstractModel
         'gift_id',
         'bonus_id',
         'conditions',
+        'is_birthday_promo',
     ];
 
     /** @var array */
@@ -227,6 +234,22 @@ class PromoCode extends AbstractModel
         return $this;
     }
 
+    public function setDaysBeforeBirthday(int $daysBeforeBirthday): self
+    {
+        $conditions = $this->conditions ?? [];
+        $conditions[self::CONDITION_TYPE_DAYS_BEFORE_BIRTHDAY] = $daysBeforeBirthday;
+        $this->conditions = $conditions;
+        return $this;
+    }
+
+    public function setDaysAfterBirthday(int $daysAfterBirthday): self
+    {
+        $conditions = $this->conditions ?? [];
+        $conditions[self::CONDITION_TYPE_DAYS_AFTER_BIRTHDAY] = $daysAfterBirthday;
+        $this->conditions = $conditions;
+        return $this;
+    }
+
     public function getCustomerIds(): array
     {
         return $this->conditions[self::CONDITION_TYPE_CUSTOMER_IDS] ?? [];
@@ -240,6 +263,22 @@ class PromoCode extends AbstractModel
     public function getRoleIds(): array
     {
         return $this->conditions[self::CONDITION_TYPE_ROLE_IDS] ?? [];
+    }
+
+    public function getDaysBeforeBirthday(): ?int
+    {
+        if (!$this->is_birthday_promo) {
+            return null;
+        }
+        return $this->conditions[self::CONDITION_TYPE_DAYS_BEFORE_BIRTHDAY] ?? null;
+    }
+
+    public function getDaysAfterBirthday(): ?int
+    {
+        if (!$this->is_birthday_promo) {
+            return null;
+        }
+        return $this->conditions[self::CONDITION_TYPE_DAYS_AFTER_BIRTHDAY] ?? null;
     }
 
     public function scopeExpired(Builder $query): void
@@ -344,8 +383,8 @@ class PromoCode extends AbstractModel
     /** Является ли промокодом на ДР
      * @return bool
      */
-    public function isHappyBirthdayPromocode(): bool
+    public function isBirthdayPromocode(): bool
     {
-        return $this->code === self::HAPPY2U_PROMOCODE;
+        return $this->is_birthday_promo;
     }
 }
