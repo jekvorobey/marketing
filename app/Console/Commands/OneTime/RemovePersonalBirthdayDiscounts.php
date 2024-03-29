@@ -7,6 +7,7 @@ use App\Models\Discount\DiscountCondition;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class RemovePersonalBirthdayDiscounts extends Command
 {
@@ -26,11 +27,23 @@ class RemovePersonalBirthdayDiscounts extends Command
 
     public function handle()
     {
+        try {
+            DB::beginTransaction();
+            $deletedDiscountIds = $this->deleteDiscountsAndRelations();
+            $this->removeSummationsWithDeletedDiscounts($deletedDiscountIds);
+            DB::commit();
+        } catch (\Exception $e) {
+            dump('ERROR: ' . $e->getMessage());
+            DB::rollBack();
+        }
+    }
+
+    private function deleteDiscountsAndRelations()
+    {
         /** @var Collection $discounts */
         $discountsToDelete = Discount::where('name', 'like', '%HAPPY2U Customer ID:%')->get();
         $discountsToDeleteIds = $discountsToDelete->pluck('id')->toArray();
 
-        /** @var Discount $discount */
         foreach ($discountsToDelete as $discountToDelete) {
             $discountToDelete->offers()->delete();
             $discountToDelete->bundleItems()->delete();
@@ -48,8 +61,7 @@ class RemovePersonalBirthdayDiscounts extends Command
             $discountToDelete->delete();
             dump("Discount {$discountToDelete->id}:{$discountToDelete->name} deleted");
         }
-
-        $this->removeSummationsWithDeletedDiscounts($discountsToDeleteIds);
+        return $discountsToDeleteIds;
     }
 
     private function removeSummationsWithDeletedDiscounts(array $deletedIds): void
