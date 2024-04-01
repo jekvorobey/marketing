@@ -18,14 +18,10 @@ use Illuminate\Support\Facades\DB;
 
 class BirthdayDiscounts extends Command
 {
-    protected const DAYS_BEFORE_BITHDAY = 7;
-    protected const DAYS_AFTER_BITHDAY = 14;
-    protected const CHECK_DISCOUNTS_LAST_DAYS_COUNT = 357;
-    protected const CREATOR_USER_ID = 19435; //Талалов
+    protected int $daysBeforeBirthday;
+    protected int $daysAfterBirthday;
 
-    protected const DISCOUNT_1_COPY_FROM_ID = 2229;
-    protected const DISCOUNT_2_COPY_FROM_ID = 2230;
-    protected const DISCOUNT_FREE_DELIVERY_COPY_FROM_ID = 2447;
+    protected const CHECK_DISCOUNTS_LAST_DAYS_COUNT = 357;
 
     /**
      * The name and signature of the console command.
@@ -39,7 +35,7 @@ class BirthdayDiscounts extends Command
      *
      * @var string
      */
-    protected $description = 'Создает скидки ко дню рождения и отправляет уведомления';
+    protected $description = 'Отправляет уведомления о скидках ко дню рождения';
 
     private ?PromoCode $birthdayPromocode;
     private CustomerService $customerService;
@@ -62,7 +58,7 @@ class BirthdayDiscounts extends Command
 
     protected function preloadData(): void
     {
-        $this->birthdayPromocode = PromoCode::where(['code' => PromoCode::HAPPY2U_PROMOCODE])->first();
+        $this->birthdayPromocode = PromoCode::where(['is_birthday_promo' => true])->first();
 
         if (!$this->birthdayPromocode) {
             throw new \LogicException('Promocode HAPPY2U not found');
@@ -71,6 +67,9 @@ class BirthdayDiscounts extends Command
         if ($this->birthdayPromocode->status !== PromoCode::STATUS_ACTIVE) {
             throw new \LogicException('Promocode HAPPY2U is not active');
         }
+
+        $this->daysBeforeBirthday = $this->birthdayPromocode->getDaysBeforeBirthday();
+        $this->daysAfterBirthday = $this->birthdayPromocode->getDaysAfterBirthday();
     }
 
     /**
@@ -82,28 +81,19 @@ class BirthdayDiscounts extends Command
     {
         $this->preloadData();
 
-        $this->createBirthdayDiscounts();
-        $this->sendBithdayNotifications();
+        $this->sendFirstBirthdayNotification();
+        $this->sendRepeatableBirthdayNotifications();
 
         return 0;
     }
 
-    protected function createBirthdayDiscounts(): void
+    protected function sendFirstBirthdayNotification(): void
     {
-        $customers = $this->getCusotmers(static::DAYS_BEFORE_BITHDAY);
+        $customers = $this->getCusotmers($this->daysBeforeBirthday);
 
         /** @var CustomerDto $customer */
         foreach ($customers as $customer) {
-            $alreadyCreatedDiscounts = $this->getBirthdayDiscountsForLastDays($customer, static::CHECK_DISCOUNTS_LAST_DAYS_COUNT);
-            if ($alreadyCreatedDiscounts->isNotEmpty()) {
-                continue;
-            }
-
             try {
-                $discount1 = $this->copyDiscountFrom(static::DISCOUNT_1_COPY_FROM_ID, $customer);
-                $discount2 = $this->copyDiscountFrom(static::DISCOUNT_2_COPY_FROM_ID, $customer);
-                $discount3 = $this->copyDiscountFrom(static::DISCOUNT_FREE_DELIVERY_COPY_FROM_ID, $customer);
-
                 $this->notificationService->send($customer->user_id, 'birthday_discount_created', $this->getEmailData([
                     'TITLE' => 'Есть догадки!',
                     'TEXT' => 'Привет, Бессовестно Талантливый!<br><br>
@@ -116,7 +106,6 @@ class BirthdayDiscounts extends Command
                         'link' => config('app.showcase_host') . '/yo',
                     ],
                 ]));
-
             } catch (\Throwable $exception) {
                 report($exception);
             }
@@ -130,97 +119,20 @@ class BirthdayDiscounts extends Command
         ], $data);
     }
 
-    protected function copyDiscountFrom(int $discountId, CustomerDto $customer): Discount
-    {
-        $originalDiscount = Discount::whereId($discountId)->firstOrFail();
-
-        try {
-            DB::beginTransaction();
-
-            $discount = $originalDiscount->replicate();
-            $discount->name = $this->generateDiscountName($customer);
-            $discount->status = Discount::STATUS_ACTIVE;
-            $discount->start_date = now();
-            $discount->end_date = now()->addDays(static::DAYS_BEFORE_BITHDAY + static::DAYS_AFTER_BITHDAY)->setTime(23,59,59);
-            $discount->promo_code_only = true;
-            $discount->push();
-
-            $this->replicateRelations($originalDiscount, $discount, 'brands');
-            $this->replicateRelations($originalDiscount, $discount, 'categories');
-            $this->replicateRelations($originalDiscount, $discount, 'offers');
-            $this->replicateRelations($originalDiscount, $discount, 'roles');
-            $this->replicateRelations($originalDiscount, $discount, 'segments');
-
-            $conditionGroup = $this->replicateConditionRelations($originalDiscount, $discount);
-
-            $condition = new DiscountCondition([
-                'discount_id' => $discount->id,
-                'type' => DiscountCondition::CUSTOMER,
-                'condition' => [DiscountCondition::FIELD_CUSTOMER_IDS => [$customer->id]],
-                'discount_condition_group_id' => $conditionGroup->id,
-            ]);
-            $condition->save();
-
-            $discount->promoCodes()->save($this->birthdayPromocode);
-
-            DB::commit();
-
-        } catch (\Throwable $exception) {
-            DB::rollBack();
-            throw $exception;
-        }
-
-        return $discount;
-    }
-
-    protected function replicateRelations(Discount $originalDiscount, Discount $newDiscount, string $relationName): void
-    {
-        $originalDiscount->load($relationName);
-
-        if (!$originalDiscount->{$relationName}) {
-            return;
-        }
-
-        foreach ($originalDiscount->{$relationName} as $relationModel) {
-            $newDiscount->{$relationName}()->save($relationModel->replicate());
-        }
-    }
-
-    protected function replicateConditionRelations(Discount $originalDiscount, Discount $newDiscount): DiscountConditionGroup
-    {
-        $originalDiscount->load('conditions');
-
-        $conditionGroup = new DiscountConditionGroup([
-            'discount_id' => $newDiscount->id,
-            'logical_operator' => LogicalOperator::AND,
-        ]);
-        $conditionGroup->save();
-
-        /** @var DiscountCondition $condition */
-        foreach ($originalDiscount->conditions as $condition) {
-            $condition = $condition->replicate();
-            $condition->discount_condition_group_id = $conditionGroup->id;
-            $condition->discount_id = $newDiscount->id;
-            $condition->push();
-        }
-
-        return $conditionGroup;
-    }
-
-    protected function sendBithdayNotifications(): void
+    protected function sendRepeatableBirthdayNotifications(): void
     {
         $customers = $this->getCusotmers();
 
         /** @var CustomerDto $customer */
         foreach ($customers as $customer) {
-            $createdBithdayDiscounts = $this->getBirthdayDiscountsForLastDays($customer, static::DAYS_BEFORE_BITHDAY + 1);
-            $activeBithdayDiscount = $createdBithdayDiscounts->filter(fn($discount) => $discount->status === Discount::STATUS_ACTIVE)->first();
+            $birthdayDiscounts = $this->getBirthdayDiscounts();
+            $activeBirthdayDiscount = $birthdayDiscounts->filter(fn($discount) => $discount->status === Discount::STATUS_ACTIVE)->first();
 
-            $orders = $createdBithdayDiscounts->isNotEmpty() ?
-                $this->getOrdersByDiscountIds($customer, $createdBithdayDiscounts->pluck('id')->toArray()) :
+            $orders = $birthdayDiscounts->isNotEmpty() ?
+                $this->getOrdersByDiscountIds($customer, $birthdayDiscounts->pluck('id')->toArray()) :
                 collect();
 
-            if ($orders->isEmpty() && $activeBithdayDiscount) {
+            if ($orders->isEmpty() && $activeBirthdayDiscount) {
                 $this->notificationService->send($customer->user_id, 'birthday_congratulation_has_not_used_promocode', $this->getEmailData([
                         'TITLE' => 'Помнишь про подарок?',
                         'TEXT' => 'Привет, Бессовестно Талантливый! <br><br>
@@ -262,20 +174,10 @@ class BirthdayDiscounts extends Command
         );
     }
 
-    protected function generateDiscountName(CustomerDto $customer): string
-    {
-        return sprintf('%s Customer ID: %s', PromoCode::HAPPY2U_PROMOCODE, $customer->id);
-    }
-
-    protected function getBirthdayDiscountsForLastDays(CustomerDto $customer, int $lastDaysCount): \Illuminate\Database\Eloquent\Collection
+    protected function getBirthdayDiscounts(): \Illuminate\Database\Eloquent\Collection
     {
         return Discount::whereHas('promoCodes', function ($promoCodeQuery) {
-                $promoCodeQuery->where('code', PromoCode::HAPPY2U_PROMOCODE);
-            })
-            ->whereDate('created_at', '>=', now()->subDays($lastDaysCount)->toDateString())
-            ->whereHas('conditions', function ($conditionQuery) use ($customer) {
-                $conditionQuery->where('type', DiscountCondition::CUSTOMER)
-                    ->whereJsonContains('condition->customerIds', [$customer->id]);
+                $promoCodeQuery->where('is_birthday_promo', true);
             })
             ->get();
     }

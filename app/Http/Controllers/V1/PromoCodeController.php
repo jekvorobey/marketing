@@ -117,6 +117,7 @@ class PromoCodeController extends Controller
             'end_date' => 'date|nullable',
             'status' => "numeric|{$required_rule}",
             'type' => "numeric|{$required_rule}",
+            'is_birthday_promo' => "boolean|nullable",
             'discounts' => 'array|nullable',
             'discounts.*' => 'numeric',
             'gift_id' => 'numeric|nullable',
@@ -128,6 +129,8 @@ class PromoCodeController extends Controller
             'conditions.roles.*' => 'numeric|nullable',
             'conditions.customers' => 'array|nullable',
             'conditions.customers.*' => 'numeric|nullable',
+            'conditions.days_before_birthday' => 'numeric|nullable',
+            'conditions.days_after_birthday' => 'numeric|nullable',
         ];
 
         if (!$promoCode->exists) {

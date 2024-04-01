@@ -9,7 +9,10 @@ use App\Services\Calculator\Bonus\BonusCalculator;
 use App\Services\Calculator\CalculatorChangePrice;
 use App\Services\Calculator\Discount\Calculators\DiscountCalculator;
 use App\Services\Calculator\PromoCode\Dto\PromoCodeResult;
+use Greensight\Customer\Dto\CustomerDto;
+use Greensight\Customer\Services\CustomerService\CustomerService;
 use Greensight\Oms\Services\OrderService\OrderService;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -67,6 +70,7 @@ class PromoCodeCalculator extends AbstractCalculator
                 'bonus_id' => $this->promoCode->bonus_id,
                 'owner_id' => $this->promoCode->owner_id,
                 'change' => $promocodeResult->getChange(),
+                'is_birthday_promo' => $this->promoCode->is_birthday_promo,
             ] : null;
     }
 
@@ -76,11 +80,7 @@ class PromoCodeCalculator extends AbstractCalculator
      */
     private function applyDiscountPromocode(): PromoCodeResult
     {
-        if ($this->promoCode->isHappyBirthdayPromocode()) {
-            $promocodeDiscounts = $this->rejectOtherCustomersDiscounts();
-        } else {
-            $promocodeDiscounts = $this->promoCode->discounts;
-        }
+        $promocodeDiscounts = $this->promoCode->discounts;
 
         if ($promocodeDiscounts->isEmpty()) {
             return PromoCodeResult::notApplied();
@@ -181,22 +181,26 @@ class PromoCodeCalculator extends AbstractCalculator
     /**
      * Проверяет ограничения заданные в conditions
      */
-    protected function checkPromoCodeConditions(PromoCode $promoCode): bool
+    protected function checkPromoCodeConditions(): bool
     {
-        if (empty($promoCode->conditions)) {
+        if (empty($this->promoCode->conditions)) {
             return true;
         }
 
-        $roleIds = collect($promoCode->getRoleIds());
+        if ($this->promoCode->is_birthday_promo && !$this->checkBirthdayPromoConditions()) {
+            return false;
+        }
+
+        $roleIds = collect($this->promoCode->getRoleIds());
         if ($roleIds->isNotEmpty() && $roleIds->intersect($this->input->customer['roles'])->isEmpty()) {
             return false;
         }
 
-        $customerIds = $promoCode->getCustomerIds();
+        $customerIds = $this->promoCode->getCustomerIds();
         if (!empty($customerIds) && !in_array($this->input->customer['id'], $customerIds)) {
             return false;
         }
-        $segmentIds = $promoCode->getSegmentIds();
+        $segmentIds = $this->promoCode->getSegmentIds();
 
         return empty($segmentIds) || in_array($this->input->customer['segment'], $segmentIds);
     }
@@ -204,24 +208,24 @@ class PromoCodeCalculator extends AbstractCalculator
     /**
      * Проверяет ограничение на количество применений одного промокода
      */
-    protected function checkPromoCodeCounter(PromoCode $promoCode): bool
+    protected function checkPromoCodeCounter(): bool
     {
-        if (!isset($promoCode->counter)) {
+        if (!isset($this->promoCode->counter)) {
             return true;
         }
 
         /** @var OrderService $orderService */
         $orderService = resolve(OrderService::class);
-        switch ($promoCode->type_of_limit) {
+        switch ($this->promoCode->type_of_limit) {
             case PromoCode::TYPE_OF_LIMIT_USER:
                 $customerId = $this->input->getCustomerId();
                 if (!$customerId) {
                     return false;
                 }
 
-                return $promoCode->counter > $orderService->orderPromoCodeCountByCustomer($promoCode->id, $customerId);
+                return $this->promoCode->counter > $orderService->orderPromoCodeCountByCustomer($this->promoCode->id, $customerId);
             case PromoCode::TYPE_OF_LIMIT_ALL:
-                return $promoCode->counter > $orderService->orderPromoCodeCount($promoCode->id);
+                return $this->promoCode->counter > $orderService->orderPromoCodeCount($this->promoCode->id);
             default:
                 return false;
         }
@@ -245,7 +249,7 @@ class PromoCodeCalculator extends AbstractCalculator
             return $this;
         }
 
-        $check = $this->checkPromoCodeConditions($this->promoCode) && $this->checkPromoCodeCounter($this->promoCode);
+        $check = $this->checkPromoCodeConditions() && $this->checkPromoCodeCounter();
         if (!$check) {
             $this->promoCode = null;
         }
@@ -280,5 +284,57 @@ class PromoCodeCalculator extends AbstractCalculator
         $discountIds = $discounts->pluck('id')->unique()->all();
 
         return Discount::query()->whereIn('id', $discountIds)->get();
+    }
+
+    private function checkBirthdayPromoConditions(): bool
+    {
+        /** @var CustomerDto $customer */
+        $customer = $this->getCustomer();
+
+        if (!$customer || !$customer->birthday) {
+            return false;
+        }
+
+        if (!$this->isYearPastAfterLastUse($customer->birthday_promo_used_at)) {
+            return false;
+        }
+
+        $birthday = Carbon::parse($customer->birthday)->setYear(now()->year);
+
+        $dateFrom = (clone $birthday)->subDays(
+            $this->promoCode->getDaysBeforeBirthday()
+        );
+        $dateTo = (clone $birthday)->addDays(
+            $this->promoCode->getDaysAfterBirthday()
+        );
+
+        if (!(now()->isBetween($dateFrom, $dateTo))) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function getCustomer(): ?CustomerDto
+    {
+        $customerService = resolve(CustomerService::class);
+
+        return $customerService->customers(
+            $customerService->newQuery()->setFilter('id', $this->input->getCustomerId())
+        )->first() ?? null;
+    }
+
+    private function isYearPastAfterLastUse(?string $birthdayPromoUsedAt): bool
+    {
+        if (!$birthdayPromoUsedAt) {
+            return true;
+        }
+
+        $diffInDays = Carbon::parse($birthdayPromoUsedAt)->diffInDays(now());
+
+        return $diffInDays >
+            Carbon::DAYS_PER_YEAR - (
+                $this->promoCode->getDaysBeforeBirthday() + $this->promoCode->getDaysAfterBirthday()
+            );
     }
 }
