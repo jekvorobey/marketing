@@ -157,7 +157,7 @@ class DiscountConditionObserver
             }
         }
 
-        if ($synergyCondition) {
+        if (!empty($synergyCondition)) {
             $synergy = collect($synergyCondition->condition[DiscountCondition::FIELD_SYNERGY] ?? [])
                 ->push($discountId)
                 ->unique()
