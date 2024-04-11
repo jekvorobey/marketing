@@ -1496,7 +1496,7 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.ibt.ru:iBT.studio/ibt-merchant-management-lib",
-                "reference": "a9c18bcb4bc6017ee0c773e8954068ce6b0b1d34"
+                "reference": "e5e8ab121f01c1642b6ebbbf1cf423aec3ea0202"
             },
             "require": {
                 "ext-json": "*",
@@ -1520,7 +1520,7 @@
                 }
             ],
             "description": "iBT Merchant Management service client",
-            "time": "2023-12-18T08:30:38+00:00"
+            "time": "2024-04-09T11:23:02+00:00"
         },
         {
             "name": "ibt/message-lib",
@@ -1615,7 +1615,7 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.ibt.ru:iBT.studio/ibt-pim-lib",
-                "reference": "abfd1a25d6ad865f2bd37d606962cdf6b740cb09"
+                "reference": "b50bedc74a79600d2b99f9ed3e965d14c565095a"
             },
             "require": {
                 "ext-json": "*",
@@ -1639,7 +1639,7 @@
                 }
             ],
             "description": "iBT PIM service client",
-            "time": "2024-03-19T09:37:44+00:00"
+            "time": "2024-04-10T10:38:27+00:00"
         },
         {
             "name": "jean85/pretty-package-versions",
