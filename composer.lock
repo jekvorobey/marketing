@@ -1453,7 +1453,7 @@
             "source": {
                 "type": "git",
                 "url": "git@gitlab.ibt.ru:iBT.studio/ibt-logistics-lib",
-                "reference": "83ab425a9d8159454c62ec193ede739163eedff3"
+                "reference": "6253bd9707b71d88932fdbd340f3c396ed5d47eb"
             },
             "require": {
                 "ext-json": "*",
@@ -1488,7 +1488,7 @@
                 }
             ],
             "description": "iBT logistics client",
-            "time": "2024-04-03T11:53:24+00:00"
+            "time": "2024-04-16T07:49:54+00:00"
         },
         {
             "name": "ibt/merchant-management-lib",
