@@ -220,7 +220,7 @@ class PromoCodeCalculator extends AbstractCalculator
             case PromoCode::TYPE_OF_LIMIT_USER:
                 $customerId = $this->input->getCustomerId();
                 if (!$customerId) {
-                    return false;
+                    return true;
                 }
 
                 return $this->promoCode->counter > $orderService->orderPromoCodeCountByCustomer($this->promoCode->id, $customerId);
