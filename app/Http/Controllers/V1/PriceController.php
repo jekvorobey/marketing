@@ -183,7 +183,7 @@ class PriceController extends Controller
                         if (!$discounts && !$bonus && ($segment || $role)) {
                             continue;
                         }
-                        //$offerId = $item['offer_id'];
+
                         if (!isset($prices[$offerId])) {
                             $prices[$offerId] = [];
                         }
