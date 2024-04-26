@@ -165,43 +165,45 @@ class PriceController extends Controller
         $roles[] = null;
 
         $prices = [];
-        foreach ($segments as $segment) {
-            foreach ($roles as $role) {
-                $segmentKey = $segment ?? '0';
-                $roleKey = $role ?? '0';
+        foreach ($offerIds as $offerId) {
+            foreach ($segments as $segment) {
+                foreach ($roles as $role) {
+                    $segmentKey = $segment ?? '0';
+                    $roleKey = $role ?? '0';
 
-                $items = (new CatalogCalculator([
-                    'offer_ids' => $offerIds,
-                    'role_ids' => [$role],
-                    'segment_id' => $segment,
-                ]))->calculate(false);
+                    $items = (new CatalogCalculator([
+                        'offer_ids' => [$offerId],
+                        'role_ids' => [$role],
+                        'segment_id' => $segment,
+                    ]))->calculate(false);
 
-                foreach ($items as $item) {
-                    $discounts = $item['discounts'] ?? null;
-                    $bonus = $item['bonus'] ?? null;
-                    if (!$discounts && !$bonus && ($segment || $role)) {
-                        continue;
+                    foreach ($items as $item) {
+                        $discounts = $item['discounts'] ?? null;
+                        $bonus = $item['bonus'] ?? null;
+                        if (!$discounts && !$bonus && ($segment || $role)) {
+                            continue;
+                        }
+                        //$offerId = $item['offer_id'];
+                        if (!isset($prices[$offerId])) {
+                            $prices[$offerId] = [];
+                        }
+
+                        if (!isset($prices[$offerId][$segmentKey])) {
+                            $prices[$offerId][$segmentKey] = [];
+                        }
+
+                        $prices[$offerId][$segmentKey][$roleKey] = [
+                            'cost' => $item['cost'],
+                            'price' => $item['price'],
+                            'price_base' => $item['price_base'],
+                            'price_prof' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_PROFESSIONAL]['price'] ?? null,
+                            'price_retail' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_CUSTOMER]['price'] ?? null,
+                            'percent_prof' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_PROFESSIONAL]['percent_by_base_price'] ?? null,
+                            'percent_retail' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_CUSTOMER]['percent_by_base_price'] ?? null,
+                            'bonus' => $item['bonus'],
+                            'discounts' => $item['discounts'] ?? null,
+                        ];
                     }
-                    $offerId = $item['offer_id'];
-                    if (!isset($prices[$offerId])) {
-                        $prices[$offerId] = [];
-                    }
-
-                    if (!isset($prices[$offerId][$segmentKey])) {
-                        $prices[$offerId][$segmentKey] = [];
-                    }
-
-                    $prices[$offerId][$segmentKey][$roleKey] = [
-                        'cost' => $item['cost'],
-                        'price' => $item['price'],
-                        'price_base' => $item['price_base'],
-                        'price_prof' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_PROFESSIONAL]['price'] ?? null,
-                        'price_retail' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_CUSTOMER]['price'] ?? null,
-                        'percent_prof' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_PROFESSIONAL]['percent_by_base_price'] ?? null,
-                        'percent_retail' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_CUSTOMER]['percent_by_base_price'] ?? null,
-                        'bonus' => $item['bonus'],
-                        'discounts' => $item['discounts'] ?? null,
-                    ];
                 }
             }
         }
