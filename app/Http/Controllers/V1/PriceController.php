@@ -4,8 +4,8 @@ namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Discount\DiscountSegment;
-use App\Models\Discount\DiscountUserRole;
 use App\Models\Price\Price;
+use App\Services\Cache\CacheHelper;
 use App\Services\Calculator\Catalog\CatalogCalculator;
 use App\Services\Price\PriceWriter;
 use Exception;
@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use MerchantManagement\Dto\MerchantPricesDto;
 use MerchantManagement\Services\MerchantService\Dto\GetMerchantPricesDto;
@@ -165,17 +166,25 @@ class PriceController extends Controller
         $roles[] = null;
 
         $prices = [];
+        $params = [];
         foreach ($offerIds as $offerId) {
-            foreach ($segments as $segment) {
-                foreach ($roles as $role) {
-                    $segmentKey = $segment ?? '0';
-                    $roleKey = $role ?? '0';
+            $params = ['offer_ids' => [$offerId]];
 
-                    $items = (new CatalogCalculator([
-                        'offer_ids' => [$offerId],
-                        'role_ids' => [$role],
-                        'segment_id' => $segment,
-                    ]))->calculate(false);
+            foreach ($segments as $segment) {
+                $segmentKey = $segment ?? '0';
+                $params['segment_id'] = $segment;
+
+                foreach ($roles as $role) {
+                    $roleKey = $role ?? '0';
+                    $params['role_ids'] = [$role];
+
+                    $items = Cache::remember(
+                        CacheHelper::getCacheKey(self::class, $params),
+                        60 * 60,
+                        function () use ($params) {
+                            return (new CatalogCalculator($params))->calculate(false);
+                        }
+                    );
 
                     foreach ($items as $item) {
                         $discounts = $item['discounts'] ?? null;
@@ -184,25 +193,7 @@ class PriceController extends Controller
                             continue;
                         }
 
-                        if (!isset($prices[$offerId])) {
-                            $prices[$offerId] = [];
-                        }
-
-                        if (!isset($prices[$offerId][$segmentKey])) {
-                            $prices[$offerId][$segmentKey] = [];
-                        }
-
-                        $prices[$offerId][$segmentKey][$roleKey] = [
-                            'cost' => $item['cost'],
-                            'price' => $item['price'],
-                            'price_base' => $item['price_base'],
-                            'price_prof' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_PROFESSIONAL]['price'] ?? null,
-                            'price_retail' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_CUSTOMER]['price'] ?? null,
-                            'percent_prof' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_PROFESSIONAL]['percent_by_base_price'] ?? null,
-                            'percent_retail' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_CUSTOMER]['percent_by_base_price'] ?? null,
-                            'bonus' => $item['bonus'],
-                            'discounts' => $item['discounts'] ?? null,
-                        ];
+                        $prices[$offerId][$segmentKey][$roleKey] = $this->formatPriceData($item);
                     }
                 }
             }
@@ -395,5 +386,20 @@ class PriceController extends Controller
         } catch (\Throwable $ex) {
             return response()->json(['error' => $ex->getMessage()], 400);
         }
+    }
+
+    private function formatPriceData(array $item): array
+    {
+        return [
+            'cost' => $item['cost'],
+            'price' => $item['price'],
+            'price_base' => $item['price_base'],
+            'price_prof' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_PROFESSIONAL]['price'] ?? null,
+            'price_retail' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_CUSTOMER]['price'] ?? null,
+            'percent_prof' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_PROFESSIONAL]['percent_by_base_price'] ?? null,
+            'percent_retail' => $item['prices_by_roles'][RoleDto::ROLE_SHOWCASE_CUSTOMER]['percent_by_base_price'] ?? null,
+            'bonus' => $item['bonus'],
+            'discounts' => $item['discounts'] ?? null,
+        ];
     }
 }
