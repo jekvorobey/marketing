@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use MerchantManagement\Dto\MerchantPricesDto;
 use MerchantManagement\Services\MerchantService\Dto\GetMerchantPricesDto;
 use MerchantManagement\Services\MerchantService\MerchantService;
@@ -180,7 +181,7 @@ class PriceController extends Controller
 
                     $items = Cache::remember(
                         CacheHelper::getCacheKey(self::class, $params),
-                        60 * 60,
+                        15 * 60,
                         function () use ($params) {
                             return (new CatalogCalculator($params))->calculate(false);
                         }
