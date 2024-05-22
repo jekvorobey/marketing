@@ -81,7 +81,7 @@ class OfferApplier extends AbstractApplier
 
                 $valueType = $discount->value_type;
                 $maxDiscountValue = $calculatorChangePrice->calculateDiscountByType(
-                    $basketItem['price_base'] ?? $basketItem['price'],
+                    $basketItem['price'] ?? $basketItem['price_base'],
                     $value,
                     $valueType
                 );
