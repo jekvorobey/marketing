@@ -110,6 +110,9 @@ class DiscountCalculator extends AbstractCalculator
         /** @var Collection|Discount[] $discounts */
         $discounts = $this->possibleDiscounts
             ->whereNotIn('type', [Discount::DISCOUNT_TYPE_DELIVERY, Discount::DISCOUNT_TYPE_CART_TOTAL])
+            ->filter(function (Discount $discount) {
+                return $discount->conditions->where('type', DiscountConditionModel::MIN_PRICE_ORDER)->isEmpty();
+            })
             ->sortBy(
                 fn (Discount $discount) => $discount->value_type === Discount::DISCOUNT_VALUE_TYPE_RUB
             );
@@ -478,7 +481,12 @@ class DiscountCalculator extends AbstractCalculator
      */
     protected function applyCartTotalDiscounts(): void
     {
-        $cartTotalDiscounts = $this->discounts->where('type', Discount::DISCOUNT_TYPE_CART_TOTAL);
+        $cartTypeTotalDiscounts = $this->discounts->where('type', Discount::DISCOUNT_TYPE_CART_TOTAL);
+        $cartConditionTypeTotalDiscounts = $this->discounts->filter(function (Discount $discount) {
+            return $discount->conditions->where('type', DiscountConditionModel::MIN_PRICE_ORDER)->isNotEmpty()
+                && $discount->type !== Discount::DISCOUNT_TYPE_DELIVERY;
+        });
+        $cartTotalDiscounts = $cartTypeTotalDiscounts->union($cartConditionTypeTotalDiscounts);
         $cartTotalDiscounts = $this->sortDiscountsByProfit($cartTotalDiscounts)->values();
         [$withPriority, $noPriority] = $cartTotalDiscounts->partition('max_priority', 1);
         $cartTotalDiscounts = $withPriority->merge($noPriority);
@@ -488,7 +496,6 @@ class DiscountCalculator extends AbstractCalculator
                 $this->applyDiscount($cartDiscount);
             }
         }
-
     }
 
     /**
@@ -569,7 +576,7 @@ class DiscountCalculator extends AbstractCalculator
                 }
 
                 $condition->condition = array_merge_recursive($condition->condition ?? [], [
-                    DiscountCondition::FIELD_SYNERGY => [$summarizableDiscount->id],
+                    DiscountConditionModel::FIELD_SYNERGY => [$summarizableDiscount->id],
                 ]);
             }
         }
